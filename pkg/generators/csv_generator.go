@@ -1,0 +1,810 @@
+package generators
+
+import (
+	"encoding/csv"
+	"fmt"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/fatih/color"
+	"github.com/google/uuid"
+)
+
+// CSVGenerator handles the generation of CSV files
+type CSVGenerator struct {
+	OutputDir       string
+	DataVolume      int
+	EntityData      map[string]*models.CSVData
+	idMap           map[string]map[string]string // Maps between entities for consistent relationships
+	relationshipMap map[string][]models.RelationshipLink
+	generatedValues map[string][]string // Store generated values by type
+	namespacePrefix string              // Store the common namespace prefix
+}
+
+// NewCSVGenerator creates a new CSVGenerator instance
+func NewCSVGenerator(outputDir string, dataVolume int) *CSVGenerator {
+	// Set a seed for consistent generation
+	seed := time.Now().UnixNano()
+	// In Go 1.20+ rand.Seed is deprecated but we'll use it for compatibility
+	// with older Go versions
+	gofakeit.Seed(seed)
+
+	return &CSVGenerator{
+		OutputDir:       outputDir,
+		DataVolume:      dataVolume,
+		EntityData:      make(map[string]*models.CSVData),
+		idMap:           make(map[string]map[string]string),
+		relationshipMap: make(map[string][]models.RelationshipLink),
+		generatedValues: make(map[string][]string),
+	}
+}
+
+// Setup prepares the generator with the necessary data
+func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships map[string]models.Relationship) {
+	// Extract the common namespace prefix
+	g.extractNamespacePrefix(entities)
+
+	// Initialize entity data
+	for id, entity := range entities {
+		csvData := &models.CSVData{
+			ExternalId:  entity.ExternalId,
+			EntityName:  entity.DisplayName,
+			Description: entity.Description,
+		}
+
+		// Extract headers from attributes
+		headers := []string{}
+		for _, attr := range entity.Attributes {
+			headers = append(headers, attr.ExternalId)
+		}
+		csvData.Headers = headers
+
+		g.EntityData[id] = csvData
+		g.idMap[id] = make(map[string]string)
+	}
+
+	// Process relationships
+	g.processRelationships(entities, relationships)
+
+	// Pre-generate some common values for generic data types
+	g.generateCommonValues()
+}
+
+// extractNamespacePrefix finds the common namespace prefix from entity external IDs
+func (g *CSVGenerator) extractNamespacePrefix(entities map[string]models.Entity) {
+	// Find the first entity with a prefix in its externalId
+	for _, entity := range entities {
+		if strings.Contains(entity.ExternalId, "/") {
+			parts := strings.Split(entity.ExternalId, "/")
+			if len(parts) > 0 {
+				g.namespacePrefix = parts[0]
+			}
+			break
+		}
+	}
+}
+
+// processRelationships analyzes the relationships between entities
+func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, relationships map[string]models.Relationship) {
+	// Create a map of attribute alias to (entity ID, attribute name)
+	attributeAliasMap := make(map[string]struct {
+		EntityID      string
+		AttributeName string
+	})
+
+	// Build the attribute alias map
+	for entityID, entity := range entities {
+		for _, attr := range entity.Attributes {
+			attributeAliasMap[attr.AttributeAlias] = struct {
+				EntityID      string
+				AttributeName string
+			}{
+				EntityID:      entityID,
+				AttributeName: attr.Name,
+			}
+		}
+	}
+
+	// Process each relationship
+	for _, relationship := range relationships {
+		// Skip path-based relationships for now
+		if len(relationship.Path) > 0 {
+			continue
+		}
+
+		// Get the entities and attributes that this relationship connects
+		if fromAttr, ok := attributeAliasMap[relationship.FromAttribute]; ok {
+			if toAttr, ok := attributeAliasMap[relationship.ToAttribute]; ok {
+				// Add the relationship link
+				link := models.RelationshipLink{
+					FromEntityID:  fromAttr.EntityID,
+					ToEntityID:    toAttr.EntityID,
+					FromAttribute: fromAttr.AttributeName,
+					ToAttribute:   toAttr.AttributeName,
+				}
+
+				g.relationshipMap[fromAttr.EntityID] = append(g.relationshipMap[fromAttr.EntityID], link)
+			}
+		}
+	}
+}
+
+// generateCommonValues pre-generates common test data values
+func (g *CSVGenerator) generateCommonValues() {
+	// Define common data types that can be used across any SOR
+
+	// Common names for generic entities
+	g.generatedValues["entityNames"] = []string{
+		"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
+		"Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho",
+		"Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega",
+	}
+
+	// Common organization departments
+	g.generatedValues["departments"] = []string{
+		"Engineering", "Sales", "Marketing", "Finance", "HR", "Operations",
+		"IT", "Legal", "Executive", "Support", "Research", "Development",
+		"QA", "Product", "Design", "Customer Success", "Administration",
+	}
+
+	// Common person names
+	g.generatedValues["firstNames"] = []string{
+		"James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda",
+		"William", "Elizabeth", "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
+		"Thomas", "Sarah", "Charles", "Karen", "Christopher", "Nancy", "Daniel", "Lisa",
+		"Matthew", "Betty", "Anthony", "Margaret", "Mark", "Sandra", "Donald", "Ashley",
+		"Steven", "Kimberly", "Paul", "Emily", "Andrew", "Donna", "Joshua", "Michelle",
+		"Kenneth", "Dorothy", "Kevin", "Carol", "Brian", "Amanda", "George", "Melissa",
+	}
+
+	g.generatedValues["lastNames"] = []string{
+		"Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia",
+		"Rodriguez", "Wilson", "Martinez", "Anderson", "Taylor", "Thomas", "Hernandez",
+		"Moore", "Martin", "Jackson", "Thompson", "White", "Lopez", "Lee", "Gonzalez",
+		"Harris", "Clark", "Lewis", "Robinson", "Walker", "Perez", "Hall", "Young",
+		"Allen", "Sanchez", "Wright", "King", "Scott", "Green", "Baker", "Adams",
+		"Nelson", "Hill", "Ramirez", "Campbell", "Mitchell", "Roberts", "Carter",
+	}
+
+	// Common permission values
+	g.generatedValues["permissions"] = []string{
+		"read", "write", "create", "delete", "admin", "view", "execute", "publish",
+		"approve", "reject", "manage", "configure", "assign", "revoke", "audit",
+	}
+
+	// Status values
+	g.generatedValues["status"] = []string{
+		"active", "inactive", "pending", "approved", "rejected", "completed",
+		"in_progress", "cancelled", "suspended", "archived", "draft",
+	}
+
+	// Common types
+	g.generatedValues["types"] = []string{
+		"primary", "secondary", "tertiary", "standard", "custom", "system", "user",
+		"internal", "external", "public", "private", "shared", "restricted",
+	}
+
+	// Common keys
+	g.generatedValues["keys"] = []string{
+		"id", "name", "description", "type", "status", "category", "group",
+		"code", "value", "priority", "order", "level", "tier", "version",
+	}
+
+	// Common expressions
+	g.generatedValues["expressions"] = []string{
+		"user.department == 'Engineering'",
+		"item.status in ['active', 'pending']",
+		"resource.owner == currentUser",
+		"request.priority > 3",
+		"document.classification != 'restricted'",
+		"project.deadline < today()",
+		"task.assignee == null",
+	}
+}
+
+// GenerateData creates random data for all entities
+func (g *CSVGenerator) GenerateData() {
+	// First, generate IDs that will be consistent across relationships
+	g.generateConsistentIds()
+
+	// Then generate data for each entity
+	for id, csvData := range g.EntityData {
+		rows := [][]string{}
+
+		for i := 0; i < g.DataVolume; i++ {
+			row := g.generateRowForEntity(id, i)
+			rows = append(rows, row)
+		}
+
+		csvData.Rows = rows
+	}
+
+	// Post-process for relationship consistency
+	g.ensureRelationshipConsistency()
+}
+
+// generateConsistentIds ensures that IDs used in relationships are consistent
+func (g *CSVGenerator) generateConsistentIds() {
+	// Initialize the random number generator with local source
+	// No need to call Seed as of Go 1.20+
+
+	// Generate consistent IDs for each entity
+	for entityID := range g.EntityData {
+		for i := 0; i < g.DataVolume; i++ {
+			g.idMap[entityID][strconv.Itoa(i)] = uuid.New().String()
+		}
+	}
+}
+
+// generateRowForEntity creates a row of data for a specific entity
+func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string {
+	// Get the entity info
+	csvData := g.EntityData[entityID]
+	headers := csvData.Headers
+
+	row := make([]string, len(headers))
+
+	for i, header := range headers {
+		// Determine the type of data to generate based on the header
+		headerLower := strings.ToLower(header)
+
+		// Generate ID fields (primary keys)
+		if headerLower == "id" {
+			idKey := strconv.Itoa(index)
+			if id, exists := g.idMap[entityID][idKey]; exists {
+				row[i] = id
+			} else {
+				// If there's no ID in the map, generate one
+				if strings.Contains(strings.ToLower(header), "uuid") {
+					row[i] = gofakeit.UUID()
+				} else {
+					row[i] = uuid.New().String()
+				}
+			}
+			continue
+		}
+
+		// Generate pointer/reference fields (foreign keys)
+		if strings.HasSuffix(headerLower, "id") && headerLower != "id" {
+			// This is likely a reference to another entity
+			referencedEntity := g.findEntityByReferenceField(headerLower)
+			if referencedEntity != "" && len(g.idMap[referencedEntity]) > 0 {
+				// Use a random existing ID from the referenced entity
+				refIds := make([]string, 0, len(g.idMap[referencedEntity]))
+				for _, id := range g.idMap[referencedEntity] {
+					refIds = append(refIds, id)
+				}
+				row[i] = refIds[rand.Intn(len(refIds))]
+			} else {
+				// Generate a random UUID as fallback
+				row[i] = uuid.New().String()
+			}
+			continue
+		}
+
+		// Generate data based on common field names
+		if headerLower == "name" || strings.HasSuffix(headerLower, "name") {
+			row[i] = g.generateName(index)
+			continue
+		}
+
+		if headerLower == "description" || strings.HasSuffix(headerLower, "description") {
+			row[i] = g.generateDescription(header, index)
+			continue
+		}
+
+		if headerLower == "type" || strings.HasSuffix(headerLower, "type") {
+			types := g.generatedValues["types"]
+			row[i] = types[index%len(types)]
+			continue
+		}
+
+		if headerLower == "status" || strings.HasSuffix(headerLower, "status") {
+			statuses := g.generatedValues["status"]
+			row[i] = statuses[index%len(statuses)]
+			continue
+		}
+
+		if headerLower == "key" || strings.HasSuffix(headerLower, "key") {
+			keys := g.generatedValues["keys"]
+			row[i] = keys[index%len(keys)] + "_" + strconv.Itoa(index)
+			continue
+		}
+
+		if headerLower == "value" || strings.HasSuffix(headerLower, "value") {
+			row[i] = g.generateValue(header, index)
+			continue
+		}
+
+		if headerLower == "uuid" {
+			row[i] = uuid.New().String()
+			continue
+		}
+
+		if headerLower == "expression" || strings.HasSuffix(headerLower, "expression") {
+			expressions := g.generatedValues["expressions"]
+			row[i] = expressions[index%len(expressions)]
+			continue
+		}
+
+		// Special case for common boolean field names
+		if header == "valid" || header == "enabled" || header == "active" || header == "archived" {
+			row[i] = strconv.FormatBool(index%2 == 0) // Alternate true/false
+			continue
+		}
+
+		// Boolean fields (more general case)
+		if headerLower == "enabled" || headerLower == "active" ||
+			headerLower == "valid" || headerLower == "archived" ||
+			strings.HasSuffix(headerLower, "enabled") ||
+			strings.HasSuffix(headerLower, "active") ||
+			strings.HasSuffix(headerLower, "valid") ||
+			strings.HasSuffix(headerLower, "archived") ||
+			strings.Contains(headerLower, "valid") ||
+			strings.Contains(headerLower, "archived") ||
+			strings.Contains(headerLower, "enabled") ||
+			strings.Contains(headerLower, "active") {
+			row[i] = strconv.FormatBool(index%2 == 0) // Alternate true/false
+			continue
+		}
+
+		// Date fields
+		if strings.Contains(headerLower, "date") ||
+			strings.Contains(headerLower, "time") ||
+			strings.Contains(headerLower, "created") ||
+			strings.Contains(headerLower, "updated") {
+			row[i] = g.generateDate(index)
+			continue
+		}
+
+		// Permission fields
+		if strings.Contains(headerLower, "permission") ||
+			strings.Contains(headerLower, "access") {
+			perms := g.generatedValues["permissions"]
+			numPerms := rand.Intn(3) + 1 // 1-3 permissions
+			selectedPerms := make([]string, numPerms)
+
+			for j := 0; j < numPerms; j++ {
+				selectedPerms[j] = perms[(index+j)%len(perms)]
+			}
+
+			row[i] = strings.Join(selectedPerms, ",")
+			continue
+		}
+
+		// Default case - generate a generic value
+		row[i] = g.generateGenericValue(header, index)
+	}
+
+	return row
+}
+
+// findEntityByReferenceField attempts to find the entity referenced by a field
+func (g *CSVGenerator) findEntityByReferenceField(fieldName string) string {
+	// Extract the entity name from the field (e.g., "roleId" -> "role")
+	re := regexp.MustCompile(`(.+)Id$`)
+	matches := re.FindStringSubmatch(fieldName)
+	if len(matches) < 2 {
+		return ""
+	}
+
+	// Get the base entity name
+	entityName := matches[1]
+
+	// Look for an entity with a similar name (case-insensitive)
+	entityNameLower := strings.ToLower(entityName)
+
+	for id, data := range g.EntityData {
+		dataNameLower := strings.ToLower(data.EntityName)
+
+		// Check if the entity name contains the field name
+		if strings.Contains(dataNameLower, entityNameLower) {
+			return id
+		}
+	}
+
+	return ""
+}
+
+// ensureRelationshipConsistency enforces consistency across related entities
+func (g *CSVGenerator) ensureRelationshipConsistency() {
+	// Iterate through relationships and ensure consistency
+	for fromEntityID, links := range g.relationshipMap {
+		for _, link := range links {
+			g.makeRelationshipsConsistent(fromEntityID, link)
+		}
+	}
+}
+
+// makeRelationshipsConsistent ensures that related entities have consistent values
+func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link models.RelationshipLink) {
+	// Get the data for both entities
+	fromData := g.EntityData[fromEntityID]
+	toData := g.EntityData[link.ToEntityID]
+
+	if fromData == nil || toData == nil {
+		return
+	}
+
+	// Find the column indices for the attributes
+	fromAttrIndex := -1
+	for i, header := range fromData.Headers {
+		if strings.EqualFold(header, link.FromAttribute) ||
+			strings.EqualFold(header, link.FromAttribute+"Id") {
+			fromAttrIndex = i
+			break
+		}
+	}
+
+	toAttrIndex := -1
+	for i, header := range toData.Headers {
+		if strings.EqualFold(header, link.ToAttribute) ||
+			strings.EqualFold(header, link.ToAttribute+"Id") {
+			toAttrIndex = i
+			break
+		}
+	}
+
+	if fromAttrIndex == -1 || toAttrIndex == -1 {
+		return
+	}
+
+	// Collect all values from the "to" entity's attribute
+	toValues := make(map[string]bool)
+	for _, row := range toData.Rows {
+		toValues[row[toAttrIndex]] = true
+	}
+
+	// Ensure "from" entity's values are in the "to" entity
+	toValuesSlice := make([]string, 0, len(toValues))
+	for val := range toValues {
+		toValuesSlice = append(toValuesSlice, val)
+	}
+
+	// If no values in "to" entity, we can't make them consistent
+	if len(toValuesSlice) == 0 {
+		return
+	}
+
+	// Update "from" entity values to reference existing "to" entity values
+	for i, row := range fromData.Rows {
+		// Use a random value from the "to" entity for each row in the "from" entity
+		row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
+		fromData.Rows[i] = row
+	}
+}
+
+// WriteCSVFiles writes all generated data to CSV files
+func (g *CSVGenerator) WriteCSVFiles() error {
+	// Create the output directory if it doesn't exist
+	err := os.MkdirAll(g.OutputDir, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Write each entity's data to a CSV file
+	for _, csvData := range g.EntityData {
+		// Parse the external ID to get the filename
+		var filename string
+
+		// Handle both formats: with namespace prefix (e.g., "KeystoneV1/Entity") and without
+		if strings.Contains(csvData.ExternalId, "/") {
+			parts := strings.Split(csvData.ExternalId, "/")
+			filename = parts[len(parts)-1] + ".csv"
+		} else {
+			// If no namespace prefix, just use the external ID
+			filename = csvData.ExternalId + ".csv"
+		}
+
+		filePath := filepath.Join(g.OutputDir, filename)
+
+		file, err := os.Create(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to create file %s: %w", filePath, err)
+		}
+		defer func() { _ = file.Close() }()
+
+		writer := csv.NewWriter(file)
+		defer writer.Flush()
+
+		// Write headers
+		err = writer.Write(csvData.Headers)
+		if err != nil {
+			return fmt.Errorf("failed to write headers to %s: %w", filePath, err)
+		}
+
+		// Write data rows
+		for _, row := range csvData.Rows {
+			err = writer.Write(row)
+			if err != nil {
+				return fmt.Errorf("failed to write row to %s: %w", filePath, err)
+			}
+		}
+
+		color.Green("✓ Generated %s with %d rows", filename, len(csvData.Rows))
+	}
+
+	return nil
+}
+
+// Helper functions for generating random data
+func (g *CSVGenerator) generateName(index int) string {
+	// Check if this is a person name or a general entity name, but only if we have entity data
+	entityID := g.findEntityByIndex(index)
+
+	if entityID != "" && g.EntityData[entityID] != nil {
+		entityName := strings.ToLower(g.EntityData[entityID].EntityName)
+
+		// Generate context-appropriate names based on entity type
+		switch {
+		// User-related entities should get person names
+		case strings.Contains(entityName, "user") ||
+			strings.Contains(entityName, "person") ||
+			strings.Contains(entityName, "employee") ||
+			strings.Contains(entityName, "customer") ||
+			strings.Contains(entityName, "contact"):
+			return sanitizeName(gofakeit.Name())
+
+		// Role-related entities should get job titles or role names
+		case strings.Contains(entityName, "role") ||
+			strings.Contains(entityName, "permission") ||
+			strings.Contains(entityName, "access") ||
+			strings.Contains(entityName, "privilege"):
+			return sanitizeName(gofakeit.JobTitle())
+
+		// Group-related entities should get department/team names
+		case strings.Contains(entityName, "group") ||
+			strings.Contains(entityName, "team") ||
+			strings.Contains(entityName, "department") ||
+			strings.Contains(entityName, "division") ||
+			strings.Contains(entityName, "unit"):
+			departments := []string{"Engineering", "Marketing", "Sales", "Finance", "HR", "Operations",
+				"IT", "Legal", "Research", "Development", "Support", "Customer Success"}
+			return sanitizeName(departments[index%len(departments)] + " " + gofakeit.JobDescriptor())
+
+		// Application or system entities
+		case strings.Contains(entityName, "app") ||
+			strings.Contains(entityName, "application") ||
+			strings.Contains(entityName, "system") ||
+			strings.Contains(entityName, "service") ||
+			strings.Contains(entityName, "software"):
+			return sanitizeName(gofakeit.AppName())
+
+		// Product entities
+		case strings.Contains(entityName, "product") ||
+			strings.Contains(entityName, "item") ||
+			strings.Contains(entityName, "merchandise") ||
+			strings.Contains(entityName, "asset"):
+			return sanitizeName(gofakeit.ProductName())
+
+		// Location entities
+		case strings.Contains(entityName, "location") ||
+			strings.Contains(entityName, "place") ||
+			strings.Contains(entityName, "address") ||
+			strings.Contains(entityName, "site") ||
+			strings.Contains(entityName, "facility"):
+			return sanitizeName(gofakeit.City() + " " + gofakeit.Street())
+
+		// Company or organization entities
+		case strings.Contains(entityName, "company") ||
+			strings.Contains(entityName, "organization") ||
+			strings.Contains(entityName, "vendor") ||
+			strings.Contains(entityName, "supplier") ||
+			strings.Contains(entityName, "client"):
+			return sanitizeName(gofakeit.Company())
+
+		// Project entities
+		case strings.Contains(entityName, "project") ||
+			strings.Contains(entityName, "initiative") ||
+			strings.Contains(entityName, "program"):
+			adjectives := []string{"Strategic", "Global", "Innovative", "Digital", "Advanced", "Enterprise"}
+			nouns := []string{"Transformation", "Optimization", "Modernization", "Integration", "Initiative", "Launch"}
+			return sanitizeName(adjectives[index%len(adjectives)] + " " + nouns[index%len(nouns)])
+
+		// Category/classification entities
+		case strings.Contains(entityName, "category") ||
+			strings.Contains(entityName, "type") ||
+			strings.Contains(entityName, "classification") ||
+			strings.Contains(entityName, "class"):
+			return sanitizeName(gofakeit.ProductCategory())
+
+		// For any other entity, use a company name as default
+		default:
+			return sanitizeName(gofakeit.Company())
+		}
+	}
+
+	// Fallback if we couldn't determine the entity type
+	return sanitizeName(gofakeit.Company())
+}
+
+// sanitizeName replaces commas and quotes in a name to avoid CSV parsing issues
+func sanitizeName(name string) string {
+	sanitized := strings.ReplaceAll(name, ",", "-")
+	return strings.ReplaceAll(sanitized, "\"", "'")
+}
+
+func (g *CSVGenerator) generateDescription(field string, index int) string {
+	// Generate a more realistic description
+	return gofakeit.Sentence(rand.Intn(5) + 3) // 3-8 words
+}
+
+func (g *CSVGenerator) generateValue(field string, index int) string {
+	// Generate a more realistic value based on the field name
+	fieldLower := strings.ToLower(field)
+
+	// Try to infer the field type from its name
+	switch {
+	case strings.Contains(fieldLower, "color"):
+		return gofakeit.Color()
+	case strings.Contains(fieldLower, "currency"):
+		return gofakeit.CurrencyShort()
+	case strings.Contains(fieldLower, "job") || strings.Contains(fieldLower, "title"):
+		return gofakeit.JobTitle()
+	case strings.Contains(fieldLower, "company"):
+		return gofakeit.Company()
+	case strings.Contains(fieldLower, "product"):
+		return gofakeit.ProductName()
+	default:
+		// Add a bit of randomness
+		adjective := gofakeit.Adjective()
+		noun := gofakeit.Noun()
+		return adjective + "_" + noun + "_" + strconv.Itoa(index)
+	}
+}
+
+func (g *CSVGenerator) generateDate(index int) string {
+	// Generate a date within the last 2 years
+	minTime := time.Now().AddDate(-2, 0, 0)
+	maxTime := time.Now()
+
+	// Use gofakeit for better randomization
+	date := gofakeit.DateRange(minTime, maxTime)
+
+	// Format as YYYY-MM-DD
+	return date.Format("2006-01-02")
+}
+
+// Helper function to find entity ID by index
+func (g *CSVGenerator) findEntityByIndex(index int) string {
+	// This is a simple utility to find an entity ID when we only have an index
+	// Takes the first entity if we can't determine which one
+	for entityID := range g.EntityData {
+		return entityID
+	}
+	return ""
+}
+
+func (g *CSVGenerator) generateGenericValue(field string, index int) string {
+	// Generate values based on the field name
+	fieldLower := strings.ToLower(field)
+
+	// More intelligent field type detection
+	switch {
+	// Numeric fields
+	case strings.Contains(fieldLower, "count") ||
+		strings.Contains(fieldLower, "number") ||
+		strings.Contains(fieldLower, "amount") ||
+		strings.Contains(fieldLower, "quantity"):
+		if strings.Contains(fieldLower, "price") || strings.Contains(fieldLower, "cost") {
+			// Generate a price with 2 decimal places (like $123.45)
+			return fmt.Sprintf("%.2f", gofakeit.Price(1, 1000))
+		}
+		return strconv.Itoa(gofakeit.Number(1, 1000))
+
+	// Percentage fields
+	case strings.Contains(fieldLower, "percent") ||
+		strings.Contains(fieldLower, "rate"):
+		return strconv.Itoa(gofakeit.Number(1, 100)) + "%"
+
+	// Email fields
+	case strings.Contains(fieldLower, "email"):
+		return gofakeit.Email()
+
+	// Phone number fields
+	case strings.Contains(fieldLower, "phone"):
+		return gofakeit.Phone()
+
+	// URL fields
+	case strings.Contains(fieldLower, "url") ||
+		strings.Contains(fieldLower, "website") ||
+		strings.Contains(fieldLower, "link"):
+		return gofakeit.URL()
+
+	// Username fields
+	case strings.Contains(fieldLower, "username") ||
+		strings.Contains(fieldLower, "user_name"):
+		return gofakeit.Username()
+
+	// Password fields
+	case strings.Contains(fieldLower, "password"):
+		return gofakeit.Password(true, true, true, true, false, 10)
+
+	// Address fields
+	case strings.Contains(fieldLower, "address"):
+		return gofakeit.Address().Address
+
+	case strings.Contains(fieldLower, "street"):
+		return gofakeit.Street()
+
+	case strings.Contains(fieldLower, "city"):
+		return gofakeit.City()
+
+	case strings.Contains(fieldLower, "state"):
+		return gofakeit.State()
+
+	case strings.Contains(fieldLower, "zip") ||
+		strings.Contains(fieldLower, "postal"):
+		return gofakeit.Zip()
+
+	case strings.Contains(fieldLower, "country"):
+		return gofakeit.Country()
+
+	// Name fields
+	case strings.Contains(fieldLower, "first_name") ||
+		strings.Contains(fieldLower, "firstname"):
+		return gofakeit.FirstName()
+
+	case strings.Contains(fieldLower, "last_name") ||
+		strings.Contains(fieldLower, "lastname"):
+		return gofakeit.LastName()
+
+	// Code fields
+	case strings.Contains(fieldLower, "code"):
+		prefix := string([]rune(gofakeit.LetterN(3)))
+		return strings.ToUpper(prefix) + "-" + strconv.Itoa(1000+index)
+
+	// IP address fields
+	case strings.Contains(fieldLower, "ip"):
+		return gofakeit.IPv4Address()
+
+	// Credit card fields
+	case strings.Contains(fieldLower, "card") ||
+		strings.Contains(fieldLower, "credit"):
+		return gofakeit.CreditCardNumber(&gofakeit.CreditCardOptions{})
+
+	// Datetime fields
+	case strings.Contains(fieldLower, "time") && !strings.Contains(fieldLower, "date"):
+		// Create a time within the last 24 hours
+		minTime := time.Now().Add(-24 * time.Hour)
+		maxTime := time.Now()
+		return gofakeit.DateRange(minTime, maxTime).Format("15:04:05")
+
+	// Color fields
+	case strings.Contains(fieldLower, "color") ||
+		strings.Contains(fieldLower, "colour"):
+		return gofakeit.Color()
+
+	// Department fields
+	case strings.Contains(fieldLower, "department") ||
+		strings.Contains(fieldLower, "dept"):
+		return gofakeit.JobTitle()
+
+	// Product fields
+	case strings.Contains(fieldLower, "product"):
+		return gofakeit.ProductName()
+
+	// Description or comment fields
+	case strings.Contains(fieldLower, "comment") ||
+		strings.Contains(fieldLower, "description") ||
+		strings.Contains(fieldLower, "summary") ||
+		strings.Contains(fieldLower, "notes"):
+		return gofakeit.Sentence(gofakeit.Number(5, 15))
+
+	// UUID fields
+	case strings.Contains(fieldLower, "uuid") ||
+		strings.Contains(fieldLower, "guid"):
+		return gofakeit.UUID()
+
+	// Default - generate a more interesting value using an adjective and noun
+	default:
+		return gofakeit.Word() + "_" + strconv.Itoa(index)
+	}
+}

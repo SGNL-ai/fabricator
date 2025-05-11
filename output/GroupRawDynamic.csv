@@ -1,0 +1,4 @@
+expression,id,groupId
+user.department == 'Engineering',a39e5485-aff8-4667-8875-41a1718601d1,76e54398-b58c-419f-8e59-ae1e9f374c12
+"item.status in ['active', 'pending']",9bbb8411-1860-43b5-9ffe-419ff46f90e1,e1a24414-f760-4fce-a684-afad13d68acf
+resource.owner == currentUser,c2841d14-1b38-4a84-8deb-6165e148086a,98b578c2-c0da-429e-893e-73aca2034ce0

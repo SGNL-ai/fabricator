@@ -1,0 +1,11 @@
+id,firstName,lastName,email,phone,departmentId,title,salary,hireDate,active
+90aec30c-340a-4490-964a-7e1746feea9f,Kaley Buckridge,Alpha_0,cristinarempel@bauch.biz,2014388715,f9ac6e4c-63c2-4bde-99c0-ca53dbd431ba,quarterly_0,are_0,2023-07-14,true
+490eaea1-0ed2-4134-a2c4-9b975eba6928,Cole Osinski,Beta_1,sauldickens@schmitt.org,1244505302,01af7636-fc15-4eae-adc4-e66690415478,consequently_1,previously_1,2023-05-15,false
+538c9909-66b9-4bc8-8890-92f752ee0bf0,Fanny Thompson,Sonny Medhurst,myrlkilback@lowe.com,6106699987,01af7636-fc15-4eae-adc4-e66690415478,hourly_2,recently_2,2024-02-05,true
+1758853c-3b55-4639-bd6f-72390a90200b,Kennith Jerde,Delta_3,allynch@waelchi.biz,6171689828,3a02f8ed-a0d3-4084-9b18-a5cbebef11f7,whose_3,earlier_3,2024-05-21,false
+68fab238-813e-4659-8a35-6136917585b5,Madilyn Rau,Epsilon_4,brennannader@dach.net,7879837206,f4d96e58-697a-4804-b9c5-546dcb5409a9,themselves_4,reel_4,2024-09-12,true
+37a8d65d-a6fb-42cd-8366-46fad33e1a4e,Zeta_5,Mazie Bernhard,stevieosinski@johns.net,9586360684,f4d96e58-697a-4804-b9c5-546dcb5409a9,therefore_5,should_5,2024-05-06,false
+15f22c3f-f2bf-4ec7-b661-8e48b6e4da19,Eta_6,Eta_6,jodietromp@shanahan.org,2365567079,f4d96e58-697a-4804-b9c5-546dcb5409a9,though_6,far_6,2024-02-29,true
+ea2c4a80-acbb-4f1a-b2a0-f7f988af5b03,Reba Murazik,Gunnar Windler,elyssasimonis@kreiger.io,8212205457,b92785da-6126-48e3-a2b7-364389d6a998,chapter_7,himself_7,2023-09-15,false
+26d07c0a-6ab4-4145-9d1b-5bc5096d031a,Iota_8,Kim Heller,alexanejacobson@metz.com,1092188923,a229d484-e387-4822-9ffe-d701153fb32b,that_8,so_8,2024-09-09,true
+1b3f679f-9998-49a6-ad9b-e5a299863588,Marisol Hyatt,Kappa_9,iankuhn@quitzon.net,5680512865,f4d96e58-697a-4804-b9c5-546dcb5409a9,itself_9,ourselves_9,2025-01-02,false

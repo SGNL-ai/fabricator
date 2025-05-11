@@ -1,0 +1,681 @@
+displayName: Skywalker-0.3.3
+description: Skywalker Assignment Variation
+hostname: localhost:8080
+defaultSyncFrequency: DAILY
+defaultSyncMinInterval: 1
+defaultApiCallFrequency: SECONDLY
+defaultApiCallMinInterval: 1
+type: S3-1.0.0
+adapterConfig: eyJyZWdpb24iOiJ1cy1lYXN0LTEiLCJidWNrZXQiOiJrZXlzdG9uZS1zZ25sLXMzLWluZ2VzdCJ9
+auth:
+  - basic:
+      username: EXAMPLE_USERNAME_PLACEHOLDER
+entities:
+  eb78023c930949848f0d794e5e9b7b03:
+    displayName: AssignmentAttribute
+    externalId: KeystoneV1/AttributeAssignment
+    description: Attributes assigned to an assignment; used to admin attributeValue
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique AttributeAssignment
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 0e7c7d0f-1454-4bf2-a598-4a0c59a0a424
+        list: false
+      - name: attributeValue
+        externalId: attributeValue
+        description: value of the attributeType
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 2fe365ec-34c7-4bac-866c-e54bc4c12adb
+        list: false
+      - name: assignmentId
+        externalId: assignmentId
+        description: pointer to a unique assignment
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 33e6bf23-dbe1-4f2c-88a8-989e8ab538a6
+        list: false
+      - name: attributeKey
+        externalId: attributeKey
+        description: attribute metadata name
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 44e1bc1f-c340-49fb-9993-ec48b6059e4a
+        list: false
+      - name: attributeType
+        externalId: attributeType
+        description: name of the attributeType
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 664beaf9-6b21-4994-9b65-d8a161681b64
+        list: false
+      - name: attributeTypeId
+        externalId: attributeTypeId
+        description: pointer to a unique AttributeType
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 70f3be0a-ec44-4572-b1dd-64914160cbb2
+        list: false
+      - name: attributeMetadataId
+        externalId: attributeMetadataId
+        description: pointer to a unique AttributeMetadata
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: dfbf2c11-c15b-4090-8ee6-bca156a990ab
+        list: false
+    entityAlias: eb78023c-9309-4984-8f0d-794e5e9b7b03
+  37e7c7e5db114365b73eee64fbc78534:
+    displayName: RoleFunctionalAbilityAttributeAssignment
+    externalId: KeystoneV1/RoleFunctionalAbilityAttributeAssignment
+    description: connects a RoleFunctionalAbility to a AttributeAssignment
+    pagesOrderedById: false
+    attributes:
+      - name: attributeTypeId
+        externalId: attributeTypeId
+        description: pointer to a unique AttributeType; used to recalculate attributeType
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 2e468e0d-d31c-4ad3-aa13-24d0c1cea7e8
+        list: false
+      - name: roleFunctionalAbilityId
+        externalId: roleFunctionalAbilityId
+        description: pointer to a unique RoleFunctionalAbility
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 51790170-27b9-4f64-a66c-2c18d576b241
+        list: false
+      - name: attributeType
+        externalId: attributeType
+        description: middle layer attribute value; used to help organize
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 51db384c-b140-4b37-9126-9985ec4cae47
+        list: false
+      - name: attributeMetadataId
+        externalId: attributeMetadataId
+        description: pointer to unique AttributeMetadata; used to recalculate attributeKey
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 76c8b571-4051-4e05-856b-be4dae15e5da
+        list: false
+      - name: id
+        externalId: id
+        description: unique RoleFunctionalAbilityAttributeAssignment id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 808ae927-16c1-4e4b-b1a4-e97d06f15447
+        list: false
+      - name: attributeKey
+        externalId: attributeKey
+        description: top level attribute name
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: b37f5ca7-f023-459e-b597-009869329eb5
+        list: false
+      - name: attributeValue
+        externalId: attributeValue
+        description: bottom layer attribute value
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: e0c91252-afff-4b49-8ed5-6f34b97352cb
+        list: false
+    entityAlias: 37e7c7e5-db11-4365-b73e-ee64fbc78534
+  85441103637542dd974123dcbc626efa:
+    displayName: AttributeMetadata
+    externalId: KeystoneV1/AttributeMetadata
+    description: top level Attribute entity used to admin attributeKey
+    pagesOrderedById: false
+    attributes:
+      - name: attributeTypeId
+        externalId: attributeTypeId
+        description: pointer to a unique AttributeType
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 0fc54599-d3e2-4cb6-ace2-4414866e2917
+        list: false
+      - name: appId
+        externalId: appId
+        description: pointer to a unique app
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 2fb61379-1902-41d2-899d-4bc7b15049ef
+        list: false
+      - name: name
+        externalId: name
+        description: attributeKey
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 57a9126e-be69-4644-8c75-4c8bd42d25a8
+        list: false
+      - name: id
+        externalId: id
+        description: unique AttributeMetadata id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: f13e4b68-29c3-495d-83b5-5302db5c2532
+        list: false
+    entityAlias: 85441103-6375-42dd-9741-23dcbc626efa
+  dca4c8bbb68e4b50a0a2903bcc32eb22:
+    displayName: AttributeType
+    externalId: KeystoneV1/AttributeType
+    description: attribute type
+    pagesOrderedById: false
+    attributes:
+      - name: appId
+        externalId: appId
+        description: application id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 12ea629c-b44f-4a90-88c5-227d0ba30867
+        list: false
+      - name: id
+        externalId: id
+        description: unique attribute type pointer
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 1c52cfe2-52f2-4c47-a5cf-6c7541945326
+        list: false
+      - name: name
+        externalId: name
+        description: value of attributeType
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: e2ac75fa-7675-4436-942a-c2f66d916399
+        list: false
+    entityAlias: dca4c8bb-b68e-4b50-a0a2-903bcc32eb22
+  e140f5e2f13440e79deb103cebfd6624:
+    displayName: SecuredEntity
+    externalId: KeystoneV1/SecuredEntity
+    description: secured entity
+    pagesOrderedById: false
+    attributes:
+      - name: name
+        externalId: name
+        description: key of the allowed operations
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 655cd7a4-43bd-4201-8866-90d11c293c40
+        list: false
+      - name: id
+        externalId: id
+        description: unique secured entity id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 7f872a72-d45f-41f6-8273-f89157f0a51a
+        list: false
+      - name: appId
+        externalId: appId
+        description: pointer to a unique application
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: e940f153-7a94-47fe-9fcb-489e1513ad95
+        list: false
+      - name: value
+        externalId: value
+        description: allowed operations value
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: eaa218b8-169c-4df7-b059-8d447bb96de3
+        list: false
+    entityAlias: e140f5e2-f134-40e7-9deb-103cebfd6624
+  845b3ffc89204a0a85d2685acd36fdd1:
+    displayName: FunctionalAbilitySecuredEntity
+    externalId: KeystoneV1/FunctionalAbilitySecuredEntity
+    description: connects a FunctionalAbility to a SecuredEntity
+    pagesOrderedById: false
+    attributes:
+      - name: functionalAbilityId
+        externalId: functionalAbilityId
+        description: pointer to a unique FunctionalAbility
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 2b987deb-f4e3-4016-a399-07b482d17416
+        list: false
+      - name: securedEntityId
+        externalId: securedEntityId
+        description: pointer to a unique secured entity
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 5a0bdd22-930b-4d81-b371-7abe2d909749
+        list: false
+      - name: id
+        externalId: id
+        description: unique secured entity id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: aa73f274-2e50-4cb5-a797-c6af8be0e3b0
+        list: false
+    entityAlias: 845b3ffc-8920-4a0a-85d2-685acd36fdd1
+  3fe78858b6ee40c6bde21811673a85e2:
+    displayName: GroupRawDynamic
+    externalId: KeystoneV1/GroupRawDynamic
+    description: holds raw dynamic string used for admin proposes
+    pagesOrderedById: false
+    attributes:
+      - name: expression
+        externalId: expression
+        description: raw dynamic expression value
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 0318b341-1126-4aae-8d01-0887a5906708
+        list: false
+      - name: id
+        externalId: id
+        description: unique GroupRawDynamic id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: aa649b73-cbf2-4ece-8af8-27cd13ec0435
+        list: false
+      - name: groupId
+        externalId: groupId
+        description: pointer to a unique group
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: df99dc49-e1b0-4b77-8b95-0fb3b2d7a78d
+        list: false
+    entityAlias: 3fe78858-b6ee-40c6-bde2-1811673a85e2
+  b783c67a186e430b879af9aecff4e1f1:
+    displayName: FunctionalAbility
+    externalId: KeystoneV1/FunctionalAbility
+    description: Entity representing a "Functional Ability" in Keystone
+    pagesOrderedById: false
+    attributes:
+      - name: roleId
+        externalId: roleId
+        description: pointer to role
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 3d1cd588-58b7-446c-b4e5-b4356486a2b7
+        list: false
+      - name: id
+        externalId: id
+        description: unique functional ability id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: b7f3430f-4cec-4c3d-a94e-efd4cbfab5c3
+        list: false
+      - name: name
+        externalId: name
+        description: key value of a FunctionalAbility
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: ef141556-cf57-4d99-b4a8-953611a62347
+        list: false
+    entityAlias: b783c67a-186e-430b-879a-f9aecff4e1f1
+  dc589885a64e4a2686241d8377713e09:
+    displayName: RawDynamic
+    externalId: KeystoneV1/RawDynamic
+    description: holds raw dynamic assignment as "value" string used by dynamic
+      engine to calculate Assignment entities
+    pagesOrderedById: false
+    attributes:
+      - name: roleId
+        externalId: roleId
+        description: pointer to a role id
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 498266d6-0a12-48ab-8976-1cd6c3ed65d3
+        list: false
+      - name: id
+        externalId: id
+        description: unique RawDynamic attribute
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 6a4bb854-15ca-4c6a-9e71-30fe62b60388
+        list: false
+      - name: value
+        externalId: value
+        description: string representation of the raw dynamic assignment
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 765e54b9-7087-41f6-9a46-0080963fe709
+        list: false
+    entityAlias: dc589885-a64e-4a26-8624-1d8377713e09
+  9fcf9ff6d8d34c43bd15cd0186d933cb:
+    displayName: Assignment
+    externalId: KeystoneV1/Assignment
+    description: pre-calculated combination of static, group, and dynamic assignments
+    pagesOrderedById: false
+    attributes:
+      - name: rawId
+        externalId: rawId
+        description: id pointing at the assignment used to calculate Assignment. enum =
+          [static,group,dynamic]
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 81a9f42a-129d-4e38-a635-b77cbe66617d
+        list: false
+      - name: id
+        externalId: id
+        description: unique Assignment attribute
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: a268ae0d-118a-4a09-abea-60265edd45c4
+        list: false
+      - name: uuid
+        externalId: uuid
+        description: user uuid pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: c73f7c31-2192-47bf-a99f-90c676ab64aa
+        list: false
+      - name: roleId
+        externalId: roleId
+        description: role id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: eece4a99-c43c-4d15-9c39-fddf8a6d1e97
+        list: false
+    entityAlias: 9fcf9ff6-d8d3-4c43-bd15-cd0186d933cb
+  b544baf7c7b34c82bfc85d21ed761c3b:
+    displayName: RoleFunctionalAbility
+    externalId: KeystoneV1/RoleFunctionalAbility
+    description: Entity representing the node connecting Role and Functional Ability
+      in the graph
+    pagesOrderedById: false
+    attributes:
+      - name: functionalAbilityId
+        externalId: functionalAbilityId
+        description: pointer to a functional ability
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 3e2764d8-1a18-44d8-bf12-771b74f54a6d
+        list: false
+      - name: id
+        externalId: id
+        description: unique RoleFunctionalAbility id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 50d728bd-3958-4686-8434-0a1b2cf3ed45
+        list: false
+      - name: roleId
+        externalId: roleId
+        description: pointer to a role
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 996cf920-0529-4fa9-bf6e-f4018bdc664c
+        list: false
+    entityAlias: b544baf7-c7b3-4c82-bfc8-5d21ed761c3b
+  c02467b3e61b4b5f91018c095251a52b:
+    displayName: GroupRole
+    externalId: KeystoneV1/GroupRole
+    description: holds group to role value pointer
+    pagesOrderedById: false
+    attributes:
+      - name: groupId
+        externalId: groupId
+        description: group id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 28363279-6b2c-480b-a21b-3ec75a04a711
+        list: false
+      - name: roleId
+        externalId: roleId
+        description: role id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: d252da38-a3fa-4519-8a7a-ad8591deae5e
+        list: false
+      - name: id
+        externalId: id
+        description: unique GroupRole id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: dbf4217d-bd69-4b8e-93ab-1ac5328b88f4
+        list: false
+    entityAlias: c02467b3-e61b-4b5f-9101-8c095251a52b
+  11d3aea0fb724138a0b21a8975821789:
+    displayName: UserInterface
+    externalId: KeystoneV1/UserInterface
+    description: Interface entity that should have a same_as relationship to Identity User
+    pagesOrderedById: false
+    attributes:
+      - name: uuid
+        externalId: uuid
+        description: IID
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 41ee2548-853c-4e39-9a81-a93ac85649bb
+        list: false
+    entityAlias: 11d3aea0-fb72-4138-a0b2-1a8975821789
+  e39aa53f8be940d0839e8e35207a83e9:
+    displayName: Role
+    externalId: KeystoneV1/Role
+    description: Keystone entity used to make Roles/Full assertions
+    pagesOrderedById: false
+    attributes:
+      - name: name
+        externalId: name
+        description: name of role and string used in assertions
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 21d3910e-e989-467d-a2b7-d97156e94842
+        list: false
+      - name: id
+        externalId: id
+        description: unique Role id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 4ea3b897-8c6a-47af-9270-884042dbe621
+        list: false
+      - name: appId
+        externalId: appId
+        description: unique Keystone App id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: eba09104-c316-4542-a2d1-89f0bbfea4be
+        list: false
+    entityAlias: e39aa53f-8be9-40d0-839e-8e35207a83e9
+  fef72dfb816d497290889de4dd19ef2b:
+    displayName: App
+    externalId: KeystoneV1/App
+    description: Keystone application is the protected asset and parent entity
+    syncFrequency: HOURLY
+    syncMinInterval: 30
+    apiCallFrequency: SECONDLY
+    apiCallMinInterval: 1
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique App id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 12dc9d54-43ba-46d5-8d4b-5b8fe8579f4d
+        list: false
+      - name: name
+        externalId: name
+        description: name of the application
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: b9bdc8eb-e4ec-4bfb-970d-1093ccd2180a
+        list: false
+    entityAlias: fef72dfb-816d-4972-9088-9de4dd19ef2b
+  8d73631e28a34226a3dca7ba865648a2:
+    displayName: Group
+    externalId: KeystoneV1/Group
+    description: Keystone group connects identity users, identity groups, roles,
+      attributes, and FAs
+    pagesOrderedById: false
+    attributes:
+      - name: name
+        externalId: name
+        description: name of a group
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: 604a4f27-0707-4718-850e-a0caa134e38f
+        list: false
+      - name: attributeId
+        externalId: attributeId
+        description: unique attribute value pointer
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: 6f6dfacd-83ee-4ab8-adc1-8f607f4bf329
+        list: false
+      - name: id
+        externalId: id
+        description: unique keystone Group id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: facb0ee1-36f6-4eab-bd4c-b94d93131c1a
+        list: false
+    entityAlias: 8d73631e-28a3-4226-a3dc-a7ba865648a2
+relationships:
+  425f1d2384bf47f795b39d34b381fe0a:
+    displayName: GRANTS_ACCESS_TO
+    name: GRANTS_ACCESS_TO
+    fromAttribute: eba09104-c316-4542-a2d1-89f0bbfea4be
+    toAttribute: 12dc9d54-43ba-46d5-8d4b-5b8fe8579f4d
+  40fcb57205cd4ba3af1de95e373b407a:
+    displayName: roleFunctionalAbility_to_functionalAbility
+    name: rolefunctionalability_to_functionalability
+    fromAttribute: 3e2764d8-1a18-44d8-bf12-771b74f54a6d
+    toAttribute: b7f3430f-4cec-4c3d-a94e-efd4cbfab5c3
+  e2f7b2a9a77c42948c61274ca6d4a293:
+    displayName: attrType_to_app
+    name: attrType_to_app
+    fromAttribute: 12ea629c-b44f-4a90-88c5-227d0ba30867
+    toAttribute: 12dc9d54-43ba-46d5-8d4b-5b8fe8579f4d
+  2afbb19611794a9bbb7245f04498600d:
+    displayName: groupRole_to_role
+    name: groupRole_to_role
+    fromAttribute: d252da38-a3fa-4519-8a7a-ad8591deae5e
+    toAttribute: 4ea3b897-8c6a-47af-9270-884042dbe621
+  4dccd0b83e194dc694c8e4278e27e5d7:
+    displayName: functionalAbilitySecuredEntity_to_securedEntity
+    name: functionalAbilitySecuredEntity_to_securedEntity
+    fromAttribute: 5a0bdd22-930b-4d81-b371-7abe2d909749
+    toAttribute: 7f872a72-d45f-41f6-8273-f89157f0a51a
+  85b2d9e0b3be4dca89d491e2254fc421:
+    displayName: assignment_to_role
+    name: assignment_to_role
+    fromAttribute: eece4a99-c43c-4d15-9c39-fddf8a6d1e97
+    toAttribute: 4ea3b897-8c6a-47af-9270-884042dbe621
+  426d9a4984e34477bb94cf6fbb29275e:
+    displayName: functionalAbility_to_functionalAbilitySecuredEntity
+    name: functionalAbility_to_functionalAbilitySecuredEntity
+    fromAttribute: b7f3430f-4cec-4c3d-a94e-efd4cbfab5c3
+    toAttribute: 2b987deb-f4e3-4016-a399-07b482d17416
+  75fa7f1a0842452eadfb7e43a161001b:
+    displayName: user_to_assignment
+    name: user_to_assignment
+    fromAttribute: 41ee2548-853c-4e39-9a81-a93ac85649bb
+    toAttribute: c73f7c31-2192-47bf-a99f-90c676ab64aa
+  83defc13bb6f4174ba049298d7b87a67:
+    displayName: roleFunctionalAbility_to_roleFunctionalAbilityAttribute
+    name: roleFunctionalAbility_to_roleFunctionalAbilityAttribute
+    fromAttribute: 50d728bd-3958-4686-8434-0a1b2cf3ed45
+    toAttribute: 51790170-27b9-4f64-a66c-2c18d576b241
+  0f16236935404eb591cf143eae1ea0d0:
+    displayName: role_to_roleFunctionalAbility
+    name: role_to_rolefunctionalability
+    fromAttribute: 4ea3b897-8c6a-47af-9270-884042dbe621
+    toAttribute: 996cf920-0529-4fa9-bf6e-f4018bdc664c
+  a063e764f62249b18ab74668d8f2d43d:
+    displayName: assignment_to_assignmentAttribute
+    name: assignment_to_assignmentAttribute
+    fromAttribute: a268ae0d-118a-4a09-abea-60265edd45c4
+    toAttribute: 33e6bf23-dbe1-4f2c-88a8-989e8ab538a6
+  6bc5c08347ae435db77d892db40d4ca7:
+    displayName: HAS_SECURED_ENTITY
+    name: HAS_SECURED_ENTITY
+    path:
+      - relationship: 0f16236935404eb591cf143eae1ea0d0
+        direction: Forward
+      - relationship: 40fcb57205cd4ba3af1de95e373b407a
+        direction: Forward
+      - relationship: 426d9a4984e34477bb94cf6fbb29275e
+        direction: Forward
+      - relationship: 4dccd0b83e194dc694c8e4278e27e5d7
+        direction: Forward
+  66ca50b578514ea4b21e4212a5944172:
+    displayName: HAS_ROLE_FUNCTIONA_ABILITY_ATTRIBUTE
+    name: HAS_ROLE_FUNCTIONA_ABILITY_ATTRIBUTE
+    path:
+      - relationship: 0f16236935404eb591cf143eae1ea0d0
+        direction: Forward
+      - relationship: 83defc13bb6f4174ba049298d7b87a67
+        direction: Forward
+  c8651d2db8564a5d9f846eac9c179ff5:
+    displayName: HAS_ASSIGNMENT_ATTRIBUTE
+    name: HAS_ASSIGNMENT_ATTRIBUTE
+    path:
+      - relationship: 75fa7f1a0842452eadfb7e43a161001b
+        direction: Forward
+      - relationship: a063e764f62249b18ab74668d8f2d43d
+        direction: Forward
+  9547bfce868140af9f0b9ccb556eb099:
+    displayName: HAS_ROLE
+    name: HAS_ROLE
+    path:
+      - relationship: 75fa7f1a0842452eadfb7e43a161001b
+        direction: Forward
+      - relationship: 85b2d9e0b3be4dca89d491e2254fc421
+        direction: Forward
+  9992800cf06047a0ad1e94dc2c6acf4a:
+    displayName: HAS_FUNCTIONAL_ABILITY
+    name: HAS_FUNCTIONAL_ABILITY
+    path:
+      - relationship: 0f16236935404eb591cf143eae1ea0d0
+        direction: Forward
+      - relationship: 40fcb57205cd4ba3af1de95e373b407a
+        direction: Forward

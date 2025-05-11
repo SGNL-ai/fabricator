@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Limit permissions for GITHUB_TOKEN
+permissions:
+  contents: read
+  checks: write    # Needed to write check results
+  actions: read    # Needed to read action status
+  pull-requests: write # Needed to comment on PRs with results
+  packages: read   # Needed to read GitHub packages
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        check-latest: true
+
+    - name: Check out code
+      uses: actions/checkout@v4
+    
+    - name: Install golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: v2.1.5
+        install-mode: binary
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+    
+    - name: Run CI checks
+      run: make ci
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: fabricator
+        path: build/fabricator
+        retention-days: 7
