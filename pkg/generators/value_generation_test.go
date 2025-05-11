@@ -7,7 +7,7 @@ import (
 )
 
 func TestGenerateGenericValue(t *testing.T) {
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 	generator.generateCommonValues() // Initialize common values
 
 	// Test all the different field types that generateGenericValue can handle
@@ -373,7 +373,7 @@ func TestGenerateGenericValue(t *testing.T) {
 }
 
 func TestGenerateValue(t *testing.T) {
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 	generator.generateCommonValues() // Initialize common values
 
 	// Test the different field types that generateValue handles

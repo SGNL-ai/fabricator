@@ -64,10 +64,12 @@ type Relationship struct {
 
 // RelationshipLink represents a link between two entities for data generation purposes
 type RelationshipLink struct {
-	FromEntityID  string `json:"fromEntityID"`
-	ToEntityID    string `json:"toEntityID"`
-	FromAttribute string `json:"fromAttribute"`
-	ToAttribute   string `json:"toAttribute"`
+	FromEntityID      string `json:"fromEntityID"`
+	ToEntityID        string `json:"toEntityID"`
+	FromAttribute     string `json:"fromAttribute"`
+	ToAttribute       string `json:"toAttribute"`
+	IsFromAttributeID bool   `json:"isFromAttributeID"` // Whether the from attribute is a unique ID
+	IsToAttributeID   bool   `json:"isToAttributeID"`   // Whether the to attribute is a unique ID
 }
 
 // CSVData represents a structure to hold data for CSV file generation

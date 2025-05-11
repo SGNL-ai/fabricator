@@ -140,6 +140,8 @@ The project follows a standard Go project layout:
 3. **CSV Generator** (`pkg/generators/csv_generator.go`):
    - Generates test data for each entity
    - Ensures relationship consistency across entities
+   - Supports variable cardinality relationships (1:1, 1:N, N:1)
+   - Auto-detects relationship cardinality using entity metadata
    - Creates and writes CSV files to the output directory
 
 4. **Data Models** (`pkg/models/yaml.go`):
@@ -153,6 +155,7 @@ The application accepts the following command-line flags:
 - `-f, --file`: Path to the YAML definition file (required)
 - `-o, --output`: Directory to store generated CSV files (default: "output")
 - `-n, --num-rows`: Number of rows to generate for each entity (default: 100)
+- `-a, --auto-cardinality`: Enable automatic cardinality detection for relationships
 - `-v, --version`: Display version information
 
 ### Important Testing Notes
@@ -160,3 +163,46 @@ The application accepts the following command-line flags:
 - Do NOT create YAML definition files yourself. All SOR YAML files come from another system and should be provided by the user.
 - When testing changes, use only the example files that already exist in the project or those explicitly provided by the user.
 - Never generate sample YAML files - they have very specific structure requirements and validation rules that must be met.
+
+## Workflow Guidance for Claude
+
+### Planning and TODO List Format
+
+When planning implementation changes, present a structured TODO list with the following format:
+
+```
+# Implementation Plan for [Feature/Fix Name]
+
+## File Changes Needed
+1. File: `path/to/file1.go`
+   - [ ] Add/modify X functionality
+   - [ ] Update Y struct with new fields
+   - [ ] Implement Z method
+
+2. File: `path/to/file2.go`
+   - [ ] Extend A interface
+   - [ ] Fix B function parameters
+
+## Testing Strategy
+1. Unit tests
+   - [ ] Create test for X functionality
+   - [ ] Update existing tests for Y changes
+
+2. Integration tests
+   - [ ] Test end-to-end workflow with new changes
+
+## CLI Changes
+- [ ] Add new flag(s) to command line interface
+- [ ] Update help documentation
+
+## Documentation Updates
+- [ ] Update README with new functionality
+- [ ] Add examples of new feature usage
+```
+
+This structured approach helps with:
+1. Clear organization of the implementation plan
+2. Systematic tracking of changes across multiple files
+3. Ensuring test coverage is maintained
+4. Not overlooking documentation updates
+5. Better communication about the implementation strategy
