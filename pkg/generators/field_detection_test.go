@@ -10,7 +10,7 @@ import (
 // TestIDMapConsistency ensures that ID fields are properly handled
 func TestIDMapConsistency(t *testing.T) {
 	// Create a generator
-	generator := NewCSVGenerator("test_output", 3)
+	generator := NewCSVGenerator("test_output", 3, false)
 	generator.generateCommonValues() // Initialize common values
 
 	// Set up entity data

@@ -14,8 +14,9 @@ import (
 func TestNewCSVGenerator(t *testing.T) {
 	outputDir := "test_output"
 	dataVolume := 10
+	autoCardinality := false
 
-	generator := NewCSVGenerator(outputDir, dataVolume)
+	generator := NewCSVGenerator(outputDir, dataVolume, autoCardinality)
 
 	if generator.OutputDir != outputDir {
 		t.Errorf("Expected OutputDir to be %s, got %s", outputDir, generator.OutputDir)
@@ -23,6 +24,10 @@ func TestNewCSVGenerator(t *testing.T) {
 
 	if generator.DataVolume != dataVolume {
 		t.Errorf("Expected DataVolume to be %d, got %d", dataVolume, generator.DataVolume)
+	}
+
+	if generator.AutoCardinality != autoCardinality {
+		t.Errorf("Expected AutoCardinality to be %t, got %t", autoCardinality, generator.AutoCardinality)
 	}
 
 	if generator.EntityData == nil {
@@ -44,7 +49,7 @@ func TestNewCSVGenerator(t *testing.T) {
 
 func TestSetup(t *testing.T) {
 	// Create a test generator
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 
 	// Create test entities and relationships
 	entities := map[string]models.Entity{
@@ -164,7 +169,7 @@ func TestGenerateAndWriteCSVFiles(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a test generator
-	generator := NewCSVGenerator(tempDir, 3)
+	generator := NewCSVGenerator(tempDir, 3, false)
 
 	// Create test entities and relationships
 	entities := map[string]models.Entity{
@@ -257,7 +262,7 @@ func TestGenerateAndWriteCSVFiles(t *testing.T) {
 }
 
 func TestDataGenerationFunctions(t *testing.T) {
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 	generator.generateCommonValues() // Initialize common values
 
 	t.Run("generateName", func(t *testing.T) {
@@ -365,7 +370,7 @@ func TestDataGenerationFunctions(t *testing.T) {
 }
 
 func TestFindEntityByReferenceField(t *testing.T) {
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 
 	// Set up some entity data
 	generator.EntityData = map[string]*models.CSVData{
@@ -417,7 +422,7 @@ func TestGenerateRowForEntity(t *testing.T) {
 	t.Skip("Skipping TestGenerateRowForEntity as we have a more focused test for the same functionality")
 
 	// Create a test generator
-	generator := NewCSVGenerator(tempDir, 5)
+	generator := NewCSVGenerator(tempDir, 5, false)
 	generator.generateCommonValues() // Initialize common values
 
 	// Test 1: Basic field generation for user entity
@@ -583,7 +588,7 @@ func TestGenerateRowForEntity(t *testing.T) {
 	// Test 4: Missing ID in idMap
 	t.Run("Missing ID in idMap", func(t *testing.T) {
 		// Create a generator specifically for this test to avoid interference
-		tempGenerator := NewCSVGenerator("test_output", 1)
+		tempGenerator := NewCSVGenerator("test_output", 1, false)
 
 		tempGenerator.EntityData = map[string]*models.CSVData{
 			"missing": {
@@ -632,7 +637,7 @@ func TestRelationshipConsistency(t *testing.T) {
 	// Test 1: Basic relationship consistency with ensureRelationshipConsistency
 	t.Run("Basic relationship consistency", func(t *testing.T) {
 		// Create a test generator
-		generator := NewCSVGenerator(tempDir, 2)
+		generator := NewCSVGenerator(tempDir, 2, false)
 
 		// Create test entities with a relationship
 		generator.EntityData = map[string]*models.CSVData{
@@ -677,7 +682,7 @@ func TestRelationshipConsistency(t *testing.T) {
 	// Test 2: Test makeRelationshipsConsistent with multiple relationships
 	t.Run("Multiple relationships consistency", func(t *testing.T) {
 		// Create a test generator
-		generator := NewCSVGenerator(tempDir, 2)
+		generator := NewCSVGenerator(tempDir, 2, false)
 
 		// Create test entities with more complex relationships
 		generator.EntityData = map[string]*models.CSVData{
@@ -763,7 +768,7 @@ func TestRelationshipConsistency(t *testing.T) {
 	// Test 3: Edge cases for makeRelationshipsConsistent
 	t.Run("Edge cases for relationship consistency", func(t *testing.T) {
 		// Create a test generator
-		generator := NewCSVGenerator(tempDir, 2)
+		generator := NewCSVGenerator(tempDir, 2, false)
 
 		// Create test entities
 		generator.EntityData = map[string]*models.CSVData{
@@ -861,7 +866,7 @@ func TestWriteCSVFiles(t *testing.T) {
 	// Test 1: Normal case - write multiple entities to CSV
 	t.Run("Write multiple entities to CSV", func(t *testing.T) {
 		// Create a test generator
-		generator := NewCSVGenerator(tempDir, 3)
+		generator := NewCSVGenerator(tempDir, 3, false)
 
 		// Create test entity data
 		generator.EntityData = map[string]*models.CSVData{
@@ -925,7 +930,7 @@ func TestWriteCSVFiles(t *testing.T) {
 	// Test 2: Error case - invalid output directory
 	t.Run("Invalid output directory", func(t *testing.T) {
 		// Create a test generator with invalid directory
-		generator := NewCSVGenerator("/nonexistent/directory", 2)
+		generator := NewCSVGenerator("/nonexistent/directory", 2, false)
 
 		// Add some minimal entity data
 		generator.EntityData = map[string]*models.CSVData{
@@ -947,7 +952,7 @@ func TestWriteCSVFiles(t *testing.T) {
 	// Test 3: Empty entity data
 	t.Run("Empty entity data", func(t *testing.T) {
 		// Create a test generator
-		generator := NewCSVGenerator(tempDir, 2)
+		generator := NewCSVGenerator(tempDir, 2, false)
 
 		// Empty entity data
 		generator.EntityData = map[string]*models.CSVData{}

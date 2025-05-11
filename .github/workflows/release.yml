@@ -1,0 +1,189 @@
+name: Release Binary
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - '.github/dependabot.yml'
+
+permissions:
+  contents: write  # Required for creating releases and pushing tags
+
+jobs:
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+      should_release: ${{ steps.check-version.outputs.should_release }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.3'
+          check-latest: true
+      
+      - name: Get latest version
+        id: get-latest-tag
+        run: |
+          LATEST_TAG=$(git tag -l 'v*' | sort -V | tail -n1 || echo "v0.0.0")
+          echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          echo "Latest tag: ${LATEST_TAG}"
+      
+      - name: Set version
+        id: set-version
+        run: |
+          # Get current version from latest tag or use v0.1.0 as initial version
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            NEW_VERSION="v0.1.0"
+          else
+            # Increment patch version
+            VERSION=${LATEST_TAG#v}
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            MINOR=$(echo $VERSION | cut -d. -f2)
+            PATCH=$(echo $VERSION | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          fi
+          
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "New version: ${NEW_VERSION}"
+      
+      - name: Check if release exists
+        id: check-version
+        run: |
+          if git show-ref --tags "refs/tags/${{ steps.set-version.outputs.version }}" --quiet; then
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "Version ${{ steps.set-version.outputs.version }} already exists, skipping release"
+          else
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Version ${{ steps.set-version.outputs.version }} does not exist, proceeding with release"
+          fi
+
+  build:
+    name: Build Binary
+    needs: prepare
+    if: needs.prepare.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: ""
+          - goos: darwin
+            goarch: amd64
+            suffix: ""
+          - goos: darwin
+            goarch: arm64
+            suffix: ""
+          - goos: windows
+            goarch: amd64
+            suffix: ".exe"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.3'
+          check-latest: true
+      
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          # Update version in the code
+          echo "Building $VERSION for $GOOS/$GOARCH"
+
+          # Create build directory
+          mkdir -p build
+
+          # Define a more descriptive filename
+          PLATFORM_NAME=""
+          if [ "$GOOS" = "darwin" ] && [ "$GOARCH" = "amd64" ]; then
+            PLATFORM_NAME="fabricator-macos-intel"
+          elif [ "$GOOS" = "darwin" ] && [ "$GOARCH" = "arm64" ]; then
+            PLATFORM_NAME="fabricator-macos-apple-silicon"
+          elif [ "$GOOS" = "linux" ]; then
+            PLATFORM_NAME="fabricator-linux"
+          elif [ "$GOOS" = "windows" ]; then
+            PLATFORM_NAME="fabricator-windows"
+          else
+            PLATFORM_NAME="fabricator-$GOOS-$GOARCH"
+          fi
+
+          # Build the binary with both technical name and friendly name
+          go build -ldflags="-X 'main.version=${VERSION#v}'" -o "build/fabricator-$GOOS-$GOARCH${{ matrix.suffix }}" ./cmd/fabricator
+
+          # Create a copy with a more user-friendly name
+          cp "build/fabricator-$GOOS-$GOARCH${{ matrix.suffix }}" "build/$PLATFORM_NAME${{ matrix.suffix }}"
+      
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fabricator-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: build/fabricator-*
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: [prepare, build]
+    if: needs.prepare.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for tag creation
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token to authorize tag creation
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Create and push Git tag
+        run: |
+          echo "Creating tag ${{ needs.prepare.outputs.version }}"
+
+          # Tag the commit
+          git tag ${{ needs.prepare.outputs.version }}
+          git push origin ${{ needs.prepare.outputs.version }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.version }}
+          name: Release ${{ needs.prepare.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/fabricator-linux-amd64/fabricator-linux
+            artifacts/fabricator-darwin-amd64/fabricator-macos-intel
+            artifacts/fabricator-darwin-arm64/fabricator-macos-apple-silicon
+            artifacts/fabricator-windows-amd64/fabricator-windows.exe
