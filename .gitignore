@@ -9,6 +9,9 @@
 /build/
 /bin/
 
+# Generated data files
+/output/
+
 # Test binary, built with `go test -c`
 *.test
 

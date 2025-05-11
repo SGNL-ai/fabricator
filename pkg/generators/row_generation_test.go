@@ -9,7 +9,7 @@ import (
 
 func TestGenerateRowForEntityComprehensive(t *testing.T) {
 	// Create generator
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 	generator.generateCommonValues() // Initialize common values
 
 	// Test entity with all common field types

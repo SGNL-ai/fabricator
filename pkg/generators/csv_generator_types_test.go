@@ -14,7 +14,7 @@ func TestFieldTypeDetection(t *testing.T) {
 	t.Skip("Skipping TestFieldTypeDetection as we have a more focused test for the same functionality")
 
 	// Create a new generator
-	generator := NewCSVGenerator("test_output", 5)
+	generator := NewCSVGenerator("test_output", 5, false)
 	generator.generateCommonValues() // Initialize common values
 
 	// Set up test entity with many field types

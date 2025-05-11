@@ -31,6 +31,7 @@ func withFlagValues(t *testing.T, flags map[string]string, fn func()) {
 	inputFile = ""
 	outputDir = "output"
 	dataVolume = 100
+	autoCardinality = false
 
 	// Re-register flags
 	flag.BoolVar(&showVersion, "v", false, "Display version information")
@@ -44,6 +45,9 @@ func withFlagValues(t *testing.T, flags map[string]string, fn func()) {
 
 	flag.IntVar(&dataVolume, "n", 100, "Number of rows to generate for each entity")
 	flag.IntVar(&dataVolume, "num-rows", 100, "Number of rows to generate for each entity")
+
+	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
+	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
 
 	// Parse flags
 	flag.Parse()
@@ -173,7 +177,7 @@ entities:
 	// Run the application with the test YAML
 	// We can't actually run main() because it may call os.Exit(),
 	// but we can call run() directly
-	err = run(yamlPath, outputPath, 2)
+	err = run(yamlPath, outputPath, 2, false)
 
 	// If there was an error, fail the test
 	if err != nil {

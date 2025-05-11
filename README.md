@@ -9,6 +9,8 @@ A command-line tool that generates CSV files for populating a system-of-record (
 - Parses YAML files that define system-of-record (SOR) structures
 - Analyzes entity names, attributes, and relationships
 - Creates consistent test data across related entities
+- Supports variable relationship cardinalities (1:1, 1:N, N:1)
+- Automatically detects cardinality based on entity metadata
 - Generates a set of CSV files with realistic test data
 - Outputs colorful and informative progress messages
 
@@ -31,16 +33,35 @@ The binary will be built to `build/fabricator`.
 
 ### From GitHub Releases
 
-You can also download pre-built binaries from the [GitHub Releases page](https://github.com/SGNL-ai/fabricator/releases) if available.
+Pre-built binaries for Linux, macOS (Intel and Apple Silicon), and Windows are automatically generated for each release and can be downloaded from the [GitHub Releases page](https://github.com/SGNL-ai/fabricator/releases).
+
+```bash
+# For macOS Intel
+curl -L https://github.com/SGNL-ai/fabricator/releases/latest/download/fabricator-macos-intel -o fabricator
+chmod +x fabricator
+./fabricator --version
+
+# For macOS Apple Silicon (M1/M2/M3)
+curl -L https://github.com/SGNL-ai/fabricator/releases/latest/download/fabricator-macos-apple-silicon -o fabricator
+chmod +x fabricator
+./fabricator --version
+
+# For Linux
+curl -L https://github.com/SGNL-ai/fabricator/releases/latest/download/fabricator-linux -o fabricator
+chmod +x fabricator
+./fabricator --version
+```
+
+For Windows users, download the `fabricator-windows.exe` file from the releases page.
 
 ## Usage
 
 ```bash
 # Basic usage (short options)
-./build/fabricator -f <yaml-file> [-o <dir>] [-n <count>]
+./build/fabricator -f <yaml-file> [-o <dir>] [-n <count>] [-a]
 
 # Basic usage (long options)
-./build/fabricator --file <yaml-file> [--output <dir>] [--num-rows <count>]
+./build/fabricator --file <yaml-file> [--output <dir>] [--num-rows <count>] [--auto-cardinality]
 
 # View version information
 ./build/fabricator -v
@@ -48,12 +69,13 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 
 ### Command Line Options
 
-| Short Flag | Long Flag   | Description                                      | Default   |
-|------------|-------------|--------------------------------------------------|-----------|
-| `-f`       | `--file`    | Path to the YAML definition file (required)      | -         |
-| `-o`       | `--output`  | Directory to store generated CSV files           | "output"  |
-| `-n`       | `--num-rows`| Number of rows to generate for each entity       | 100       |
-| `-v`       | `--version` | Display version information                      | -         |
+| Short Flag | Long Flag            | Description                                      | Default   |
+|------------|----------------------|--------------------------------------------------|-----------|
+| `-f`       | `--file`             | Path to the YAML definition file (required)      | -         |
+| `-o`       | `--output`           | Directory to store generated CSV files           | "output"  |
+| `-n`       | `--num-rows`         | Number of rows to generate for each entity       | 100       |
+| `-a`       | `--auto-cardinality` | Enable automatic cardinality detection           | false     |
+| `-v`       | `--version`          | Display version information                      | -         |
 
 ### Examples
 
@@ -63,6 +85,12 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 
 # Using long-form options
 ./build/fabricator --file example.yaml --num-rows 1000 --output export/data
+
+# Generate CSV files with automatic cardinality detection for relationships
+./build/fabricator -f example.yaml -n 200 -a
+
+# Using long-form options with auto-cardinality
+./build/fabricator --file example.yaml --num-rows 500 --auto-cardinality --output data/variable-cardinality
 ```
 
 ## YAML Format
@@ -82,7 +110,8 @@ The tool generates the following for each entity:
 1. A CSV file named after the entity's external ID (without the namespace prefix)
 2. Headers matching the entity's attribute external IDs
 3. Consistent data across relationships between entities
-4. Realistic test data based on attribute names and types
+4. Variable cardinality relationships (with the `-a` flag)
+5. Realistic test data based on attribute names and types
 
 The data generator intelligently creates appropriate values based on field names:
 - ID fields get unique identifiers
@@ -91,6 +120,26 @@ The data generator intelligently creates appropriate values based on field names
 - Email fields get valid email addresses
 - Boolean fields get true/false values
 - Numeric fields get appropriate numbers
+
+## Relationship Cardinality
+
+When the auto-cardinality feature is enabled (`-a` flag), Fabricator automatically detects and generates appropriate cardinality for entity relationships:
+
+- **1:1 relationships** - Simple one-to-one mappings between entities
+- **1:N relationships** - One entity related to multiple instances of another entity
+- **N:1 relationships** - Multiple entities related to a single instance of another entity
+
+Cardinality detection is based on:
+
+1. Entity metadata (primary detection method)
+   - Fields with `uniqueId: true` are used to identify key relationships
+   - When a relationship links a unique ID to a non-unique field, cardinality is automatically determined
+
+2. Field naming patterns (fallback method)
+   - Field names ending with "Id" typically indicate N:1 relationships
+   - Plural field names or names ending with "Ids" suggest 1:N relationships
+
+Without the `-a` flag, all relationships default to 1:1 cardinality.
 
 ## Development
 
