@@ -31,6 +31,9 @@ var (
 
 	// Data volume
 	dataVolume int
+
+	// Auto-cardinality for relationships
+	autoCardinality bool
 )
 
 func init() {
@@ -46,6 +49,9 @@ func init() {
 
 	flag.IntVar(&dataVolume, "n", 100, "Number of rows to generate for each entity")
 	flag.IntVar(&dataVolume, "num-rows", 100, "Number of rows to generate for each entity")
+
+	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
+	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
 }
 
 func main() {
@@ -67,19 +73,20 @@ func main() {
 	}
 
 	// Main application logic
-	if err := run(inputFile, outputDir, dataVolume); err != nil {
+	if err := run(inputFile, outputDir, dataVolume, autoCardinality); err != nil {
 		color.Red("Error: %v", err)
 		os.Exit(1)
 	}
 }
 
 // run performs the main application logic
-func run(inputFile, outputDir string, dataVolume int) error {
+func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) error {
 	// Print start message
 	printHeader()
 	color.Cyan("Input file: %s", inputFile)
 	color.Cyan("Output directory: %s", outputDir)
 	color.Cyan("Data volume: %d rows per entity", dataVolume)
+	color.Cyan("Auto-cardinality: %t", autoCardinality)
 	color.Cyan("==================")
 
 	// Create a parser and parse the YAML file
@@ -108,7 +115,7 @@ func run(inputFile, outputDir string, dataVolume int) error {
 
 	// Initialize CSV generator
 	color.Yellow("Initializing CSV generator...")
-	generator := generators.NewCSVGenerator(absOutputDir, dataVolume)
+	generator := generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
 	generator.Setup(def.Entities, def.Relationships)
 
 	// Generate data

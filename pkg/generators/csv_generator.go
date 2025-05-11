@@ -26,10 +26,11 @@ type CSVGenerator struct {
 	relationshipMap map[string][]models.RelationshipLink
 	generatedValues map[string][]string // Store generated values by type
 	namespacePrefix string              // Store the common namespace prefix
+	AutoCardinality bool                // Whether to enable automatic cardinality detection
 }
 
 // NewCSVGenerator creates a new CSVGenerator instance
-func NewCSVGenerator(outputDir string, dataVolume int) *CSVGenerator {
+func NewCSVGenerator(outputDir string, dataVolume int, autoCardinality bool) *CSVGenerator {
 	// Set a seed for consistent generation
 	seed := time.Now().UnixNano()
 	// In Go 1.20+ rand.Seed is deprecated but we'll use it for compatibility
@@ -43,6 +44,7 @@ func NewCSVGenerator(outputDir string, dataVolume int) *CSVGenerator {
 		idMap:           make(map[string]map[string]string),
 		relationshipMap: make(map[string][]models.RelationshipLink),
 		generatedValues: make(map[string][]string),
+		AutoCardinality: autoCardinality,
 	}
 }
 
@@ -93,10 +95,11 @@ func (g *CSVGenerator) extractNamespacePrefix(entities map[string]models.Entity)
 
 // processRelationships analyzes the relationships between entities
 func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, relationships map[string]models.Relationship) {
-	// Create a map of attribute alias to (entity ID, attribute name)
+	// Create a map of attribute alias to (entity ID, attribute name, uniqueId)
 	attributeAliasMap := make(map[string]struct {
 		EntityID      string
 		AttributeName string
+		UniqueID      bool
 	})
 
 	// Build the attribute alias map
@@ -105,9 +108,11 @@ func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, r
 			attributeAliasMap[attr.AttributeAlias] = struct {
 				EntityID      string
 				AttributeName string
+				UniqueID      bool
 			}{
 				EntityID:      entityID,
 				AttributeName: attr.Name,
+				UniqueID:      attr.UniqueId,
 			}
 		}
 	}
@@ -122,12 +127,14 @@ func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, r
 		// Get the entities and attributes that this relationship connects
 		if fromAttr, ok := attributeAliasMap[relationship.FromAttribute]; ok {
 			if toAttr, ok := attributeAliasMap[relationship.ToAttribute]; ok {
-				// Add the relationship link
+				// Add the relationship link with uniqueId information
 				link := models.RelationshipLink{
-					FromEntityID:  fromAttr.EntityID,
-					ToEntityID:    toAttr.EntityID,
-					FromAttribute: fromAttr.AttributeName,
-					ToAttribute:   toAttr.AttributeName,
+					FromEntityID:      fromAttr.EntityID,
+					ToEntityID:        toAttr.EntityID,
+					FromAttribute:     fromAttr.AttributeName,
+					ToAttribute:       toAttr.AttributeName,
+					IsFromAttributeID: fromAttr.UniqueID,
+					IsToAttributeID:   toAttr.UniqueID,
 				}
 
 				g.relationshipMap[fromAttr.EntityID] = append(g.relationshipMap[fromAttr.EntityID], link)
@@ -435,19 +442,23 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 
 	// Find the column indices for the attributes
 	fromAttrIndex := -1
+	fromAttrName := ""
 	for i, header := range fromData.Headers {
 		if strings.EqualFold(header, link.FromAttribute) ||
 			strings.EqualFold(header, link.FromAttribute+"Id") {
 			fromAttrIndex = i
+			fromAttrName = header
 			break
 		}
 	}
 
 	toAttrIndex := -1
+	toAttrName := ""
 	for i, header := range toData.Headers {
 		if strings.EqualFold(header, link.ToAttribute) ||
 			strings.EqualFold(header, link.ToAttribute+"Id") {
 			toAttrIndex = i
+			toAttrName = header
 			break
 		}
 	}
@@ -473,11 +484,105 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 		return
 	}
 
-	// Update "from" entity values to reference existing "to" entity values
-	for i, row := range fromData.Rows {
-		// Use a random value from the "to" entity for each row in the "from" entity
-		row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
-		fromData.Rows[i] = row
+	// Default to 1:1 relationship if auto-cardinality is not enabled
+	if !g.AutoCardinality {
+		// Just use the default 1:1 mapping
+		for i, row := range fromData.Rows {
+			// Use a random value from the "to" entity for each row in the "from" entity
+			row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
+			fromData.Rows[i] = row
+		}
+		return
+	}
+
+	// Use uniqueId information to determine cardinality
+	// If fromAttribute is not a uniqueId and toAttribute is a uniqueId: many-to-one relationship (N:1)
+	// If fromAttribute is a uniqueId and toAttribute is not a uniqueId: one-to-many relationship (1:N)
+	// If both are uniqueIds or both are not uniqueIds: default to 1:1 but use field naming as fallback
+
+	var isOneToMany, isManyToOne bool
+
+	// Primary cardinality determination: use uniqueId information
+	if link.IsFromAttributeID && !link.IsToAttributeID {
+		// From is unique ID, To is not: likely a 1:N relationship
+		isOneToMany = true
+	} else if !link.IsFromAttributeID && link.IsToAttributeID {
+		// From is not unique ID, To is: likely a N:1 relationship
+		isManyToOne = true
+	} else {
+		// Fallback to field naming conventions when uniqueId doesn't provide a clear signal
+		// (e.g., both are uniqueIds or neither are uniqueIds)
+		fromAttrLower := strings.ToLower(fromAttrName)
+		toAttrLower := strings.ToLower(toAttrName)
+
+		// Check for one-to-many (1:N) relationship
+		isOneToMany = strings.HasSuffix(fromAttrLower, "s") || // plural form
+			strings.Contains(fromAttrLower, "ids") // multiple IDs
+
+		// Check for many-to-one (N:1) relationship
+		isManyToOne = strings.HasSuffix(toAttrLower, "s") || // plural form
+			strings.Contains(toAttrLower, "ids") // multiple IDs
+	}
+
+	if isOneToMany {
+		// Handle one-to-many relationship with row duplication
+		newRows := [][]string{}
+
+		for _, row := range fromData.Rows {
+			// Determine how many relationships to create (1-3 for variety)
+			numRelationships := rand.Intn(3) + 1
+
+			// Create multiple rows with different relationship values
+			for j := 0; j < numRelationships; j++ {
+				// Clone the row
+				newRow := make([]string, len(row))
+				copy(newRow, row)
+
+				// Assign a random value from the target entity
+				newRow[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
+
+				// For ID fields, ensure uniqueness by generating a new UUID
+				for i, header := range fromData.Headers {
+					if strings.EqualFold(header, "id") {
+						newRow[i] = uuid.New().String()
+					}
+				}
+
+				newRows = append(newRows, newRow)
+			}
+		}
+
+		// Replace the original rows with our expanded set
+		fromData.Rows = newRows
+	} else if isManyToOne {
+		// Handle many-to-one relationship by clustering multiple rows to the same target
+		// Create clusters of values
+		numClusters := len(toValuesSlice)
+		if numClusters > 0 {
+			clusterSize := len(fromData.Rows) / numClusters
+			if clusterSize < 1 {
+				clusterSize = 1
+			}
+
+			for i, row := range fromData.Rows {
+				// Determine which cluster this row belongs to
+				clusterIndex := i / clusterSize
+				if clusterIndex >= numClusters {
+					clusterIndex = numClusters - 1
+				}
+
+				// Assign the value from the cluster
+				row[fromAttrIndex] = toValuesSlice[clusterIndex]
+				fromData.Rows[i] = row
+			}
+		}
+	} else {
+		// Default case: Use standard 1:1 mapping
+		for i, row := range fromData.Rows {
+			// Use a random value from the "to" entity for each row in the "from" entity
+			row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
+			fromData.Rows[i] = row
+		}
 	}
 }
 
