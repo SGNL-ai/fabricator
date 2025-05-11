@@ -1,0 +1,11 @@
+id,name,serialNumber,typeId,purchaseDate,purchasePrice,assignedToEmployeeId,location,status,lastMaintenanceDate
+98ef2c94-6cdc-4384-8335-f93f1c40bdf7,Montana Ritchie,565,d0e72606-9ff3-42f3-a231-edd2924ef7d4,2025-01-19,anyone_0,37a8d65d-a6fb-42cd-8366-46fad33e1a4e,have_0,active,2024-04-11
+d3eb9129-c629-41c1-bdf8-7acdb23e19b2,Beta_1,760,d0e72606-9ff3-42f3-a231-edd2924ef7d4,2024-11-29,anything_1,90aec30c-340a-4490-964a-7e1746feea9f,him_1,inactive,2023-08-01
+77bcc3d8-9a67-44fa-862b-b7effd65df7d,Orval Erdman,815,0ce0f0d1-7775-4171-bda7-a0aaf154ec5a,2023-11-16,upon_2,ea2c4a80-acbb-4f1a-b2a0-f7f988af5b03,work_2,pending,2023-12-15
+53b26937-b8b4-41b0-8b75-e01445724527,Delta_3,151,acc9918e-122c-41ab-9563-be628abcd76d,2024-04-23,begin_3,1b3f679f-9998-49a6-ad9b-e5a299863588,completely_3,approved,2024-04-27
+fc7aeae7-22f8-40c2-8f88-580bbcda6079,Eloise Olson,949,47ad7047-9197-459a-ba54-334392d21567,2024-05-24,whereas_4,68fab238-813e-4659-8a35-6136917585b5,which_4,rejected,2025-02-05
+84a1a525-a11b-4e97-9d46-f8f047fc8142,Lisandro Nicolas,27,492097f2-38a4-43bc-b86e-ede0ae4fddfb,2024-09-23,smell_5,ea2c4a80-acbb-4f1a-b2a0-f7f988af5b03,look_5,completed,2023-09-20
+8b98305d-bfaa-4712-b506-261ad3fec56b,Edwin Denesik,627,24e49d0f-72a9-4b7d-8067-5d6c3c48ba0a,2025-03-12,these_6,15f22c3f-f2bf-4ec7-b661-8e48b6e4da19,Barbadian_6,in_progress,2023-12-26
+8acc726b-3e75-45ff-acf8-84adc6acc99b,Theta_7,816,24e49d0f-72a9-4b7d-8067-5d6c3c48ba0a,2025-01-10,which_7,1b3f679f-9998-49a6-ad9b-e5a299863588,motherhood_7,cancelled,2023-05-28
+a87c9014-c802-4023-afaf-cd0432585423,Autumn Rodriguez,716,24e49d0f-72a9-4b7d-8067-5d6c3c48ba0a,2023-05-29,when_8,90aec30c-340a-4490-964a-7e1746feea9f,whichever_8,suspended,2024-10-20
+d69fd65d-a5e6-4855-b57b-0f4ade019977,Cecil Hirthe,432,acc9918e-122c-41ab-9563-be628abcd76d,2023-08-25,for_9,490eaea1-0ed2-4134-a2c4-9b975eba6928,as_9,archived,2024-07-15
