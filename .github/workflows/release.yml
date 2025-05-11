@@ -38,26 +38,36 @@ jobs:
           LATEST_TAG=$(git tag -l 'v*' | sort -V | tail -n1 || echo "v0.0.0")
           echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
           echo "Latest tag: ${LATEST_TAG}"
-      
+
       - name: Set version
         id: set-version
         run: |
           # Get current version from latest tag or use v0.1.0 as initial version
           LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
-          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+          if [ "$LATEST_TAG" = "v0.0.0" ] || [ -z "$LATEST_TAG" ]; then
             NEW_VERSION="v0.1.0"
+            echo "Using initial version: ${NEW_VERSION}"
           else
             # Increment patch version
             VERSION=${LATEST_TAG#v}
-            MAJOR=$(echo $VERSION | cut -d. -f1)
-            MINOR=$(echo $VERSION | cut -d. -f2)
-            PATCH=$(echo $VERSION | cut -d. -f3)
-            PATCH=$((PATCH + 1))
-            NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+
+            # Make sure we have a valid version format
+            if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              MAJOR=$(echo $VERSION | cut -d. -f1)
+              MINOR=$(echo $VERSION | cut -d. -f2)
+              PATCH=$(echo $VERSION | cut -d. -f3)
+              PATCH=$((PATCH + 1))
+              NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+              echo "Incrementing version from ${LATEST_TAG} to ${NEW_VERSION}"
+            else
+              # If version parsing fails, use a safe default
+              NEW_VERSION="v0.1.0"
+              echo "Could not parse version, using default: ${NEW_VERSION}"
+            fi
           fi
-          
+
           echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-          echo "New version: ${NEW_VERSION}"
+          echo "Final version to use: ${NEW_VERSION}"
       
       - name: Check if release exists
         id: check-version
@@ -162,11 +172,20 @@ jobs:
 
       - name: Create and push Git tag
         run: |
-          echo "Creating tag ${{ needs.prepare.outputs.version }}"
+          # Validate version format first
+          VERSION="${{ needs.prepare.outputs.version }}"
+
+          # Make sure it matches semantic versioning format (vX.Y.Z)
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Invalid version format '$VERSION'. Must be in format 'vX.Y.Z'"
+            exit 1
+          fi
+
+          echo "Creating tag $VERSION"
 
           # Tag the commit
-          git tag ${{ needs.prepare.outputs.version }}
-          git push origin ${{ needs.prepare.outputs.version }}
+          git tag "$VERSION"
+          git push origin "$VERSION"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -177,8 +196,8 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.prepare.outputs.version }}
-          name: Release ${{ needs.prepare.outputs.version }}
+          tag_name: "${{ needs.prepare.outputs.version }}"
+          name: "Release ${{ needs.prepare.outputs.version }}"
           draft: false
           prerelease: false
           generate_release_notes: true
