@@ -66,16 +66,24 @@ func (p *Parser) validate() error {
 			return fmt.Errorf("entity %s has no attributes", id)
 		}
 
-		// Check for uniqueId attribute
+		// Check for uniqueId attribute and ensure only one attribute is marked as uniqueId
 		hasUniqueId := false
+		uniqueIdAttrs := []string{}
 		for _, attr := range entity.Attributes {
 			if attr.UniqueId {
 				hasUniqueId = true
-				break
+				uniqueIdAttrs = append(uniqueIdAttrs, attr.Name)
 			}
 		}
 
 		if !hasUniqueId {
+			return fmt.Errorf("entity %s (%s) has no attribute marked as uniqueId",
+				id, entity.DisplayName)
+		}
+
+		// Check that at least one attribute is marked as uniqueId (already checked above)
+		// But this code is added for clarity and future-proofing
+		if len(uniqueIdAttrs) == 0 {
 			return fmt.Errorf("entity %s (%s) has no attribute marked as uniqueId",
 				id, entity.DisplayName)
 		}

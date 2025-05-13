@@ -24,11 +24,11 @@ type CSVGenerator struct {
 	EntityData         map[string]*models.CSVData
 	idMap              map[string]map[string]string // Maps between entities for consistent relationships
 	relationshipMap    map[string][]models.RelationshipLink
-	generatedValues    map[string][]string        // Store generated values by type
-	namespacePrefix    string                     // Store the common namespace prefix
-	AutoCardinality    bool                       // Whether to enable automatic cardinality detection
+	generatedValues    map[string][]string // Store generated values by type
+	namespacePrefix    string              // Store the common namespace prefix
+	AutoCardinality    bool                // Whether to enable automatic cardinality detection
 	usedUniqueValues   map[string]map[string]bool // Track used values for fields with uniqueId=true by entity:attribute
-	uniqueIdAttributes map[string][]string        // Track attributes with uniqueId=true by entity
+	uniqueIdAttributes map[string][]string       // Track attributes with uniqueId=true by entity
 }
 
 // NewCSVGenerator creates a new CSVGenerator instance
@@ -72,7 +72,7 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 
 		for _, attr := range entity.Attributes {
 			headers = append(headers, attr.ExternalId)
-
+			
 			// Track attributes with uniqueId=true
 			if attr.UniqueId {
 				g.uniqueIdAttributes[id] = append(g.uniqueIdAttributes[id], attr.ExternalId)
@@ -324,7 +324,7 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 
 		// Generate data based on common field names
 		var value string
-
+		
 		if headerLower == "name" || strings.HasSuffix(headerLower, "name") {
 			value = g.generateName(index)
 		} else if headerLower == "description" || strings.HasSuffix(headerLower, "description") {
@@ -378,12 +378,12 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 			// Default case - generate a generic value
 			value = g.generateGenericValue(header, index)
 		}
-
+		
 		// If this is a unique attribute, ensure it's unique
 		if isUnique && value != "" {
 			value = g.generateUniqueValue(entityID, header, value)
 		}
-
+		
 		row[i] = value
 	}
 
@@ -441,17 +441,8 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 	fromAttrIndex := -1
 	fromAttrName := ""
 	for i, header := range fromData.Headers {
-		// Try to match directly
 		if strings.EqualFold(header, link.FromAttribute) ||
 			strings.EqualFold(header, link.FromAttribute+"Id") {
-			fromAttrIndex = i
-			fromAttrName = header
-			break
-		}
-
-		// Handle the common case of attribute aliases like "user_id" for "id"
-		// For the "from" entity, often the attribute is just "id"
-		if strings.HasSuffix(link.FromAttribute, "_id") && strings.EqualFold(header, "id") {
 			fromAttrIndex = i
 			fromAttrName = header
 			break
@@ -461,23 +452,11 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 	toAttrIndex := -1
 	toAttrName := ""
 	for i, header := range toData.Headers {
-		// Try to match directly
 		if strings.EqualFold(header, link.ToAttribute) ||
 			strings.EqualFold(header, link.ToAttribute+"Id") {
 			toAttrIndex = i
 			toAttrName = header
 			break
-		}
-
-		// Handle attribute aliases that include entity name
-		// E.g., "order_userId" might be just "userId" in the actual data
-		if strings.Contains(link.ToAttribute, "_") {
-			parts := strings.Split(link.ToAttribute, "_")
-			if len(parts) >= 2 && strings.EqualFold(header, parts[1]) {
-				toAttrIndex = i
-				toAttrName = header
-				break
-			}
 		}
 	}
 
@@ -485,83 +464,7 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 		return
 	}
 
-	// Analyze the relationship to determine how to ensure consistency
-	// In typical relationships, we have primary keys (PKs) and foreign keys (FKs)
-
-	// Helper functions to identify field types
-	isPrimaryKeyField := func(name string) bool {
-		return name == "id" || strings.HasSuffix(strings.ToLower(name), "uuid") ||
-			strings.HasSuffix(strings.ToLower(name), "guid")
-	}
-
-	isForeignKeyField := func(name string) bool {
-		// Foreign keys usually contain "id" but are not just "id"
-		return name != "id" && strings.Contains(strings.ToLower(name), "id")
-	}
-
-	// Determine if the fields indicate a specific relationship direction
-	fromIsPrimary := isPrimaryKeyField(fromAttrName)
-	toIsPrimary := isPrimaryKeyField(toAttrName)
-	fromIsForeign := isForeignKeyField(fromAttrName)
-	toIsForeign := isForeignKeyField(toAttrName)
-
-	// First case: Primary key in "from" entity, foreign key in "to" entity
-	// Example: User.id -> Order.userId
-	if (fromIsPrimary && toIsForeign) ||
-		(fromAttrName == "id" && strings.Contains(strings.ToLower(toAttrName), "id")) {
-		// Collect all valid primary keys from the "from" entity
-		validPrimaryKeys := make([]string, 0, len(fromData.Rows))
-		for _, row := range fromData.Rows {
-			// Only add non-empty values
-			if row[fromAttrIndex] != "" {
-				validPrimaryKeys = append(validPrimaryKeys, row[fromAttrIndex])
-			}
-		}
-
-		// Nothing to do if we don't have any valid primary keys
-		if len(validPrimaryKeys) == 0 {
-			return
-		}
-
-		// Update all foreign keys in the "to" entity to reference valid primary keys
-		for i, row := range toData.Rows {
-			// Pick a random valid primary key
-			row[toAttrIndex] = validPrimaryKeys[rand.Intn(len(validPrimaryKeys))]
-			toData.Rows[i] = row
-		}
-
-		return
-	}
-
-	// Second case: Foreign key in "from" entity, primary key in "to" entity
-	// Example: Order.userId -> User.id
-	if (toIsPrimary && fromIsForeign) ||
-		(toAttrName == "id" && strings.Contains(strings.ToLower(fromAttrName), "id")) {
-		// Collect all valid primary keys from the "to" entity
-		validPrimaryKeys := make([]string, 0, len(toData.Rows))
-		for _, row := range toData.Rows {
-			// Only add non-empty values
-			if row[toAttrIndex] != "" {
-				validPrimaryKeys = append(validPrimaryKeys, row[toAttrIndex])
-			}
-		}
-
-		// Nothing to do if we don't have any valid primary keys
-		if len(validPrimaryKeys) == 0 {
-			return
-		}
-
-		// Update all foreign keys in the "from" entity to reference valid primary keys
-		for i, row := range fromData.Rows {
-			// Pick a random valid primary key
-			row[fromAttrIndex] = validPrimaryKeys[rand.Intn(len(validPrimaryKeys))]
-			fromData.Rows[i] = row
-		}
-
-		return
-	}
-
-	// Collect all values from the "to" entity's attribute (for other relationship types)
+	// Collect all values from the "to" entity's attribute
 	toValues := make(map[string]bool)
 	for _, row := range toData.Rows {
 		toValues[row[toAttrIndex]] = true
@@ -691,7 +594,7 @@ func isUniqueAttribute(entityID string, attrName string, uniqueIdMap map[string]
 	if !exists {
 		return false
 	}
-
+	
 	for _, uniqueAttr := range uniqueAttrs {
 		if uniqueAttr == attrName {
 			return true
@@ -1031,28 +934,28 @@ func (g *CSVGenerator) generateGenericValue(field string, index int) string {
 // generateUniqueValue creates a unique value for attributes marked as uniqueId=true
 func (g *CSVGenerator) generateUniqueValue(entityID string, attrName string, baseValue string) string {
 	attrKey := entityID + ":" + attrName
-
+	
 	// If this is our first use of this attribute, initialize the map
 	if g.usedUniqueValues[attrKey] == nil {
 		g.usedUniqueValues[attrKey] = make(map[string]bool)
 	}
-
+	
 	// For UUID-based values, we can just use a UUID directly as it's guaranteed unique
 	if strings.Contains(strings.ToLower(attrName), "uuid") || strings.HasSuffix(strings.ToLower(attrName), "id") {
 		uniqueVal := uuid.New().String()
 		g.usedUniqueValues[attrKey][uniqueVal] = true
 		return uniqueVal
 	}
-
+	
 	// For other types, try to make the base value unique
 	uniqueVal := baseValue
 	attempt := 0
-
+	
 	// If this value is already used, append a suffix to make it unique
 	for g.usedUniqueValues[attrKey][uniqueVal] && attempt < 1000 {
 		// Add a suffix to make it unique
 		suffix := "_" + strconv.Itoa(attempt)
-
+		
 		// If the value already has a numerical suffix, replace it
 		if idx := strings.LastIndex(baseValue, "_"); idx != -1 {
 			if _, err := strconv.Atoi(baseValue[idx+1:]); err == nil {
@@ -1063,10 +966,10 @@ func (g *CSVGenerator) generateUniqueValue(entityID string, attrName string, bas
 		} else {
 			uniqueVal = baseValue + suffix
 		}
-
+		
 		attempt++
 	}
-
+	
 	// Mark this value as used
 	g.usedUniqueValues[attrKey][uniqueVal] = true
 	return uniqueVal

@@ -42,7 +42,7 @@ type Attribute struct {
 	Description    string `yaml:"description"`
 	Type           string `yaml:"type"`
 	Indexed        bool   `yaml:"indexed"`
-	UniqueId       bool   `yaml:"uniqueId"`
+	UniqueId       bool   `yaml:"uniqueId,omitempty"` // Defaults to false when not specified
 	AttributeAlias string `yaml:"attributeAlias"`
 	List           bool   `yaml:"list"`
 }
