@@ -50,13 +50,20 @@ func NewERDiagramGenerator(definition *models.SORDefinition) *ERDiagramGenerator
 }
 
 // IsGraphvizAvailable checks if the user has graphviz (dot) installed
-func IsGraphvizAvailable() bool {
-	cmd := exec.Command("which", "dot")
+// Using a variable to enable mocking in tests
+var IsGraphvizAvailable = func() bool {
+	cmd := execCommand("which", "dot")
 	if err := cmd.Run(); err != nil {
 		return false
 	}
 	return true
 }
+
+// execCommand holds exec.Command function to allow mocking in tests
+var execCommand = exec.Command
+
+// createTemp holds os.CreateTemp function to allow mocking in tests
+var createTemp = os.CreateTemp
 
 // GenerateERDiagram creates an ER diagram from the SOR definition
 // If Graphviz is available, it generates an SVG file directly
@@ -169,7 +176,7 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 	isSvgOutput := IsGraphvizAvailable() && filepath.Ext(outputPath) == ".svg"
 
 	// Create a temporary DOT file
-	tmpDotFile, err := os.CreateTemp("", "er-diagram-*.dot")
+	tmpDotFile, err := createTemp("", "er-diagram-*.dot")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary DOT file: %w", err)
 	}
@@ -186,7 +193,7 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 	// If Graphviz is available and we want SVG output, use it to generate the SVG
 	if isSvgOutput {
 		// Use the dot command to convert DOT to SVG
-		cmd := exec.Command("dot", "-Tsvg", tmpDotFile.Name(), "-o", outputPath)
+		cmd := execCommand("dot", "-Tsvg", tmpDotFile.Name(), "-o", outputPath)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to run Graphviz dot command: %w", err)
 		}
