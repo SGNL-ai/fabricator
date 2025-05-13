@@ -1,0 +1,292 @@
+displayName: Skywalker-Assertions-Only
+description: Keystone dev env
+hostname: localhost:8080
+defaultSyncFrequency: DAILY
+defaultSyncMinInterval: 1
+defaultApiCallFrequency: SECONDLY
+defaultApiCallMinInterval: 1
+type: S3-1.0.0
+adapterConfig: ewogICJyZWdpb24iOiAidXMtZWFzdC0yIiwKICAiYnVja2V0IjogImRpc25leS1wb2MtdGVzdGluZyIKfQ==
+auth:
+  - basic:
+      username: AKIAQYEI5BI7JBQGJPOS
+entities:
+  App:
+    displayName: App
+    externalId: App
+    description: Keystone application is the protected asset and parent entity
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique App id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: name
+        externalId: name
+        description: ""
+        type: String
+        indexed: false
+        uniqueId: false
+  Assignment:
+    displayName: Assignment
+    externalId: Assignment
+    description: pre-calculated combination of static, group, and dynamic assignments
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique Assignment attribute
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: uuid
+        externalId: uuid
+        description: user uuid pointer
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: roleId
+        externalId: roleId
+        description: role id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: rawId
+        externalId: rawId
+        description: id pointing at the assignment used to calculate Assignment. enum = [static,group,dynamic]
+        type: String
+        indexed: true
+        uniqueId: false
+  AssignmentAttribute:
+    displayName: AssignmentAttribute
+    externalId: AssignmentAttribute
+    description: Attributes assigned to an assignment
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: typeName
+        externalId: typeName
+        description: ""
+        type: String
+        indexed: false
+        uniqueId: false
+      - name: value
+        externalId: value
+        description: ""
+        type: String
+        indexed: false
+        uniqueId: false
+      - name: attributeId
+        externalId: attributeId
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: assignmentId
+        externalId: assignmentId
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: attributeName
+        externalId: attributeName
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: typeId
+        externalId: typeId
+        description: ""
+        type: String
+        indexed: true
+  FunctionalAbility:
+    displayName: FunctionalAbility
+    externalId: FunctionalAbility
+    description: Entity representing a "Functional Ability" in Keystone
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique functional ability id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: roleId
+        externalId: roleId
+        description: pointer to role
+        type: String
+        indexed: true
+        uniqueId: false 
+      - name: name
+        externalId: name
+        description: ""
+        type: String
+        indexed: false
+        uniqueId: false
+  FunctionalAbilitySecuredEntity:
+    displayName: FunctionalAbilitySecuredEntity
+    externalId: FunctionalAbilitySecuredEntity
+    description: ""
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: seId
+        externalId: seId
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: faId
+        externalId: faId
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: false
+  Role:
+    displayName: Role
+    externalId: Role
+    description: Keystone entity used to make Roles/Full assertions
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique Role id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: appId
+        externalId: appId
+        description: unique Keystone App id pointer
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: name
+        externalId: name
+        description: name of role and string used in assertions
+        type: String
+        indexed: false
+        uniqueId: false
+  RoleFunctionalAbility:
+    displayName: RoleFunctionalAbility
+    externalId: RoleFunctionalAbility
+    description: Entity representing the node connecting Role and Functional Ability in the graph
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique RoleFunctionalAbility id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: roleId
+        externalId: roleId
+        description: pointer to a role
+        type: String
+        indexed: true
+        uniqueId: false
+      - name: functionalAbilityId
+        externalId: functionalAbilityId
+        description: pointer to a functional ability
+        type: String
+        indexed: true
+        uniqueId: false
+  SecuredEntity:
+    displayName: SecuredEntity
+    externalId: SecuredEntity
+    description: secured entity
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: unique secured entity id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: value
+        externalId: value
+        description: ""
+        type: String
+        indexed: false
+        uniqueId: false 
+      - name: name
+        externalId: name
+        description: ""
+        type: String
+        indexed: false
+        uniqueId: false
+      - name: appId
+        externalId: appId
+        description: ""
+        type: String
+        indexed: true
+        uniqueId: false
+  UserInterface:
+    displayName: UserInterface
+    externalId: UserInterface
+    description: Interface entity that should have a same_as relationship to Identity User
+    pagesOrderedById: false
+    attributes:
+      - name: uuid
+        externalId: uuid
+        description: IID
+        type: String
+        indexed: true
+        uniqueId: true
+relationships:
+  assigned_to_user:
+    displayName: assigned_to_user
+    name: assigned_to_user
+    fromAttribute: Assignment.uuid
+    toAttribute: UserInterface.uuid
+  assigned_to_role:
+    displayName: assigned_to_role
+    name: assigned_to_role
+    fromAttribute: Assignment.roleId
+    toAttribute: Role.id
+  role_to_app:
+    displayName: role_to_app
+    name: role_to_app
+    fromAttribute: Role.appId
+    toAttribute: App.id
+  assigned_to_attribute:
+    displayName: assigned_to_attribute
+    name: assigned_to_attribute
+    fromAttribute: Assignment.id
+    toAttribute: AssignmentAttribute.assignmentId
+  role_to_roleFunctionalAbility:
+    displayName: role_to_roleFunctionalAbility
+    name: role_to_roleFunctionalAbility
+    fromAttribute: Role.id
+    toAttribute: RoleFunctionalAbility.roleId
+  roleFunctionalAbility_to_functionalAbility:
+    displayName: roleFunctionalAbility_to_functionalAbility
+    name: roleFunctionalAbility_to_functionalAbility
+    fromAttribute: RoleFunctionalAbility.functionalAbilityId
+    toAttribute: FunctionalAbility.id
+  functionalAbility_to_functionalAbilitySecuredEntity:
+    displayName: functionalAbility_to_functionalAbilitySecuredEntity
+    name: functionalAbility_to_functionalAbilitySecuredEntity
+    fromAttribute: FunctionalAbility.id
+    toAttribute: FunctionalAbilitySecuredEntity.faId
+  functionalAbilitySecuredEntity_to_securedEntity:
+    displayName: functionalAbilitySecuredEntity_to_securedEntity
+    name: functionalAbilitySecuredEntity_to_securedEntity
+    fromAttribute: FunctionalAbilitySecuredEntity.seId
+    toAttribute: SecuredEntity.id
+  securedEntity_to_app:
+    displayName: securedEntity_to_app
+    name: securedEntity_to_app
+    fromAttribute: SecuredEntity.appId
+    toAttribute: App.id

@@ -34,6 +34,9 @@ var (
 
 	// Auto-cardinality for relationships
 	autoCardinality bool
+
+	// Validate relationships
+	validateRelationships bool
 )
 
 func init() {
@@ -52,6 +55,18 @@ func init() {
 
 	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
 	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
+
+	// Set default for validation to true
+	validateRelationships = true
+
+	// Add a standard boolean flag for validation
+	flag.BoolVar(&validateRelationships, "validate", true, "Validate relationships consistency in output CSV files")
+
+	// Override default usage output
+	flag.Usage = func() {
+		fmt.Printf("Usage of %s:\n", os.Args[0])
+		printUsage()
+	}
 }
 
 func main() {
@@ -68,7 +83,7 @@ func main() {
 	if inputFile == "" {
 		color.Red("Error: Input file is required. Use -f/--file flag to specify a YAML file.")
 		fmt.Println("\nUsage:")
-		flag.PrintDefaults()
+		printUsage()
 		os.Exit(1)
 	}
 
@@ -87,6 +102,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	color.Cyan("Output directory: %s", outputDir)
 	color.Cyan("Data volume: %d rows per entity", dataVolume)
 	color.Cyan("Auto-cardinality: %t", autoCardinality)
+	color.Cyan("Validate relationships: %t", validateRelationships)
 	color.Cyan("==================")
 
 	// Create a parser and parse the YAML file
@@ -127,6 +143,58 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	err = generator.WriteCSVFiles()
 	if err != nil {
 		return fmt.Errorf("failed to write CSV files: %w", err)
+	}
+
+	// Validate relationships if requested
+	if validateRelationships {
+		color.Yellow("Validating relationship consistency in generated files...")
+
+		// Validate relationship consistency
+		validationResults := generator.ValidateRelationships()
+
+		// Check if there are validation errors
+		if len(validationResults) > 0 {
+			color.Yellow("Found relationship consistency issues:")
+			for _, result := range validationResults {
+				if result.InvalidRows > 0 {
+					color.Red("  • %s (%s) → %s (%s): %d invalid references out of %d rows",
+						result.FromEntity, result.FromEntityFile,
+						result.ToEntity, result.ToEntityFile,
+						result.InvalidRows, result.TotalRows)
+
+					// Show a limited number of detailed errors to avoid flooding the console
+					maxErrorsToShow := 5
+					errorsShown := 0
+					for _, errMsg := range result.Errors {
+						if errorsShown < maxErrorsToShow {
+							color.Yellow("    - %s", errMsg)
+							errorsShown++
+						} else if errorsShown == maxErrorsToShow {
+							color.Yellow("    - ... and %d more errors", len(result.Errors)-maxErrorsToShow)
+							break
+						}
+					}
+				}
+			}
+			color.Yellow("\nSome relationships have consistency issues. This might be expected with random data generation.")
+		} else {
+			color.Green("✓ All relationships are consistent across generated files!")
+		}
+
+		// Validate unique values
+		uniqueValueErrors := generator.ValidateUniqueValues()
+		if len(uniqueValueErrors) > 0 {
+			color.Yellow("\nFound uniqueness constraint violations:")
+			for _, entityError := range uniqueValueErrors {
+				color.Red("  • Entity %s (%s):", entityError.EntityID, entityError.EntityFile)
+				for _, errMsg := range entityError.Messages {
+					color.Yellow("    - %s", errMsg)
+				}
+			}
+			color.Yellow("\nSome unique attributes have duplicate values. This may cause issues in the SOR.")
+		} else {
+			color.Green("✓ All unique constraints are respected in generated files!")
+		}
 	}
 
 	// Print completion message
@@ -233,6 +301,16 @@ func printParsingStatistics(def *models.SORDefinition) {
 		len(def.Relationships), directRelationships, pathRelationships)
 }
 
+// printUsage displays the usage information with proper double-dash syntax for long options
+func printUsage() {
+	fmt.Println("  -v, --version\n\tDisplay version information")
+	fmt.Println("  -f, --file string\n\tPath to the YAML definition file (required)")
+	fmt.Println("  -o, --output string\n\tDirectory to store generated CSV files (default \"output\")")
+	fmt.Println("  -n, --num-rows int\n\tNumber of rows to generate for each entity (default 100)")
+	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
+	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
+}
+
 // printCompletionSummary displays the summary of generated files
 func printCompletionSummary(outputDir string, entities map[string]models.Entity, volume int) {
 	// List generated files
@@ -258,21 +336,6 @@ func printCompletionSummary(outputDir string, entities map[string]models.Entity,
 	color.Green("  Entities processed: %d", len(entities))
 	color.Green("  Records per entity: %d", volume)
 	color.Green("  Total records generated: %d", csvFiles*volume)
-
-	// Print file list
-	color.Green("\nGenerated files:")
-	fileCount := 0
-	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".csv" {
-			fileCount++
-			if fileCount <= 10 {
-				color.Green("  - %s", file.Name())
-			} else if fileCount == 11 {
-				color.Green("  - ... and %d more files", csvFiles-10)
-				break
-			}
-		}
-	}
 
 	color.Green("\nUse these CSV files to populate your system-of-record.\n")
 }
