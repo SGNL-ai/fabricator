@@ -12,6 +12,7 @@ A command-line tool that generates CSV files for populating a system-of-record (
 - Supports variable relationship cardinalities (1:1, 1:N, N:1)
 - Automatically detects cardinality based on entity metadata
 - Generates a set of CSV files with realistic test data
+- Creates an SVG entity-relationship diagram visualization
 - Outputs colorful and informative progress messages
 
 ## Installation
@@ -75,6 +76,7 @@ For Windows users, download the `fabricator-windows.exe` file from the releases 
 | `-o`       | `--output`           | Directory to store generated CSV files           | "output"  |
 | `-n`       | `--num-rows`         | Number of rows to generate for each entity       | 100       |
 | `-a`       | `--auto-cardinality` | Enable automatic cardinality detection           | false     |
+| `-d`       | `--diagram`          | Generate Entity-Relationship diagram             | true      |
 | `-v`       | `--version`          | Display version information                      | -         |
 
 ### Examples
@@ -91,6 +93,9 @@ For Windows users, download the `fabricator-windows.exe` file from the releases 
 
 # Using long-form options with auto-cardinality
 ./build/fabricator --file example.yaml --num-rows 500 --auto-cardinality --output data/variable-cardinality
+
+# Generate CSV files but disable ER diagram generation
+./build/fabricator -f example.yaml --diagram=false
 ```
 
 ## YAML Format
@@ -105,13 +110,21 @@ Each entity in the YAML file will result in a corresponding CSV file, with the f
 
 ## Generated Data
 
-The tool generates the following for each entity:
+The tool generates the following outputs:
 
-1. A CSV file named after the entity's external ID (without the namespace prefix)
-2. Headers matching the entity's attribute external IDs
-3. Consistent data across relationships between entities
-4. Variable cardinality relationships (with the `-a` flag)
-5. Realistic test data based on attribute names and types
+1. CSV files:
+   - Named after each entity's external ID (without the namespace prefix)
+   - Headers matching the entity's attribute external IDs
+   - Consistent data across relationships between entities
+   - Variable cardinality relationships (with the `-a` flag)
+   - Realistic test data based on attribute names and types
+
+2. Entity-Relationship Diagram (enabled by default):
+   - SVG visualization of all entities and their relationships
+   - Color-coded entities with attributes listed
+   - Primary keys (uniqueId attributes) highlighted
+   - Relationship cardinality indicators (1:1, 1:N, N:1, N:M)
+   - Can be disabled with `--diagram=false`
 
 The data generator intelligently creates appropriate values based on field names:
 - ID fields get unique identifiers

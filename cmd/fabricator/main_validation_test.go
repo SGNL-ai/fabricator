@@ -150,8 +150,13 @@ func TestPrintCompletionSummary(t *testing.T) {
 	// Skip detailed output testing due to direct terminal output
 	// Just ensure the function runs without panic
 
-	// Call the function
-	printCompletionSummary(tempDir, entities, 10)
+	// Call the function with a mock SORDefinition
+	mockDef := &models.SORDefinition{
+		DisplayName: "Test SOR",
+		Description: "Test Description",
+		Entities:    entities,
+	}
+	printCompletionSummary(tempDir, mockDef, 10, true)
 
 	// Test passes if we reach this point - function didn't panic
 	// Mock the expected output for test validation

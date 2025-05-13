@@ -1,0 +1,31 @@
+// This patch adds panic recovery to the ER diagram generation code
+
+--- main.go.original	2023-05-13 12:00:00.000000000 -0700
++++ main.go.patched	2023-05-13 12:01:00.000000000 -0700
+@@ -167,10 +167,19 @@
+ 			// Set diagram output path
+ 			diagramPath := filepath.Join(absOutputDir, "entity_relationship_diagram.svg")
+ 
+-			// Generate the diagram
+-			err := diagrams.GenerateERDiagram(def, diagramPath)
+-			if err != nil {
+-				color.Red("Warning: Could not generate ER diagram: %v", err)
+-			} else {
+-				color.Green("✓ Generated ER diagram at %s", diagramPath)
++			// Generate the diagram with panic recovery
++			func() {
++				defer func() {
++					if r := recover(); r != nil {
++						color.Red("Warning: ER diagram generation failed with panic: %v", r)
++					}
++				}()
++				
++				// Generate the diagram
++				err := diagrams.GenerateERDiagram(def, diagramPath)
++				if err != nil {
++					color.Red("Warning: Could not generate ER diagram: %v", err)
++				} else {
++					color.Green("✓ Generated ER diagram at %s", diagramPath)
++				}
++			}()
+ 			}
