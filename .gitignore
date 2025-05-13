@@ -36,4 +36,11 @@ go.work
 
 # Temporary files
 *.tmp
+*.bak
+*.diff
+*.patch
 **/.claude/settings.local.json
+/test-run/
+
+# Sensitive files
+# Add patterns here, not specific filenames

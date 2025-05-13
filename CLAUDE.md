@@ -166,6 +166,14 @@ The application accepts the following command-line flags:
 
 ## Workflow Guidance for Claude
 
+### Getting Started
+
+When first connecting to this project, you should:
+1. Review the project structure to understand the codebase organization
+2. Examine the main components and their responsibilities
+3. Familiarize yourself with the existing test files and examples
+4. Check the current implementation state through relevant source files
+
 ### Planning and TODO List Format
 
 When planning implementation changes, present a structured TODO list with the following format:

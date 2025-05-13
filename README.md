@@ -12,6 +12,8 @@ A command-line tool that generates CSV files for populating a system-of-record (
 - Supports variable relationship cardinalities (1:1, 1:N, N:1)
 - Automatically detects cardinality based on entity metadata
 - Generates a set of CSV files with realistic test data
+- Validates existing CSV files against a YAML definition
+- Performs relationship consistency and uniqueness constraint checks
 - Creates an SVG entity-relationship diagram visualization
 - Outputs colorful and informative progress messages
 
@@ -77,6 +79,8 @@ For Windows users, download the `fabricator-windows.exe` file from the releases 
 | `-n`       | `--num-rows`         | Number of rows to generate for each entity       | 100       |
 | `-a`       | `--auto-cardinality` | Enable automatic cardinality detection           | false     |
 | `-d`       | `--diagram`          | Generate Entity-Relationship diagram             | true      |
+|            | `--validate`         | Validate relationships in CSV files              | true      |
+|            | `--validate-only`    | Validate existing CSV files without generation   | false     |
 | `-v`       | `--version`          | Display version information                      | -         |
 
 ### Examples
@@ -96,6 +100,12 @@ For Windows users, download the `fabricator-windows.exe` file from the releases 
 
 # Generate CSV files but disable ER diagram generation
 ./build/fabricator -f example.yaml --diagram=false
+
+# Validate existing CSV files without generating new data
+./build/fabricator -f example.yaml -o existing/csv/data --validate-only
+
+# Validate existing CSV files and generate an ER diagram
+./build/fabricator -f example.yaml -o existing/csv/data --validate-only --diagram
 ```
 
 ## YAML Format
@@ -108,23 +118,31 @@ The YAML file should define a system-of-record structure, including:
 
 Each entity in the YAML file will result in a corresponding CSV file, with the filename derived from the entity's `externalId`.
 
-## Generated Data
+## Generated Data & Validation
 
-The tool generates the following outputs:
+The tool provides the following functionality:
 
-1. CSV files:
-   - Named after each entity's external ID (without the namespace prefix)
+1. CSV Generation:
+   - CSV files named after each entity's external ID (without the namespace prefix)
    - Headers matching the entity's attribute external IDs
    - Consistent data across relationships between entities
    - Variable cardinality relationships (with the `-a` flag)
    - Realistic test data based on attribute names and types
 
-2. Entity-Relationship Diagram (enabled by default):
+2. CSV Validation (via `--validate-only`):
+   - Checks existing CSV files against a YAML definition
+   - Validates relationship consistency across entities
+   - Verifies unique constraint requirements are met
+   - Helpful for validating production or manually-created data exports
+   - Use with the existing output directory containing CSV files
+
+3. Entity-Relationship Diagram (enabled by default):
    - SVG visualization of all entities and their relationships
    - Color-coded entities with attributes listed
    - Primary keys (uniqueId attributes) highlighted
    - Relationship cardinality indicators (1:1, 1:N, N:1, N:M)
    - Can be disabled with `--diagram=false`
+   - Works in both generation and validation-only modes
 
 The data generator intelligently creates appropriate values based on field names:
 - ID fields get unique identifiers
