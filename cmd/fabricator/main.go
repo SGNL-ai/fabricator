@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SGNL-ai/fabricator/pkg/diagrams"
 	"github.com/SGNL-ai/fabricator/pkg/fabricator"
 	"github.com/SGNL-ai/fabricator/pkg/generators"
 	"github.com/SGNL-ai/fabricator/pkg/models"
@@ -37,6 +38,9 @@ var (
 
 	// Validate relationships
 	validateRelationships bool
+
+	// Generate ER diagram
+	generateDiagram bool
 )
 
 func init() {
@@ -61,6 +65,23 @@ func init() {
 
 	// Add a standard boolean flag for validation
 	flag.BoolVar(&validateRelationships, "validate", true, "Validate relationships consistency in output CSV files")
+
+	// Check if GraphViz is available to determine default for diagram generation
+	graphvizAvailable := diagrams.IsGraphvizAvailable()
+
+	// Set default for diagram generation based on GraphViz availability
+	generateDiagram = graphvizAvailable
+
+	// Add a flag to control diagram generation with appropriate default message
+	diagramDesc := "Generate Entity-Relationship diagram"
+	if !graphvizAvailable {
+		diagramDesc += " (default: false - Graphviz not found)"
+	} else {
+		diagramDesc += " (default: true)"
+	}
+
+	flag.BoolVar(&generateDiagram, "diagram", generateDiagram, diagramDesc)
+	flag.BoolVar(&generateDiagram, "d", generateDiagram, diagramDesc)
 
 	// Override default usage output
 	flag.Usage = func() {
@@ -103,6 +124,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	color.Cyan("Data volume: %d rows per entity", dataVolume)
 	color.Cyan("Auto-cardinality: %t", autoCardinality)
 	color.Cyan("Validate relationships: %t", validateRelationships)
+	color.Cyan("Generate ER diagram: %t", generateDiagram)
 	color.Cyan("==================")
 
 	// Create a parser and parse the YAML file
@@ -143,6 +165,53 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	err = generator.WriteCSVFiles()
 	if err != nil {
 		return fmt.Errorf("failed to write CSV files: %w", err)
+	}
+
+	// Generate ER diagram if requested
+	if generateDiagram {
+		// Check if Graphviz is available (this is a double-check since flag might be manually set)
+		graphvizAvailable := diagrams.IsGraphvizAvailable()
+		outputFormat := "DOT"
+		extension := ".dot"
+
+		if graphvizAvailable {
+			outputFormat = "SVG"
+			extension = ".svg"
+		}
+
+		color.Yellow("Generating Entity-Relationship diagram (%s format)...", outputFormat)
+
+		// Create diagram filename based on SOR name
+		diagramName := cleanNameForFilename(def.DisplayName)
+
+		// Set diagram output path
+		diagramPath := filepath.Join(absOutputDir, diagramName+extension)
+
+		// Generate the diagram with panic recovery
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					color.Red("Warning: ER diagram generation failed with panic: %v", r)
+				}
+			}()
+
+			// Generate the diagram
+			err := diagrams.GenerateERDiagram(def, diagramPath)
+			if err != nil {
+				color.Red("Warning: Could not generate ER diagram: %v", err)
+			} else {
+				color.Green("✓ Generated ER diagram at %s", diagramPath)
+
+				// If Graphviz isn't available but diagram generation was requested, show a helpful message
+				if !graphvizAvailable {
+					color.Yellow("  Note: Generated DOT file only. To convert to SVG:")
+					color.Yellow("  1. Install Graphviz (https://graphviz.org)")
+					color.Yellow("  2. Run: dot -Tsvg %s -o %s",
+						diagramPath,
+						strings.TrimSuffix(diagramPath, extension)+".svg")
+				}
+			}
+		}()
 	}
 
 	// Validate relationships if requested
@@ -198,7 +267,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	}
 
 	// Print completion message
-	printCompletionSummary(absOutputDir, def.Entities, dataVolume)
+	printCompletionSummary(absOutputDir, def, dataVolume, generateDiagram)
 
 	return nil
 }
@@ -309,10 +378,21 @@ func printUsage() {
 	fmt.Println("  -n, --num-rows int\n\tNumber of rows to generate for each entity (default 100)")
 	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
 	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
+
+	// Build diagram flag description with dynamic default based on Graphviz availability
+	diagDesc := "Generate Entity-Relationship diagram"
+	if diagrams.IsGraphvizAvailable() {
+		diagDesc += " (default true)"
+	} else {
+		diagDesc += " (default false - Graphviz not found)"
+	}
+	fmt.Println("  -d, --diagram\n\t" + diagDesc)
 }
 
 // printCompletionSummary displays the summary of generated files
-func printCompletionSummary(outputDir string, entities map[string]models.Entity, volume int) {
+func printCompletionSummary(outputDir string, def *models.SORDefinition, volume int, diagramGenerated bool) {
+	// Extract entities for backward compatibility
+	entities := def.Entities
 	// List generated files
 	files, err := os.ReadDir(outputDir)
 	if err != nil {
@@ -337,5 +417,43 @@ func printCompletionSummary(outputDir string, entities map[string]models.Entity,
 	color.Green("  Records per entity: %d", volume)
 	color.Green("  Total records generated: %d", csvFiles*volume)
 
+	if diagramGenerated {
+		// Get a clean filename from the SOR display name
+		diagramName := cleanNameForFilename(def.DisplayName)
+
+		// Look for specific diagram files based on SOR name
+		dotFile := filepath.Join(outputDir, diagramName+".dot")
+		svgFile := filepath.Join(outputDir, diagramName+".svg")
+
+		// Also check for default names in case they were generated earlier
+		defaultDotFile := filepath.Join(outputDir, "entity_relationship_diagram.dot")
+		defaultSvgFile := filepath.Join(outputDir, "entity_relationship_diagram.svg")
+
+		// Check if the files exist and print them in output
+		if _, err := os.Stat(dotFile); err == nil {
+			color.Green("  Entity-Relationship diagram (DOT): %s", dotFile)
+		} else if _, err := os.Stat(defaultDotFile); err == nil {
+			color.Green("  Entity-Relationship diagram (DOT): %s", defaultDotFile)
+		}
+
+		if _, err := os.Stat(svgFile); err == nil {
+			color.Green("  Entity-Relationship diagram (SVG): %s", svgFile)
+		} else if _, err := os.Stat(defaultSvgFile); err == nil {
+			color.Green("  Entity-Relationship diagram (SVG): %s", defaultSvgFile)
+		}
+	}
+
 	color.Green("\nUse these CSV files to populate your system-of-record.\n")
+}
+
+// cleanNameForFilename creates a filesystem-safe name from a display name
+func cleanNameForFilename(name string) string {
+	// Replace spaces and slashes with underscores
+	cleaned := strings.ReplaceAll(name, " ", "_")
+	cleaned = strings.ReplaceAll(cleaned, "/", "_")
+	// If the name is empty, use a default
+	if cleaned == "" {
+		cleaned = "entity_relationship_diagram"
+	}
+	return cleaned
 }
