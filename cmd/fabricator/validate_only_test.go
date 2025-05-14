@@ -19,7 +19,7 @@ func TestValidateOnlyMode(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Copy test YAML file from examples directory
-	examplePath := filepath.Join("..", "..", "examples", "example.yaml")
+	examplePath := filepath.Join("..", "..", "examples", "sample.yaml")
 	exampleContent, err := os.ReadFile(examplePath)
 	if err != nil {
 		t.Fatalf("Failed to read example YAML file: %v", err)
