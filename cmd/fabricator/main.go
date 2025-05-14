@@ -41,6 +41,9 @@ var (
 
 	// Generate ER diagram
 	generateDiagram bool
+
+	// Validation-only mode (skip CSV generation)
+	validateOnly bool
 )
 
 func init() {
@@ -59,6 +62,8 @@ func init() {
 
 	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
 	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
+
+	flag.BoolVar(&validateOnly, "validate-only", false, "Validate existing CSV files without generating new data")
 
 	// Set default for validation to true
 	validateRelationships = true
@@ -121,8 +126,11 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	printHeader()
 	color.Cyan("Input file: %s", inputFile)
 	color.Cyan("Output directory: %s", outputDir)
-	color.Cyan("Data volume: %d rows per entity", dataVolume)
-	color.Cyan("Auto-cardinality: %t", autoCardinality)
+	if !validateOnly {
+		color.Cyan("Data volume: %d rows per entity", dataVolume)
+		color.Cyan("Auto-cardinality: %t", autoCardinality)
+	}
+	color.Cyan("Validation-only mode: %t", validateOnly)
 	color.Cyan("Validate relationships: %t", validateRelationships)
 	color.Cyan("Generate ER diagram: %t", generateDiagram)
 	color.Cyan("==================")
@@ -141,30 +149,45 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	// Display entity and relationship statistics
 	printParsingStatistics(def)
 
-	// Calculate estimated number of records
-	totalRecords := len(def.Entities) * dataVolume
-	color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
-
-	// Create output directory
+	// Resolve output directory
 	absOutputDir, err := filepath.Abs(outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 
-	// Initialize CSV generator
-	color.Yellow("Initializing CSV generator...")
-	generator := generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-	generator.Setup(def.Entities, def.Relationships)
+	var generator *generators.CSVGenerator
 
-	// Generate data
-	color.Yellow("Generating data for %d entities...", len(def.Entities))
-	generator.GenerateData()
+	if !validateOnly {
+		// Calculate estimated number of records
+		totalRecords := len(def.Entities) * dataVolume
+		color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
 
-	// Write CSV files
-	color.Yellow("Writing CSV files to %s...", absOutputDir)
-	err = generator.WriteCSVFiles()
-	if err != nil {
-		return fmt.Errorf("failed to write CSV files: %w", err)
+		// Initialize CSV generator
+		color.Yellow("Initializing CSV generator...")
+		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
+		generator.Setup(def.Entities, def.Relationships)
+
+		// Generate data
+		color.Yellow("Generating data for %d entities...", len(def.Entities))
+		generator.GenerateData()
+
+		// Write CSV files
+		color.Yellow("Writing CSV files to %s...", absOutputDir)
+		err = generator.WriteCSVFiles()
+		if err != nil {
+			return fmt.Errorf("failed to write CSV files: %w", err)
+		}
+	} else {
+		// In validation-only mode, initialize without generating
+		color.Yellow("Validation-only mode: Loading existing CSV files from %s...", absOutputDir)
+		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
+		generator.Setup(def.Entities, def.Relationships)
+
+		// Load existing CSV files for validation
+		err = generator.LoadExistingCSVFiles()
+		if err != nil {
+			return fmt.Errorf("failed to load existing CSV files: %w", err)
+		}
 	}
 
 	// Generate ER diagram if requested
@@ -378,6 +401,7 @@ func printUsage() {
 	fmt.Println("  -n, --num-rows int\n\tNumber of rows to generate for each entity (default 100)")
 	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
 	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
+	fmt.Println("  --validate-only\n\tValidate existing CSV files without generating new data")
 
 	// Build diagram flag description with dynamic default based on Graphviz availability
 	diagDesc := "Generate Entity-Relationship diagram"
@@ -410,12 +434,20 @@ func printCompletionSummary(outputDir string, def *models.SORDefinition, volume 
 
 	// Print summary
 	successColor := color.New(color.FgGreen, color.Bold)
-	_, _ = successColor.Println("\n✓ CSV Generation Complete!")
-	color.Green("  Output directory: %s", outputDir)
-	color.Green("  CSV files generated: %d", csvFiles)
-	color.Green("  Entities processed: %d", len(entities))
-	color.Green("  Records per entity: %d", volume)
-	color.Green("  Total records generated: %d", csvFiles*volume)
+
+	if validateOnly {
+		_, _ = successColor.Println("\n✓ Validation Complete!")
+		color.Green("  Input directory: %s", outputDir)
+		color.Green("  CSV files validated: %d", csvFiles)
+		color.Green("  Entities in definition: %d", len(entities))
+	} else {
+		_, _ = successColor.Println("\n✓ CSV Generation Complete!")
+		color.Green("  Output directory: %s", outputDir)
+		color.Green("  CSV files generated: %d", csvFiles)
+		color.Green("  Entities processed: %d", len(entities))
+		color.Green("  Records per entity: %d", volume)
+		color.Green("  Total records generated: %d", csvFiles*volume)
+	}
 
 	if diagramGenerated {
 		// Get a clean filename from the SOR display name
@@ -443,7 +475,11 @@ func printCompletionSummary(outputDir string, def *models.SORDefinition, volume 
 		}
 	}
 
-	color.Green("\nUse these CSV files to populate your system-of-record.\n")
+	if validateOnly {
+		color.Green("\nValidation of existing CSV files complete.\n")
+	} else {
+		color.Green("\nUse these CSV files to populate your system-of-record.\n")
+	}
 }
 
 // cleanNameForFilename creates a filesystem-safe name from a display name

@@ -29,6 +29,7 @@ type CSVGenerator struct {
 	AutoCardinality    bool                       // Whether to enable automatic cardinality detection
 	usedUniqueValues   map[string]map[string]bool // Track used values for fields with uniqueId=true by entity:attribute
 	uniqueIdAttributes map[string][]string        // Track attributes with uniqueId=true by entity
+	existingFiles      map[string]bool            // Track existing CSV files in validation-only mode
 }
 
 // NewCSVGenerator creates a new CSVGenerator instance
@@ -49,6 +50,7 @@ func NewCSVGenerator(outputDir string, dataVolume int, autoCardinality bool) *CS
 		AutoCardinality:    autoCardinality,
 		usedUniqueValues:   make(map[string]map[string]bool),
 		uniqueIdAttributes: make(map[string][]string),
+		existingFiles:      make(map[string]bool),
 	}
 }
 
@@ -94,6 +96,16 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 
 	// Pre-generate some common values for generic data types
 	g.generateCommonValues()
+
+	// Identify existing CSV files in the output directory
+	files, err := os.ReadDir(g.OutputDir)
+	if err == nil {
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(strings.ToLower(file.Name()), ".csv") {
+				g.existingFiles[file.Name()] = true
+			}
+		}
+	}
 }
 
 // extractNamespacePrefix finds the common namespace prefix from entity external IDs
@@ -158,6 +170,92 @@ func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, r
 			}
 		}
 	}
+}
+
+// LoadExistingCSVFiles loads existing CSV files from the output directory for validation
+func (g *CSVGenerator) LoadExistingCSVFiles() error {
+	// Check if output directory exists
+	if _, err := os.Stat(g.OutputDir); os.IsNotExist(err) {
+		return fmt.Errorf("output directory does not exist: %s", g.OutputDir)
+	}
+
+	// Load CSV files in the output directory
+	files, err := os.ReadDir(g.OutputDir)
+	if err != nil {
+		return fmt.Errorf("failed to read output directory: %w", err)
+	}
+
+	// Map to track which entities have been loaded
+	foundEntities := make(map[string]bool)
+
+	// Counter for successfully loaded files
+	loadedFiles := 0
+
+	// Find and load CSV files for each entity
+	for entityID, entityData := range g.EntityData {
+		// Determine the expected filename for this entity
+		entityFilename := getEntityFileName(entityData)
+		entityLoaded := false
+
+		// Look for an existing CSV file matching this entity
+		for _, file := range files {
+			if file.IsDir() || !strings.HasSuffix(strings.ToLower(file.Name()), ".csv") {
+				continue
+			}
+
+			// Check if this is the file for the current entity
+			if file.Name() == entityFilename {
+				// Read and parse the CSV file
+				filePath := filepath.Join(g.OutputDir, file.Name())
+				fileData, err := os.ReadFile(filePath)
+				if err != nil {
+					return fmt.Errorf("failed to read CSV file %s: %w", filePath, err)
+				}
+
+				// Parse the CSV content
+				reader := csv.NewReader(strings.NewReader(string(fileData)))
+				records, err := reader.ReadAll()
+				if err != nil {
+					return fmt.Errorf("failed to parse CSV file %s: %w", filePath, err)
+				}
+
+				// Verify we have at least a header row
+				if len(records) == 0 {
+					color.Yellow("Warning: Empty CSV file for entity %s (%s)", entityID, filePath)
+					continue
+				}
+
+				// Update entity data with parsed CSV
+				entityData.Headers = records[0]
+				entityData.Rows = records[1:]
+
+				foundEntities[entityID] = true
+				entityLoaded = true
+				loadedFiles++
+
+				color.Green("✓ Loaded %s: %d rows", entityFilename, len(entityData.Rows))
+				break
+			}
+		}
+
+		if !entityLoaded {
+			color.Yellow("Warning: No CSV file found for entity %s (expected %s)", entityID, entityFilename)
+		}
+	}
+
+	// Check if any files were loaded
+	if loadedFiles == 0 {
+		return fmt.Errorf("no matching CSV files found in directory: %s", g.OutputDir)
+	}
+
+	// Report loading summary
+	color.Green("Successfully loaded %d CSV files for validation", loadedFiles)
+	if len(foundEntities) < len(g.EntityData) {
+		color.Yellow("Warning: %d entities do not have corresponding CSV files",
+			len(g.EntityData)-len(foundEntities))
+	}
+
+	return nil
 }
 
 // generateCommonValues pre-generates common test data values

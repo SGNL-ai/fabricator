@@ -19,7 +19,18 @@ func withFlagValues(t *testing.T, flags map[string]string, fn func()) {
 	// Create new args
 	newArgs := []string{"fabricator"}
 	for name, value := range flags {
-		newArgs = append(newArgs, name, value)
+		if value == "" {
+			// For boolean flags (which don't need values)
+			// Handle boolean flags with format "-flag=false"
+			if strings.Contains(name, "=") {
+				newArgs = append(newArgs, name)
+			} else {
+				newArgs = append(newArgs, name)
+			}
+		} else {
+			// For flags with values
+			newArgs = append(newArgs, name, value)
+		}
 	}
 	os.Args = newArgs
 
@@ -32,6 +43,8 @@ func withFlagValues(t *testing.T, flags map[string]string, fn func()) {
 	outputDir = "output"
 	dataVolume = 100
 	autoCardinality = false
+	validateOnly = false
+	generateDiagram = true
 
 	// Re-register flags
 	flag.BoolVar(&showVersion, "v", false, "Display version information")
@@ -48,6 +61,13 @@ func withFlagValues(t *testing.T, flags map[string]string, fn func()) {
 
 	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
 	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
+
+	// Add validateOnly flag
+	flag.BoolVar(&validateOnly, "validate-only", false, "Validate existing CSV files without generating new data")
+
+	// Add diagram generation flag
+	flag.BoolVar(&generateDiagram, "d", true, "Generate Entity-Relationship diagram")
+	flag.BoolVar(&generateDiagram, "diagram", true, "Generate Entity-Relationship diagram")
 
 	// Parse flags
 	flag.Parse()
