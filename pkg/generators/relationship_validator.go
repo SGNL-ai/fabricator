@@ -209,8 +209,8 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 			}
 
 			// Check that all values are unique
-			usedValues := make(map[string]bool)
-			duplicates := []string{}
+			usedValues := make(map[string]int) // Map value to its row count
+			duplicateValues := make(map[string][]int) // Map of value to list of row indices where it appears
 
 			for i, row := range csvData.Rows {
 				value := row[attrIndex]
@@ -218,21 +218,71 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 				// Empty values are always a problem for uniqueId attributes
 				if value == "" {
 					entityErrors.Messages = append(entityErrors.Messages,
-						fmt.Sprintf("Row %d has empty value for unique attribute %s", i, uniqueAttr))
+						fmt.Sprintf("Row %d has empty value for unique attribute %s", i+1, uniqueAttr))
 					continue
 				}
 
-				// Check if this value has been used before
-				if usedValues[value] {
-					duplicates = append(duplicates, value)
+				// Track occurrences of this value
+				usedValues[value]++
+				
+				// If we've seen this value before, add it to duplicates
+				if usedValues[value] > 1 {
+					if duplicateValues[value] == nil {
+						// First find the initial occurrence
+						for j, prevRow := range csvData.Rows[:i] {
+							if prevRow[attrIndex] == value {
+								duplicateValues[value] = []int{j + 1} // +1 for 1-based row numbering
+								break
+							}
+						}
+					}
+					// Add current occurrence
+					duplicateValues[value] = append(duplicateValues[value], i+1) // +1 for 1-based row numbering
 				}
-				usedValues[value] = true
 			}
 
-			// Report duplicate values
-			if len(duplicates) > 0 {
+			// Report duplicate values with detailed information
+			if len(duplicateValues) > 0 {
+				// Count total duplicates
+				totalDuplicates := 0
+				for _, rowIndices := range duplicateValues {
+					totalDuplicates += len(rowIndices)
+				}
+				
+				// Base message about duplicates
 				entityErrors.Messages = append(entityErrors.Messages,
-					fmt.Sprintf("Attribute %s has %d duplicate values", uniqueAttr, len(duplicates)))
+					fmt.Sprintf("Attribute %s has %d duplicate values", uniqueAttr, len(duplicateValues)))
+				
+				// Add detailed information for each duplicate value
+				if len(duplicateValues) <= 5 { // Limit detail to avoid overwhelming output
+					for value, rowIndices := range duplicateValues {
+						// Show up to 5 rows where this value appears
+						rowDisplay := ""
+						if len(rowIndices) <= 5 {
+							rowNumbers := make([]string, len(rowIndices))
+							for i, rowIdx := range rowIndices {
+								rowNumbers[i] = fmt.Sprintf("%d", rowIdx)
+							}
+							rowDisplay = strings.Join(rowNumbers, ", ")
+						} else {
+							rowNumbers := make([]string, 5)
+							for i, rowIdx := range rowIndices[:5] {
+								rowNumbers[i] = fmt.Sprintf("%d", rowIdx)
+							}
+							rowDisplay = strings.Join(rowNumbers, ", ") + "... (and " + 
+								fmt.Sprintf("%d", len(rowIndices)-5) + " more)"
+						}
+						
+						// Truncate very long values
+						displayValue := value
+						if len(displayValue) > 30 {
+							displayValue = displayValue[:27] + "..."
+						}
+						
+						entityErrors.Messages = append(entityErrors.Messages,
+							fmt.Sprintf("  - Value '%s' appears in rows: %s", displayValue, rowDisplay))
+					}
+				}
 			}
 		}
 

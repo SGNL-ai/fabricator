@@ -124,17 +124,40 @@ func (g *CSVGenerator) extractNamespacePrefix(entities map[string]models.Entity)
 
 // processRelationships analyzes the relationships between entities
 func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, relationships map[string]models.Relationship) {
-	// Create a map of attribute alias to (entity ID, attribute name, uniqueId)
+	// Create maps to find entities and attributes by different identifiers
+	// Map of attribute alias to (entity ID, attribute name, uniqueId)
 	attributeAliasMap := make(map[string]struct {
 		EntityID      string
 		AttributeName string
 		UniqueID      bool
 	})
 
-	// Build the attribute alias map
+	// Map to lookup entities/attributes by "Entity.Attribute" pattern (for YAML without attributeAlias)
+	entityAttributeMap := make(map[string]struct {
+		EntityID      string
+		AttributeName string
+		UniqueID      bool
+	})
+
+	// Build the attribute maps
 	for entityID, entity := range entities {
 		for _, attr := range entity.Attributes {
-			attributeAliasMap[attr.AttributeAlias] = struct {
+			// Handle attributeAlias case (when it exists)
+			if attr.AttributeAlias != "" {
+				attributeAliasMap[attr.AttributeAlias] = struct {
+					EntityID      string
+					AttributeName string
+					UniqueID      bool
+				}{
+					EntityID:      entityID,
+					AttributeName: attr.Name,
+					UniqueID:      attr.UniqueId,
+				}
+			}
+
+			// Also build Entity.Attribute map for YAMLs without attributeAlias
+			entityKey := entity.ExternalId + "." + attr.ExternalId
+			entityAttributeMap[entityKey] = struct {
 				EntityID      string
 				AttributeName string
 				UniqueID      bool
@@ -153,21 +176,42 @@ func (g *CSVGenerator) processRelationships(entities map[string]models.Entity, r
 			continue
 		}
 
-		// Get the entities and attributes that this relationship connects
-		if fromAttr, ok := attributeAliasMap[relationship.FromAttribute]; ok {
-			if toAttr, ok := attributeAliasMap[relationship.ToAttribute]; ok {
-				// Add the relationship link with uniqueId information
-				link := models.RelationshipLink{
-					FromEntityID:      fromAttr.EntityID,
-					ToEntityID:        toAttr.EntityID,
-					FromAttribute:     fromAttr.AttributeName,
-					ToAttribute:       toAttr.AttributeName,
-					IsFromAttributeID: fromAttr.UniqueID,
-					IsToAttributeID:   toAttr.UniqueID,
-				}
+		var fromAttr, toAttr struct {
+			EntityID      string
+			AttributeName string
+			UniqueID      bool
+		}
+		var fromOk, toOk bool
 
-				g.relationshipMap[fromAttr.EntityID] = append(g.relationshipMap[fromAttr.EntityID], link)
+		// Try to match using attribute aliases first
+		if relationship.FromAttribute != "" && relationship.ToAttribute != "" {
+			fromAttr, fromOk = attributeAliasMap[relationship.FromAttribute]
+			toAttr, toOk = attributeAliasMap[relationship.ToAttribute]
+		}
+
+		// If attribute alias lookup fails, try Entity.Attribute pattern
+		if !fromOk || !toOk {
+			// Handle the format used in SW-Assertions-Only-0.1.0.yaml
+			// Relationships defined like "Entity.attribute"
+			if strings.Contains(relationship.FromAttribute, ".") && strings.Contains(relationship.ToAttribute, ".") {
+				fromAttr, fromOk = entityAttributeMap[relationship.FromAttribute]
+				toAttr, toOk = entityAttributeMap[relationship.ToAttribute]
 			}
+		}
+
+		// If we found both the from and to attributes, create the relationship
+		if fromOk && toOk {
+			// Add the relationship link with uniqueId information
+			link := models.RelationshipLink{
+				FromEntityID:      fromAttr.EntityID,
+				ToEntityID:        toAttr.EntityID,
+				FromAttribute:     fromAttr.AttributeName,
+				ToAttribute:       toAttr.AttributeName,
+				IsFromAttributeID: fromAttr.UniqueID,
+				IsToAttributeID:   toAttr.UniqueID,
+			}
+
+			g.relationshipMap[fromAttr.EntityID] = append(g.relationshipMap[fromAttr.EntityID], link)
 		}
 	}
 }
@@ -393,9 +437,11 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 				row[i] = id
 			} else {
 				// If there's no ID in the map, generate one
-				if strings.Contains(strings.ToLower(header), "uuid") {
-					row[i] = gofakeit.UUID()
+				if isUnique {
+					// Always use generateUniqueValue for unique ID fields to ensure tracking
+					row[i] = g.generateUniqueValue(entityID, header, "")
 				} else {
+					// Non-unique IDs can just be generated
 					row[i] = uuid.New().String()
 				}
 			}
@@ -415,7 +461,12 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 				row[i] = refIds[rand.Intn(len(refIds))]
 			} else {
 				// Generate a random UUID as fallback
-				row[i] = uuid.New().String()
+				if isUnique {
+					// Always use generateUniqueValue for unique foreign key fields
+					row[i] = g.generateUniqueValue(entityID, header, "")
+				} else {
+					row[i] = uuid.New().String()
+				}
 			}
 			continue
 		}
@@ -439,7 +490,12 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 		} else if headerLower == "value" || strings.HasSuffix(headerLower, "value") {
 			value = g.generateValue(header, index)
 		} else if headerLower == "uuid" {
-			value = uuid.New().String()
+			// For UUID fields, use the generateUniqueValue function to ensure uniqueness and tracking
+			if isUnique {
+				value = g.generateUniqueValue(entityID, header, "")
+			} else {
+				value = uuid.New().String()
+			}
 		} else if headerLower == "expression" || strings.HasSuffix(headerLower, "expression") {
 			expressions := g.generatedValues["expressions"]
 			value = expressions[index%len(expressions)]
@@ -477,7 +533,7 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 			value = g.generateGenericValue(header, index)
 		}
 
-		// If this is a unique attribute, ensure it's unique
+		// For any unique attribute (that hasn't already been handled), ensure it's unique
 		if isUnique && value != "" {
 			value = g.generateUniqueValue(entityID, header, value)
 		}
@@ -583,6 +639,11 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 		return
 	}
 
+	// Check if the attributes are unique (should have unique values)
+	fromIsUnique := isUniqueAttribute(fromEntityID, fromAttrName, g.uniqueIdAttributes)
+	// We might need toIsUnique in future enhancements
+	_ = isUniqueAttribute(link.ToEntityID, toAttrName, g.uniqueIdAttributes)
+
 	// Analyze the relationship to determine how to ensure consistency
 	// In typical relationships, we have primary keys (PKs) and foreign keys (FKs)
 
@@ -649,13 +710,47 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 			return
 		}
 
-		// Update all foreign keys in the "from" entity to reference valid primary keys
-		for i, row := range fromData.Rows {
-			// Pick a random valid primary key
-			row[fromAttrIndex] = validPrimaryKeys[rand.Intn(len(validPrimaryKeys))]
-			fromData.Rows[i] = row
+		// For unique attributes, ensure we don't reuse values
+		if fromIsUnique && len(fromData.Rows) > len(validPrimaryKeys) {
+			// If we have more rows than unique values, we need to generate more unique values
+			// Generate new unique values for each row beyond the available validPrimaryKeys
+			for i := range fromData.Rows {
+				if i < len(validPrimaryKeys) {
+					// Use existing values for the first set of rows
+					fromData.Rows[i][fromAttrIndex] = validPrimaryKeys[i]
+				} else {
+					// For additional rows, generate new unique values
+					fromData.Rows[i][fromAttrIndex] = g.generateUniqueValue(fromEntityID, fromAttrName, "")
+				}
+			}
+		} else {
+			// Standard case: assign values with potential reuse
+			// Track used indices to avoid duplicates for unique attributes
+			usedIndices := make(map[int]bool)
+			
+			for i, row := range fromData.Rows {
+				var valueIndex int
+				
+				if fromIsUnique {
+					// For unique attributes, ensure we don't reuse values
+					// Find an unused index
+					for {
+						valueIndex = rand.Intn(len(validPrimaryKeys))
+						if !usedIndices[valueIndex] || len(usedIndices) >= len(validPrimaryKeys) {
+							usedIndices[valueIndex] = true
+							break
+						}
+					}
+				} else {
+					// For non-unique attributes, just pick randomly
+					valueIndex = rand.Intn(len(validPrimaryKeys))
+				}
+				
+				// Assign the value
+				row[fromAttrIndex] = validPrimaryKeys[valueIndex]
+				fromData.Rows[i] = row
+			}
 		}
-
 		return
 	}
 
@@ -679,10 +774,30 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 	// Default to 1:1 relationship if auto-cardinality is not enabled
 	if !g.AutoCardinality {
 		// Just use the default 1:1 mapping
-		for i, row := range fromData.Rows {
-			// Use a random value from the "to" entity for each row in the "from" entity
-			row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
-			fromData.Rows[i] = row
+		// For unique attributes, ensure we don't reuse values
+		if fromIsUnique {
+			// For unique attributes in a 1:1 relationship, assign each value at most once
+			// If we have more rows than unique values, we need to generate more unique values
+			usedToValues := make(map[string]bool)
+			
+			for i, row := range fromData.Rows {
+				if i < len(toValuesSlice) {
+					// Use each target value once if possible
+					row[fromAttrIndex] = toValuesSlice[i]
+					usedToValues[toValuesSlice[i]] = true
+				} else {
+					// For additional rows, generate a new unique value
+					row[fromAttrIndex] = g.generateUniqueValue(fromEntityID, fromAttrName, "")
+				}
+				fromData.Rows[i] = row
+			}
+		} else {
+			// For non-unique attributes, just assign randomly
+			for i, row := range fromData.Rows {
+				// Use a random value from the "to" entity for each row in the "from" entity
+				row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
+				fromData.Rows[i] = row
+			}
 		}
 		return
 	}
@@ -774,11 +889,29 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 			}
 		}
 	} else {
-		// Default case: Use standard 1:1 mapping
-		for i, row := range fromData.Rows {
-			// Use a random value from the "to" entity for each row in the "from" entity
-			row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
-			fromData.Rows[i] = row
+		// Default case: Use standard 1:1 mapping but ensure uniqueness if needed
+		if fromIsUnique {
+			// For unique attributes, ensure we don't reuse values
+			// If we have more rows than unique values, we need to generate more unique values
+				// We do not need to track indices since we assign sequentially
+			
+			for i, row := range fromData.Rows {
+				if i < len(toValuesSlice) {
+					// Try to use each target value once
+					row[fromAttrIndex] = toValuesSlice[i]
+				} else {
+					// We've used all available target values, so generate new ones
+					row[fromAttrIndex] = g.generateUniqueValue(fromEntityID, fromAttrName, "")
+				}
+				fromData.Rows[i] = row
+			}
+		} else {
+			// For non-unique attributes, just assign randomly
+			for i, row := range fromData.Rows {
+				// Use a random value from the "to" entity for each row in the "from" entity
+				row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
+				fromData.Rows[i] = row
+			}
 		}
 	}
 }
@@ -1135,10 +1268,39 @@ func (g *CSVGenerator) generateUniqueValue(entityID string, attrName string, bas
 		g.usedUniqueValues[attrKey] = make(map[string]bool)
 	}
 
-	// For UUID-based values, we can just use a UUID directly as it's guaranteed unique
+	// For UUID-based values, we generate a new UUID and ensure it's unique
 	if strings.Contains(strings.ToLower(attrName), "uuid") || strings.HasSuffix(strings.ToLower(attrName), "id") {
 		uniqueVal := uuid.New().String()
+		
+		// Make sure the generated UUID isn't already used (extremely unlikely but possible)
+		// This is a safety check to ensure we never have duplicate UUIDs
+		attempt := 0
+		for g.usedUniqueValues[attrKey][uniqueVal] && attempt < 1000 {
+			uniqueVal = uuid.New().String()
+			attempt++
+		}
+		
+		// Also check if this value is used by any other entity with a unique attribute
+		// This helps prevent duplication across related entities
+		globalKey := "global:" + strings.ToLower(attrName)
+		if g.usedUniqueValues[globalKey] == nil {
+			g.usedUniqueValues[globalKey] = make(map[string]bool)
+		}
+		
+		// If this value is already used globally for this attribute type, generate a new one
+		attempt = 0
+		for g.usedUniqueValues[globalKey][uniqueVal] && attempt < 1000 {
+			uniqueVal = uuid.New().String()
+			attempt++
+			// Check entity-specific uniqueness again
+			if g.usedUniqueValues[attrKey][uniqueVal] {
+				continue
+			}
+		}
+		
+		// Mark as used both locally and globally
 		g.usedUniqueValues[attrKey][uniqueVal] = true
+		g.usedUniqueValues[globalKey][uniqueVal] = true
 		return uniqueVal
 	}
 

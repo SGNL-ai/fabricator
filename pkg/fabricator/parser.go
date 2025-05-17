@@ -89,20 +89,154 @@ func (p *Parser) validate() error {
 		}
 	}
 
-	// Basic validation for relationships
-	for id, rel := range p.Definition.Relationships {
-		// Skip path-based relationships for validation
+	// Validate relationships
+	err := p.validateRelationships()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateRelationships performs comprehensive validation of relationship definitions
+func (p *Parser) validateRelationships() error {
+	if len(p.Definition.Relationships) == 0 {
+		// No relationships to validate
+		return nil
+	}
+
+	// Create maps to find entities and attributes by different identifiers
+	// Map of attribute alias to (entityID, attrName, externalId) - for alias-based relationships
+	attributeAliasMap := make(map[string]struct {
+		EntityID      string
+		AttributeName string
+		ExternalID    string
+		UniqueID      bool
+	})
+
+	// Map to lookup entities/attributes by "Entity.Attribute" pattern
+	entityAttributeMap := make(map[string]struct {
+		EntityID      string
+		AttributeName string
+		ExternalID    string
+		UniqueID      bool
+	})
+
+	// Build the attribute maps
+	for entityID, entity := range p.Definition.Entities {
+		for _, attr := range entity.Attributes {
+			// Handle attributeAlias case (when it exists)
+			if attr.AttributeAlias != "" {
+				attributeAliasMap[attr.AttributeAlias] = struct {
+					EntityID      string
+					AttributeName string
+					ExternalID    string
+					UniqueID      bool
+				}{
+					EntityID:      entityID,
+					AttributeName: attr.Name,
+					ExternalID:    attr.ExternalId,
+					UniqueID:      attr.UniqueId,
+				}
+			}
+
+			// Also build Entity.Attribute map for YAMLs without attributeAlias
+			entityKey := entity.ExternalId + "." + attr.ExternalId
+			entityAttributeMap[entityKey] = struct {
+				EntityID      string
+				AttributeName string
+				ExternalID    string
+				UniqueID      bool
+			}{
+				EntityID:      entityID,
+				AttributeName: attr.Name,
+				ExternalID:    attr.ExternalId,
+				UniqueID:      attr.UniqueId,
+			}
+		}
+	}
+
+	// Keep track of valid and invalid relationships
+	invalidRelationships := make([]string, 0)
+	validRelationships := 0
+	pathBasedRelationships := 0
+
+	// Validate each relationship
+	for relID, rel := range p.Definition.Relationships {
+		// First, validate path-based relationships
 		if len(rel.Path) > 0 {
+			pathBasedRelationships++
+			// For path-based relationships, ensure all the referenced relationships exist
+			for i, pathStep := range rel.Path {
+				if _, exists := p.Definition.Relationships[pathStep.Relationship]; !exists {
+					invalidRelationships = append(invalidRelationships,
+						fmt.Sprintf("relationship %s: path step %d references non-existent relationship %s",
+							relID, i+1, pathStep.Relationship))
+				}
+			}
 			continue
 		}
 
+		// For direct relationships, validate fromAttribute and toAttribute
 		if rel.FromAttribute == "" {
-			return fmt.Errorf("relationship %s missing fromAttribute", id)
+			invalidRelationships = append(invalidRelationships,
+				fmt.Sprintf("relationship %s: missing fromAttribute", relID))
+			continue
 		}
 
 		if rel.ToAttribute == "" {
-			return fmt.Errorf("relationship %s missing toAttribute", id)
+			invalidRelationships = append(invalidRelationships,
+				fmt.Sprintf("relationship %s: missing toAttribute", relID))
+			continue
 		}
+
+		// Check if attributes match real entities - try both mapping approaches
+		var fromFound, toFound bool
+
+		// First check attribute alias mapping
+		_, fromFound = attributeAliasMap[rel.FromAttribute]
+		_, toFound = attributeAliasMap[rel.ToAttribute]
+
+		// If not found, try Entity.Attribute mapping
+		if !fromFound || !toFound {
+			if strings.Contains(rel.FromAttribute, ".") && strings.Contains(rel.ToAttribute, ".") {
+				_, fromFound = entityAttributeMap[rel.FromAttribute]
+				_, toFound = entityAttributeMap[rel.ToAttribute]
+			}
+		}
+
+		// Report validation problems
+		if !fromFound {
+			invalidRelationships = append(invalidRelationships,
+				fmt.Sprintf("relationship %s: fromAttribute '%s' does not match any entity attribute",
+					relID, rel.FromAttribute))
+		}
+
+		if !toFound {
+			invalidRelationships = append(invalidRelationships,
+				fmt.Sprintf("relationship %s: toAttribute '%s' does not match any entity attribute",
+					relID, rel.ToAttribute))
+		}
+
+		if fromFound && toFound {
+			validRelationships++
+		}
+	}
+
+	// Report validation results
+	if len(invalidRelationships) > 0 {
+		// Build detailed error message
+		errorMsg := fmt.Sprintf("Found %d invalid relationships (out of %d total):\n",
+			len(invalidRelationships), len(p.Definition.Relationships))
+
+		for _, msg := range invalidRelationships {
+			errorMsg += "• " + msg + "\n"
+		}
+
+		errorMsg += fmt.Sprintf("\nValid relationships: %d direct, %d path-based",
+			validRelationships, pathBasedRelationships)
+
+		return fmt.Errorf("%s", errorMsg)
 	}
 
 	return nil

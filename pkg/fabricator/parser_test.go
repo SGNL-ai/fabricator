@@ -3,6 +3,7 @@ package fabricator
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
@@ -40,6 +41,14 @@ entities:
         indexed: true
         uniqueId: true
         attributeAlias: test-id-alias
+        list: false
+      - name: otherAttr
+        externalId: otherAttr
+        description: test attribute
+        type: String
+        indexed: false
+        uniqueId: false
+        attributeAlias: test-other-alias
         list: false
     entityAlias: test1-alias
 relationships:
@@ -248,14 +257,14 @@ func setupTestParser() *Parser {
 	// Create relationships
 	relationship1 := models.Relationship{
 		DisplayName:   "User to Role",
-		Name:          "user_to_role",
+		Name:          "user_to_role_rel",
 		FromAttribute: "user-role-alias",
 		ToAttribute:   "role-id-alias",
 	}
 
 	relationship2 := models.Relationship{
 		DisplayName:   "Role to Permission",
-		Name:          "role_to_permission",
+		Name:          "role_to_permission_rel",
 		FromAttribute: "role-id-alias",
 		ToAttribute:   "perm-role-alias",
 	}
@@ -266,11 +275,11 @@ func setupTestParser() *Parser {
 		Name:        "user_to_permission",
 		Path: []models.RelationshipPath{
 			{
-				Relationship: "user_to_role",
+				Relationship: "rel1", // Reference to the relationship ID, not the name
 				Direction:    "Forward",
 			},
 			{
-				Relationship: "role_to_permission",
+				Relationship: "rel2", // Reference to the relationship ID, not the name
 				Direction:    "Forward",
 			},
 		},
@@ -353,8 +362,8 @@ func TestFindRelationshipsForEntity(t *testing.T) {
 		if !exists {
 			t.Error("Expected relationship 'rel1' to exist")
 		}
-		if rel.Name != "user_to_role" {
-			t.Errorf("Expected relationship name 'user_to_role', got '%s'", rel.Name)
+		if rel.Name != "user_to_role_rel" {
+			t.Errorf("Expected relationship name 'user_to_role_rel', got '%s'", rel.Name)
 		}
 	})
 
@@ -495,6 +504,12 @@ func TestValidate(t *testing.T) {
 		if err != nil {
 			t.Errorf("validate() failed on valid definition: %v", err)
 		}
+
+		// Test validateRelationships directly
+		err = parser.validateRelationships()
+		if err != nil {
+			t.Errorf("validateRelationships() failed on valid relationships: %v", err)
+		}
 	})
 
 	// Test with missing required fields
@@ -616,6 +631,54 @@ func TestValidate(t *testing.T) {
 		err := parser.validate()
 		if err == nil {
 			t.Error("validate() should fail with invalid direct relationship")
+		}
+	})
+}
+
+// TestValidateRelationships tests specific scenarios for relationship validation
+func TestValidateRelationships(t *testing.T) {
+	t.Run("Non-existent attribute references", func(t *testing.T) {
+		// Create a parser with a relationship that references non-existent attributes
+		parser := setupTestParser()
+
+		// Add an invalid relationship with non-existent attribute references
+		parser.Definition.Relationships["bad_rel"] = models.Relationship{
+			DisplayName:   "Bad Relationship",
+			Name:          "bad_relationship",
+			FromAttribute: "non-existent-from-alias",
+			ToAttribute:   "non-existent-to-alias",
+		}
+
+		// Test validation should fail
+		err := parser.validateRelationships()
+		if err == nil {
+			t.Error("validateRelationships() should fail with non-existent attribute references")
+		}
+
+		// Verify error contains the expected information
+		errStr := err.Error()
+		if !strings.Contains(errStr, "non-existent-from-alias") {
+			t.Errorf("Error message should mention the missing from attribute")
+		}
+		if !strings.Contains(errStr, "non-existent-to-alias") {
+			t.Errorf("Error message should mention the missing to attribute")
+		}
+	})
+
+	t.Run("Empty relationships", func(t *testing.T) {
+		// Test with empty relationships (should pass validation)
+		parser := &Parser{
+			Definition: &models.SORDefinition{
+				DisplayName:   "Test SOR",
+				Description:   "Test System of Record",
+				Entities:      map[string]models.Entity{},
+				Relationships: map[string]models.Relationship{},
+			},
+		}
+
+		err := parser.validateRelationships()
+		if err != nil {
+			t.Errorf("validateRelationships() failed on empty relationships: %v", err)
 		}
 	})
 }
