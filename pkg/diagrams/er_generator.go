@@ -2,6 +2,7 @@ package diagrams
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/util"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
 )
@@ -83,12 +85,22 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 
 	// Extract entity and relationship data
 	g.extractEntities()
-	g.extractRelationships()
+	
+	// Create the graph using our shared utilities
+	// We don't need to prevent cycles in the diagram
+	entityGraph, err := util.BuildEntityDependencyGraph(g.Definition.Entities, g.Definition.Relationships, false)
+	if err != nil {
+		// Soft failure for the diagrams - we'll still show what we can
+		fmt.Printf("Warning: Error building dependency graph: %v. Some relationships may be missing.\n", err)
+		entityGraph = graph.New(graph.StringHash, graph.Directed())
+		// Extract relationships manually as a fallback
+		g.extractRelationships()
+	} else {
+		// Process the relationships to add to our list for styling
+		g.extractRelationshipsFromGraph(entityGraph)
+	}
 
-	// Create a graph using dominikbraun/graph
-	entityGraph := graph.New(graph.StringHash, graph.Directed())
-
-	// Add entities as vertices with attributes for styling
+	// Add or update entities as vertices with attributes for styling
 	for id, entity := range g.Entities {
 		// Create vertex attribute map for styling
 		attributes := map[string]string{
@@ -105,8 +117,18 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 			// "height":    "1.0",
 		}
 
-		// Add vertex with attributes
-		err := entityGraph.AddVertex(id, graph.VertexAttributes(attributes))
+		// Check if vertex already exists
+		_, err := entityGraph.Vertex(id)
+		if err == nil {
+			// Vertex already exists, just continue
+			continue
+		} else if !errors.Is(err, graph.ErrVertexNotFound) {
+			// Some other error
+			return fmt.Errorf("failed to check vertex %s: %w", id, err)
+		}
+
+		// Add vertex with attributes (vertex doesn't exist yet)
+		err = entityGraph.AddVertex(id, graph.VertexAttributes(attributes))
 		if err != nil {
 			return fmt.Errorf("failed to add vertex for entity %s: %w", id, err)
 		}
@@ -145,8 +167,11 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 		// Add the edge with attributes
 		err := entityGraph.AddEdge(rel.FromEntity, rel.ToEntity, graph.EdgeAttributes(attributes))
 		if err != nil {
-			return fmt.Errorf("failed to add edge for relationship %s -> %s: %w",
+			// For the diagram, we'll just skip invalid edges rather than failing
+			// This allows us to generate at least a partial diagram
+			fmt.Printf("Warning: Failed to add edge for relationship %s -> %s: %v\n",
 				rel.FromEntity, rel.ToEntity, err)
+			continue
 		}
 
 		// Mark this edge as added
@@ -219,6 +244,113 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 	}
 
 	return nil
+}
+
+// extractRelationshipsFromGraph extracts relationship information from the already-built dependency graph
+func (g *ERDiagramGenerator) extractRelationshipsFromGraph(entityGraph graph.Graph[string, string]) {
+	// Create alias maps like in the original method for looking up details
+	aliasToEntity := make(map[string]struct {
+		EntityID      string
+		AttributeName string
+		IsUnique      bool
+	})
+
+	// Build the attribute alias map
+	for entityID, entity := range g.Definition.Entities {
+		for _, attr := range entity.Attributes {
+			aliasToEntity[attr.AttributeAlias] = struct {
+				EntityID      string
+				AttributeName string
+				IsUnique      bool
+			}{
+				EntityID:      entityID,
+				AttributeName: attr.ExternalId,
+				IsUnique:      attr.UniqueId,
+			}
+		}
+	}
+
+	// Make a map of existing relationships to determine if they're path-based
+	pathBasedRels := make(map[string]bool)
+	for relID, rel := range g.Definition.Relationships {
+		if len(rel.Path) > 0 {
+			pathBasedRels[relID] = true
+		}
+	}
+
+	// Clear existing relationships
+	g.Relationships = []Relationship{}
+
+	// Get all edges from the graph
+	edges, err := entityGraph.Edges()
+	if err != nil {
+		// Soft error - we'll continue with an empty set
+		fmt.Printf("Warning: Failed to get edges from graph: %v\n", err)
+		return
+	}
+
+	// Keep track of edges we've added to avoid duplicates
+	processedEdges := make(map[string]bool)
+
+	// For each edge in the graph, create a relationship in our format
+	for _, edge := range edges {
+		// Create a unique key for this edge
+		edgeKey := fmt.Sprintf("%s->%s", edge.Source, edge.Target)
+		
+		// Skip edges we've already processed
+		if processedEdges[edgeKey] {
+			continue
+		}
+		
+		// Find a relationship between these entities
+		var displayName string
+		var isPathBased bool
+		
+		// Try to match it to one of our original relationships
+		for relID, rel := range g.Definition.Relationships {
+			// Skip path-based for direct lookup
+			if len(rel.Path) > 0 {
+				continue
+			}
+			
+			// Look up the entities from the attribute aliases
+			fromInfo, fromOK := aliasToEntity[rel.FromAttribute]
+			toInfo, toOK := aliasToEntity[rel.ToAttribute]
+			
+			if fromOK && toOK {
+				// If this relationship matches our edge
+				if (fromInfo.EntityID == edge.Source && toInfo.EntityID == edge.Target) ||
+				   (fromInfo.EntityID == edge.Target && toInfo.EntityID == edge.Source) {
+					
+					// Use this relationship's display name
+					displayName = rel.DisplayName
+					if displayName == "" {
+						displayName = rel.Name
+					}
+					
+					isPathBased = pathBasedRels[relID]
+					break
+				}
+			}
+		}
+		
+		// If we couldn't find a matching relationship, use a generic name
+		if displayName == "" {
+			displayName = "Related"
+		}
+		
+		// Create the relationship object for our diagram
+		g.Relationships = append(g.Relationships, Relationship{
+			ID:          edgeKey,
+			DisplayName: displayName,
+			FromEntity:  edge.Source,
+			ToEntity:    edge.Target,
+			PathBased:   isPathBased,
+		})
+		
+		// Mark this edge as processed
+		processedEdges[edgeKey] = true
+	}
 }
 
 // extractEntities extracts entity information from the definition
