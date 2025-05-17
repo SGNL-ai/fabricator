@@ -2,6 +2,8 @@ package generators
 
 import (
 	"testing"
+	
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsUniqueAttribute(t *testing.T) {
@@ -14,42 +16,42 @@ func TestIsUniqueAttribute(t *testing.T) {
 		expectedOutcome bool
 	}{
 		{
-			name:            "attribute is unique",
+			name:            "attribute_is_unique",
 			entityID:        "entity1",
 			attrName:        "id",
 			uniqueIdMap:     map[string][]string{"entity1": {"id", "email"}},
 			expectedOutcome: true,
 		},
 		{
-			name:            "attribute is not unique",
+			name:            "attribute_is_not_unique",
 			entityID:        "entity1",
 			attrName:        "name",
 			uniqueIdMap:     map[string][]string{"entity1": {"id", "email"}},
 			expectedOutcome: false,
 		},
 		{
-			name:            "entity not in map",
+			name:            "entity_not_in_map",
 			entityID:        "entity2",
 			attrName:        "id",
 			uniqueIdMap:     map[string][]string{"entity1": {"id", "email"}},
 			expectedOutcome: false,
 		},
 		{
-			name:            "empty unique map for entity",
+			name:            "empty_unique_map_for_entity",
 			entityID:        "entity3",
 			attrName:        "id",
 			uniqueIdMap:     map[string][]string{"entity3": {}},
 			expectedOutcome: false,
 		},
 		{
-			name:            "empty unique map",
+			name:            "empty_unique_map",
 			entityID:        "entity1",
 			attrName:        "id",
 			uniqueIdMap:     map[string][]string{},
 			expectedOutcome: false,
 		},
 		{
-			name:            "nil unique map",
+			name:            "nil_unique_map",
 			entityID:        "entity1",
 			attrName:        "id",
 			uniqueIdMap:     nil,
@@ -60,11 +62,10 @@ func TestIsUniqueAttribute(t *testing.T) {
 	// Run test cases
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := isUniqueAttribute(tc.entityID, tc.attrName, tc.uniqueIdMap)
-			if result != tc.expectedOutcome {
-				t.Errorf("isUniqueAttribute(%s, %s, map) = %v; want %v",
-					tc.entityID, tc.attrName, result, tc.expectedOutcome)
-			}
+			result := IsUniqueAttribute(tc.entityID, tc.attrName, tc.uniqueIdMap)
+			assert.Equal(t, tc.expectedOutcome, result, 
+				"IsUniqueAttribute(%s, %s, map) = %v; want %v",
+				tc.entityID, tc.attrName, result, tc.expectedOutcome)
 		})
 	}
 }

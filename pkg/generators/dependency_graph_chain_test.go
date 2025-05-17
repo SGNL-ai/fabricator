@@ -1,10 +1,11 @@
 package generators
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestChainedEntityDependencyGraph(t *testing.T) {
@@ -114,24 +115,14 @@ func TestChainedEntityDependencyGraph(t *testing.T) {
 	// Build the dependency graph
 	var err error
 	g.dependencyGraph, err = g.buildEntityDependencyGraph(entities, relationships)
-	if err != nil {
-		t.Fatalf("Failed to build entity dependency graph: %v", err)
-	}
+	require.NoError(t, err, "Failed to build entity dependency graph")
 
-	// Print the graph edges for debugging
-	fmt.Println("Graph edges:")
+	// Get the graph edges
 	edges, _ := g.dependencyGraph.Edges()
-	for _, edge := range edges {
-		fmt.Printf("Edge: %s -> %s\n", edge.Source, edge.Target)
-	}
 
 	// Get the topological order
 	order, err := g.getTopologicalOrder(g.dependencyGraph)
-	if err != nil {
-		t.Fatalf("Failed to get topological order: %v", err)
-	}
-	
-	fmt.Println("Topological order:", order)
+	require.NoError(t, err, "Failed to get topological order")
 
 	// We expect the following dependencies:
 	// 1. Group should be earlier in the ordering (Role depends on Group)
@@ -139,9 +130,7 @@ func TestChainedEntityDependencyGraph(t *testing.T) {
 	// 3. GroupMembership should be after User and Group
 	// 4. Role should be after Group
 	
-	if len(order) != 4 {
-		t.Fatalf("Expected 4 entities in topological order, got %d", len(order))
-	}
+	require.Len(t, order, 4, "Expected 4 entities in topological order")
 
 	// Find the indices of each entity in the order
 	userIndex := -1
@@ -164,20 +153,16 @@ func TestChainedEntityDependencyGraph(t *testing.T) {
 
 	// Verify the dependencies:
 	// 1. GroupMembership should come after both User and Group
-	if membershipIndex < userIndex || membershipIndex < groupIndex {
-		t.Errorf("GroupMembership should come after both User and Group in the topological order")
-		t.Errorf("User index: %d, Group index: %d, GroupMembership index: %d", 
-			userIndex, groupIndex, membershipIndex)
-	}
+	assert.True(t, membershipIndex > userIndex && membershipIndex > groupIndex,
+		"GroupMembership should come after both User and Group in the topological order. "+
+		"User index: %d, Group index: %d, GroupMembership index: %d", 
+		userIndex, groupIndex, membershipIndex)
 
 	// 2. Role should come after Group
-	if roleIndex < groupIndex {
-		t.Errorf("Role should come after Group in the topological order")
-		t.Errorf("Group index: %d, Role index: %d", groupIndex, roleIndex)
-	}
+	assert.Greater(t, roleIndex, groupIndex,
+		"Role should come after Group in the topological order. "+
+		"Group index: %d, Role index: %d", groupIndex, roleIndex)
 
 	// Verify that we have exactly three edges
-	if len(edges) != 3 {
-		t.Errorf("Expected exactly 3 edges in the graph, got %d", len(edges))
-	}
+	assert.Len(t, edges, 3, "Expected exactly 3 edges in the graph")
 }

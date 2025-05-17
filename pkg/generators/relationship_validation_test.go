@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRelationshipValidation(t *testing.T) {
 	// Create a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "relationship-validation-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Test 1: Validate a valid relationship
@@ -68,14 +68,7 @@ func TestRelationshipValidation(t *testing.T) {
 		results := generator.ValidateRelationships()
 
 		// Should have no errors
-		if len(results) > 0 {
-			t.Errorf("Expected no validation errors, but got %d issues", len(results))
-			for _, result := range results {
-				for _, err := range result.Errors {
-					t.Errorf("Validation error: %s", err)
-				}
-			}
-		}
+		assert.Empty(t, results, "Expected no validation errors in valid relationship")
 	})
 
 	// Test 2: Invalid relationship with broken references
@@ -130,16 +123,12 @@ func TestRelationshipValidation(t *testing.T) {
 		results := generator.ValidateRelationships()
 
 		// Should have errors
-		if len(results) == 0 {
-			t.Errorf("Expected validation errors, but got none")
-		} else {
+		assert.NotEmpty(t, results, "Expected validation errors in invalid relationship")
+		
+		if len(results) > 0 {
 			result := results[0]
-			if result.InvalidRows != 2 {
-				t.Errorf("Expected 2 invalid rows, got %d", result.InvalidRows)
-			}
-			if result.TotalRows != 4 {
-				t.Errorf("Expected 4 total rows, got %d", result.TotalRows)
-			}
+			assert.Equal(t, 2, result.InvalidRows, "Expected 2 invalid rows in order->user relationship")
+			assert.Equal(t, 4, result.TotalRows, "Expected 4 total rows in order entity")
 		}
 	})
 
@@ -177,32 +166,25 @@ func TestRelationshipValidation(t *testing.T) {
 		errors := generator.ValidateUniqueValues()
 
 		// Should have errors for the duplicate email
-		if len(errors) == 0 {
-			t.Errorf("Expected validation errors for duplicate email, but got none")
-		} else {
-			foundUserEntity := false
-			foundDuplicateError := false
+		assert.NotEmpty(t, errors, "Expected validation errors for duplicate email")
+		
+		foundUserEntity := false
+		foundDuplicateError := false
 
-			for _, entityError := range errors {
-				if entityError.EntityID == "user" {
-					foundUserEntity = true
+		for _, entityError := range errors {
+			if entityError.EntityID == "user" {
+				foundUserEntity = true
 
-					for _, msg := range entityError.Messages {
-						if msg == "Attribute email has 1 duplicate values" {
-							foundDuplicateError = true
-							break
-						}
+				for _, msg := range entityError.Messages {
+					if msg == "Attribute email has 1 duplicate values" {
+						foundDuplicateError = true
+						break
 					}
 				}
 			}
-
-			if !foundUserEntity {
-				t.Errorf("Expected errors for user entity, but found none")
-			}
-
-			if !foundDuplicateError {
-				t.Errorf("Expected error about duplicate email, but didn't find it")
-			}
 		}
+
+		assert.True(t, foundUserEntity, "Expected errors for user entity")
+		assert.True(t, foundDuplicateError, "Expected error about duplicate email")
 	})
 }

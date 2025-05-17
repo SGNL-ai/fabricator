@@ -1,10 +1,11 @@
 package generators
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEntityDependencySort(t *testing.T) {
@@ -60,37 +61,21 @@ func TestEntityDependencySort(t *testing.T) {
 	// Build the dependency graph
 	var err error
 	g.dependencyGraph, err = g.buildEntityDependencyGraph(entities, relationships)
-	if err != nil {
-		t.Fatalf("Failed to build entity dependency graph: %v", err)
-	}
+	require.NoError(t, err, "Failed to build entity dependency graph")
 
-	// Print the graph edges for debugging
-	fmt.Println("Graph edges:")
-	edges, _ := g.dependencyGraph.Edges()
-	for _, edge := range edges {
-		fmt.Printf("Edge: %s -> %s\n", edge.Source, edge.Target)
-	}
+	// We don't need edges for this test
+	// Uncomment if needed for edge verification:
+	// edges, _ := g.dependencyGraph.Edges()
 
 	// Get the topological order
 	order, err := g.getTopologicalOrder(g.dependencyGraph)
-	if err != nil {
-		t.Fatalf("Failed to get topological order: %v", err)
-	}
-	
-	fmt.Println("Topological order:", order)
+	require.NoError(t, err, "Failed to get topological order")
 
 	// In this case, User should come before Assignment
 	// because Assignment depends on User (Assignment.uuid -> User.uuid)
-	if len(order) != 2 {
-		t.Fatalf("Expected 2 entities in topological order, got %d", len(order))
-	}
+	require.Len(t, order, 2, "Expected 2 entities in topological order")
 
 	// The first entity should be User and the second should be Assignment
-	if order[0] != "user1" {
-		t.Errorf("Expected first entity to be 'user1', got '%s'", order[0])
-	}
-
-	if order[1] != "assignment1" {
-		t.Errorf("Expected second entity to be 'assignment1', got '%s'", order[1])
-	}
+	assert.Equal(t, "user1", order[0], "First entity should be 'user1'")
+	assert.Equal(t, "assignment1", order[1], "Second entity should be 'assignment1'")
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestFieldTypeDetection verifies field type detection in generateRowForEntity
@@ -52,37 +53,25 @@ func TestFieldTypeDetection(t *testing.T) {
 	)
 
 	// Check ID field
-	if row[idIdx] != "entity-uuid-0" {
-		t.Errorf("Expected ID to be entity-uuid-0, got %s", row[idIdx])
-	}
+	assert.Equal(t, "entity-uuid-0", row[idIdx], "ID field should match the value from idMap")
 
 	// Check type field
-	if row[typeIdx] == "" {
-		t.Errorf("Expected type to be non-empty")
-	}
+	assert.NotEmpty(t, row[typeIdx], "Type field should not be empty")
 
 	// Check permissions field (should be a comma-separated list)
-	if !strings.Contains(row[permissionsIdx], ",") && len(row[permissionsIdx]) < 3 {
-		t.Errorf("Expected permissions to be a comma-separated list, got %s", row[permissionsIdx])
-	}
+	assert.True(t, strings.Contains(row[permissionsIdx], ",") || len(row[permissionsIdx]) >= 3, 
+		"Permissions field should be a comma-separated list")
 
 	// Check expression field
-	if row[expressionIdx] == "" {
-		t.Errorf("Expected expression to be non-empty")
-	}
+	assert.NotEmpty(t, row[expressionIdx], "Expression field should not be empty")
 
 	// Check percentage and rate fields (should contain %)
-	if !strings.Contains(row[percentageIdx], "%") {
-		t.Errorf("Expected percentage to contain %% symbol, got %s", row[percentageIdx])
-	}
-	if !strings.Contains(row[rateIdx], "%") {
-		t.Errorf("Expected rate to contain %% symbol, got %s", row[rateIdx])
-	}
+	assert.Contains(t, row[percentageIdx], "%", "Percentage field should contain the % symbol")
+	assert.Contains(t, row[rateIdx], "%", "Rate field should contain the % symbol")
 
 	// Check code field (should be in format XXX-1000)
-	if !strings.Contains(row[codeIdx], "-") || len(row[codeIdx]) < 5 {
-		t.Errorf("Expected code to be in format XXX-1000, got %s", row[codeIdx])
-	}
+	assert.Contains(t, row[codeIdx], "-", "Code field should contain a dash")
+	assert.GreaterOrEqual(t, len(row[codeIdx]), 5, "Code field should have at least 5 characters")
 
 	// Check boolean fields
 	booleanFields := []struct {
@@ -96,13 +85,11 @@ func TestFieldTypeDetection(t *testing.T) {
 
 	for _, field := range booleanFields {
 		value := row[field.index]
-		if value != "true" && value != "false" {
-			t.Errorf("Expected %s to be a boolean (true/false), got %s", field.name, value)
-		}
+		assert.Contains(t, []string{"true", "false"}, value, 
+			"Field %s should be a boolean (true/false)", field.name)
 	}
 
 	// Check date field
-	if len(row[dateIdx]) != 10 || !strings.Contains(row[dateIdx], "-") {
-		t.Errorf("Expected date in YYYY-MM-DD format, got %s", row[dateIdx])
-	}
+	assert.Len(t, row[dateIdx], 10, "Date field should be 10 characters long (YYYY-MM-DD)")
+	assert.Contains(t, row[dateIdx], "-", "Date field should contain dashes")
 }

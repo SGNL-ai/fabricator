@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUniqueAttributeValues(t *testing.T) {
 	// Create a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "unique-attributes-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Test case: Entity with multiple unique attributes
@@ -79,9 +79,8 @@ func TestUniqueAttributeValues(t *testing.T) {
 				if _, isUnique := uniqueValues[header]; isUnique {
 					value := row[i]
 					// Check if we've seen this value before
-					if uniqueValues[header][value] {
-						t.Errorf("Duplicate value %s found for unique attribute %s", value, header)
-					}
+					assert.False(t, uniqueValues[header][value], 
+						"Duplicate value %s found for unique attribute %s", value, header)
 					uniqueValues[header][value] = true
 				}
 			}
@@ -90,9 +89,7 @@ func TestUniqueAttributeValues(t *testing.T) {
 		// Verify that the tracking maps were properly populated
 		t.Run("Verify uniqueIdAttributes map", func(t *testing.T) {
 			uniqueAttrs, exists := generator.uniqueIdAttributes["entity1"]
-			if !exists {
-				t.Error("uniqueIdAttributes map does not contain entity1")
-			}
+			assert.True(t, exists, "uniqueIdAttributes map should contain entity1")
 
 			expectedUniqueAttrs := []string{"id", "code"}
 			for _, attr := range expectedUniqueAttrs {
@@ -103,9 +100,7 @@ func TestUniqueAttributeValues(t *testing.T) {
 						break
 					}
 				}
-				if !found {
-					t.Errorf("uniqueIdAttributes map does not contain attribute %s", attr)
-				}
+				assert.True(t, found, "uniqueIdAttributes map should contain attribute %s", attr)
 			}
 		})
 	})
@@ -218,9 +213,8 @@ func TestUniqueAttributeValues(t *testing.T) {
 			for i, header := range userHeaders {
 				if _, isUnique := userUniqueValues[header]; isUnique {
 					value := row[i]
-					if userUniqueValues[header][value] {
-						t.Errorf("Duplicate value %s found for unique user attribute %s", value, header)
-					}
+					assert.False(t, userUniqueValues[header][value], 
+						"Duplicate value %s found for unique user attribute %s", value, header)
 					userUniqueValues[header][value] = true
 				}
 			}
@@ -234,9 +228,8 @@ func TestUniqueAttributeValues(t *testing.T) {
 			for i, header := range orderHeaders {
 				if _, isUnique := orderUniqueValues[header]; isUnique {
 					value := row[i]
-					if orderUniqueValues[header][value] {
-						t.Errorf("Duplicate value %s found for unique order attribute %s", value, header)
-					}
+					assert.False(t, orderUniqueValues[header][value], 
+						"Duplicate value %s found for unique order attribute %s", value, header)
 					orderUniqueValues[header][value] = true
 				}
 			}
@@ -293,15 +286,16 @@ func TestUniqueAttributeValues(t *testing.T) {
 				} else {
 					invalidRefs++
 					if invalidRefs <= 3 { // Limit error messages
-						t.Errorf("Order references invalid userId: %s", userId)
+						assert.Fail(t, "Order references invalid userId", "Invalid userId: %s", userId)
 					}
 				}
 			}
 
 			// Print summary
-			if invalidRefs > 0 {
-				t.Errorf("Summary: %d valid references, %d invalid references", validRefs, invalidRefs)
-			} else {
+			assert.Zero(t, invalidRefs, "There should be no invalid references (found %d valid, %d invalid)", 
+				validRefs, invalidRefs)
+			
+			if invalidRefs == 0 {
 				t.Logf("All references are valid: %d total", validRefs)
 			}
 		}

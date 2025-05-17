@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateUniqueValuesExpanded(t *testing.T) {
@@ -32,9 +33,7 @@ func TestValidateUniqueValuesExpanded(t *testing.T) {
 		results := generator.ValidateUniqueValues()
 
 		// Should not report any errors
-		if len(results) > 0 {
-			t.Errorf("Expected no errors for entity with no unique attributes, but found %d errors", len(results))
-		}
+		assert.Empty(t, results, "Expected no errors for entity with no unique attributes")
 	})
 
 	// Test case 2: Missing unique attribute in headers
@@ -62,11 +61,8 @@ func TestValidateUniqueValuesExpanded(t *testing.T) {
 		results := generator.ValidateUniqueValues()
 
 		// Should report errors about missing attribute
-		if len(results) == 0 {
-			t.Errorf("Expected errors for missing unique attribute in headers, but found none")
-		} else if len(results[0].Messages) == 0 {
-			t.Errorf("Expected error messages for missing unique attribute, but found none")
-		}
+		assert.NotEmpty(t, results, "Expected errors for missing unique attribute in headers")
+		assert.NotEmpty(t, results[0].Messages, "Expected error messages for missing unique attribute")
 	})
 
 	// Test case 3: Empty values in unique attribute
@@ -94,11 +90,8 @@ func TestValidateUniqueValuesExpanded(t *testing.T) {
 		results := generator.ValidateUniqueValues()
 
 		// Should report errors about empty value
-		if len(results) == 0 {
-			t.Errorf("Expected errors for empty values in unique attribute, but found none")
-		} else if len(results[0].Messages) == 0 {
-			t.Errorf("Expected error messages for empty values, but found none")
-		}
+		assert.NotEmpty(t, results, "Expected errors for empty values in unique attribute")
+		assert.NotEmpty(t, results[0].Messages, "Expected error messages for empty values")
 	})
 
 	// Test case 4: Duplicate values in unique attribute
@@ -127,11 +120,8 @@ func TestValidateUniqueValuesExpanded(t *testing.T) {
 		results := generator.ValidateUniqueValues()
 
 		// Should report errors about duplicate values
-		if len(results) == 0 {
-			t.Errorf("Expected errors for duplicate values in unique attribute, but found none")
-		} else if len(results[0].Messages) == 0 {
-			t.Errorf("Expected error messages for duplicate values, but found none")
-		}
+		assert.NotEmpty(t, results, "Expected errors for duplicate values in unique attribute")
+		assert.NotEmpty(t, results[0].Messages, "Expected error messages for duplicate values")
 	})
 
 	// Test case 5: Multiple unique attributes with issues
@@ -161,42 +151,33 @@ func TestValidateUniqueValuesExpanded(t *testing.T) {
 		results := generator.ValidateUniqueValues()
 
 		// Should report multiple issues
-		if len(results) == 0 {
-			t.Errorf("Expected errors for multiple issues, but found none")
-		} else if len(results[0].Messages) < 2 {
-			t.Errorf("Expected multiple error messages, but found %d", len(results[0].Messages))
-		}
+		assert.NotEmpty(t, results, "Expected errors for multiple issues")
+		assert.GreaterOrEqual(t, len(results[0].Messages), 2, "Expected multiple error messages")
 	})
 
-	// Test case 6: Test getEntityFileName function with nil input
+	// Test case 6: Test GetEntityFileName function with nil input
 	t.Run("GetEntityFileNameWithNilInput", func(t *testing.T) {
 		// Call the function with nil input
-		result := getEntityFileName(nil)
+		result := GetEntityFileName(nil)
 
 		// Should return "unknown"
-		if result != "unknown" {
-			t.Errorf("Expected 'unknown' for nil input to getEntityFileName, got '%s'", result)
-		}
+		assert.Equal(t, "unknown", result, "Expected 'unknown' for nil input to GetEntityFileName")
 	})
 
-	// Test case 7: Test getEntityFileName with and without namespace prefix
+	// Test case 7: Test GetEntityFileName with and without namespace prefix
 	t.Run("GetEntityFileNameWithAndWithoutNamespace", func(t *testing.T) {
 		// Test with namespace prefix
 		withPrefix := &models.CSVData{
 			ExternalId: "Namespace/Entity",
 		}
-		resultWithPrefix := getEntityFileName(withPrefix)
-		if resultWithPrefix != "Entity.csv" {
-			t.Errorf("Expected 'Entity.csv' for 'Namespace/Entity', got '%s'", resultWithPrefix)
-		}
+		resultWithPrefix := GetEntityFileName(withPrefix)
+		assert.Equal(t, "Entity.csv", resultWithPrefix, "Expected 'Entity.csv' for 'Namespace/Entity'")
 
 		// Test without namespace prefix
 		withoutPrefix := &models.CSVData{
 			ExternalId: "Entity",
 		}
-		resultWithoutPrefix := getEntityFileName(withoutPrefix)
-		if resultWithoutPrefix != "Entity.csv" {
-			t.Errorf("Expected 'Entity.csv' for 'Entity', got '%s'", resultWithoutPrefix)
-		}
+		resultWithoutPrefix := GetEntityFileName(withoutPrefix)
+		assert.Equal(t, "Entity.csv", resultWithoutPrefix, "Expected 'Entity.csv' for 'Entity'")
 	})
 }

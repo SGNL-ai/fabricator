@@ -1,14 +1,16 @@
 package generators
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestComplexRelationships(t *testing.T) {
+// TestComplexRelationshipsTopologicalSort tests that a complex set of relationships
+// with potential circular references can still be sorted topologically.
+func TestComplexRelationshipsTopologicalSort(t *testing.T) {
 	// Create a generator with a small data volume for testing
 	dataVolume := 10
 	g := NewCSVGenerator("test_output", dataVolume, false)
@@ -18,7 +20,7 @@ func TestComplexRelationships(t *testing.T) {
 	// - Team: has many users, has manager (a user)
 	// - Ticket: assigned to a user, created by a user, belongs to a team
 	entities := map[string]models.Entity{
-		"user1": {
+		"user": {
 			DisplayName: "User",
 			ExternalId:  "User",
 			Description: "User entity",
@@ -41,7 +43,7 @@ func TestComplexRelationships(t *testing.T) {
 				},
 			},
 		},
-		"team1": {
+		"team": {
 			DisplayName: "Team",
 			ExternalId:  "Team",
 			Description: "Team entity",
@@ -64,7 +66,7 @@ func TestComplexRelationships(t *testing.T) {
 				},
 			},
 		},
-		"ticket1": {
+		"ticket": {
 			DisplayName: "Ticket",
 			ExternalId:  "Ticket",
 			Description: "Ticket entity",
@@ -99,7 +101,7 @@ func TestComplexRelationships(t *testing.T) {
 		},
 	}
 
-	// Define relationships
+	// Define relationships with potential circular references
 	relationships := map[string]models.Relationship{
 		"user_team": {
 			DisplayName:   "user_team",
@@ -133,33 +135,22 @@ func TestComplexRelationships(t *testing.T) {
 		},
 	}
 
-	// Run Setup - our improved logic should handle these circular dependencies gracefully
-	// by filtering out edges that would create cycles
+	// Setup should handle these circular dependencies gracefully
 	err := g.Setup(entities, relationships)
+	require.NoError(t, err, "Failed to set up complex relationships")
 	
-	// With our enhanced cycle detection, we should no longer get an error here
-	if err != nil {
-		// This is not a fatal error, just print it for debugging
-		fmt.Printf("Got error: %v\n", err)
-	} else {
-		// Print the successful topological order
-		// Our improved dependency graph logic should find a valid order without cycles
-		entityOrder, err := g.getTopologicalOrder(g.dependencyGraph)
-		if err != nil {
-			t.Fatalf("Failed to get topological order: %v", err)
-		}
-		
-		fmt.Println("Successfully found topological order:", entityOrder)
-		
-		// Verify that all entities are included in the ordering
-		if len(entityOrder) != 3 {
-			t.Errorf("Expected all 3 entities in order, got %d", len(entityOrder))
-		}
+	// Verify that we can get a valid topological order
+	entityOrder, err := g.getTopologicalOrder(g.dependencyGraph)
+	require.NoError(t, err, "Failed to get topological order")
+	
+	// Verify that all entities are included in the ordering
+	assert.Len(t, entityOrder, 3, "Expected all 3 entities in order")
+	
+	// Verify each entity is in the ordering
+	expectedEntities := map[string]bool{"user": true, "team": true, "ticket": true}
+	for _, entity := range entityOrder {
+		delete(expectedEntities, entity)
 	}
-}
-
-// Helper function to check if an error message refers to a cycle
-func containsCycleError(errorMsg string) bool {
-	return strings.Contains(strings.ToLower(errorMsg), "cycle") ||
-		strings.Contains(strings.ToLower(errorMsg), "cyclic")
+	
+	assert.Empty(t, expectedEntities, "All entities should be present in topological order")
 }

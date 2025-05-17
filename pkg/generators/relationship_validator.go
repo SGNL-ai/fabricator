@@ -38,8 +38,8 @@ func (g *CSVGenerator) ValidateRelationships() []RelationshipValidationResult {
 // validateRelationship checks a single relationship for integrity
 func (g *CSVGenerator) validateRelationship(fromEntityID string, link models.RelationshipLink) RelationshipValidationResult {
 	// Get file names for both entities
-	fromFileName := getEntityFileName(g.EntityData[fromEntityID])
-	toFileName := getEntityFileName(g.EntityData[link.ToEntityID])
+	fromFileName := GetEntityFileName(g.EntityData[fromEntityID])
+	toFileName := GetEntityFileName(g.EntityData[link.ToEntityID])
 
 	result := RelationshipValidationResult{
 		FromEntity:     fromEntityID,
@@ -173,7 +173,7 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 	// For each entity
 	for entityID, csvData := range g.EntityData {
 		// Get the file name for this entity
-		entityFile := getEntityFileName(csvData)
+		entityFile := GetEntityFileName(csvData)
 
 		// Get the unique attributes for this entity
 		uniqueAttrs := g.uniqueIdAttributes[entityID]
@@ -295,18 +295,4 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 	return results
 }
 
-// getEntityFileName returns the CSV file name for an entity
-func getEntityFileName(csvData *models.CSVData) string {
-	if csvData == nil {
-		return "unknown"
-	}
-
-	// Handle both formats: with namespace prefix (e.g., "KeystoneV1/Entity") and without
-	if strings.Contains(csvData.ExternalId, "/") {
-		parts := strings.Split(csvData.ExternalId, "/")
-		return parts[len(parts)-1] + ".csv"
-	} else {
-		// If no namespace prefix, just use the external ID
-		return csvData.ExternalId + ".csv"
-	}
-}
+// Helper function to get entity file paths

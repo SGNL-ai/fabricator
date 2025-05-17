@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateRelationshipExpanded(t *testing.T) {
@@ -35,9 +36,7 @@ func TestValidateRelationshipExpanded(t *testing.T) {
 		result := generator.validateRelationship("from", link)
 
 		// Check that it identified the missing entity
-		if len(result.Errors) == 0 {
-			t.Errorf("Expected errors for missing entity data, but found none")
-		}
+		assert.NotEmpty(t, result.Errors, "Expected errors for missing entity data")
 	})
 
 	// Test case 2: Missing attribute columns
@@ -79,9 +78,7 @@ func TestValidateRelationshipExpanded(t *testing.T) {
 		result := generator.validateRelationship("from", link)
 
 		// Check that it identified the missing attributes
-		if len(result.Errors) == 0 {
-			t.Errorf("Expected errors for missing attribute columns, but found none")
-		}
+		assert.NotEmpty(t, result.Errors, "Expected errors for missing attribute columns")
 	})
 
 	// Test case 3: Empty foreign key
@@ -124,9 +121,8 @@ func TestValidateRelationshipExpanded(t *testing.T) {
 		result := generator.validateRelationship("primary", link)
 
 		// Should flag the empty foreign key
-		if len(result.Errors) == 0 || result.InvalidRows == 0 {
-			t.Errorf("Expected errors for empty foreign key, but found none")
-		}
+		assert.NotEmpty(t, result.Errors, "Expected errors for empty foreign key")
+		assert.Greater(t, result.InvalidRows, 0, "Expected invalid rows for empty foreign key")
 	})
 
 	// Test case 4: Invalid primary key reference
@@ -169,9 +165,8 @@ func TestValidateRelationshipExpanded(t *testing.T) {
 		result := generator.validateRelationship("primary", link)
 
 		// Should flag the invalid reference
-		if len(result.Errors) == 0 || result.InvalidRows == 0 {
-			t.Errorf("Expected errors for invalid primary key reference, but found none")
-		}
+		assert.NotEmpty(t, result.Errors, "Expected errors for invalid primary key reference")
+		assert.Greater(t, result.InvalidRows, 0, "Expected invalid rows for invalid primary key reference")
 	})
 
 	// Test case 5: Empty source value
@@ -214,9 +209,8 @@ func TestValidateRelationshipExpanded(t *testing.T) {
 		result := generator.validateRelationship("from", link)
 
 		// Should flag the empty source value
-		if len(result.Errors) == 0 || result.InvalidRows == 0 {
-			t.Errorf("Expected errors for empty source value, but found none")
-		}
+		assert.NotEmpty(t, result.Errors, "Expected errors for empty source value")
+		assert.Greater(t, result.InvalidRows, 0, "Expected invalid rows for empty source value")
 	})
 
 	// Test case 6: Invalid target reference
@@ -259,8 +253,7 @@ func TestValidateRelationshipExpanded(t *testing.T) {
 		result := generator.validateRelationship("from", link)
 
 		// Should flag the invalid reference
-		if len(result.Errors) == 0 || result.InvalidRows == 0 {
-			t.Errorf("Expected errors for invalid target reference, but found none")
-		}
+		assert.NotEmpty(t, result.Errors, "Expected errors for invalid target reference")
+		assert.Greater(t, result.InvalidRows, 0, "Expected invalid rows for invalid target reference")
 	})
 }

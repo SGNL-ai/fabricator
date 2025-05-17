@@ -5,6 +5,7 @@ import (
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestIDMapConsistency ensures that ID fields are properly handled
@@ -21,6 +22,11 @@ func TestIDMapConsistency(t *testing.T) {
 			Headers:    []string{"id", "name"},
 		},
 	}
+	
+	// Mark the id field as a unique attribute
+	generator.uniqueIdAttributes = map[string][]string{
+		"entity": {"id"},
+	}
 
 	// Set up idMap
 	expectedID := "test-id-1234"
@@ -32,9 +38,7 @@ func TestIDMapConsistency(t *testing.T) {
 	row := generator.generateRowForEntity("entity", 0)
 
 	// Check ID field
-	if row[0] != expectedID {
-		t.Errorf("Expected ID to be '%s', got '%s'", expectedID, row[0])
-	}
+	assert.Equal(t, expectedID, row[0], "Generated row should have expected ID value")
 
 	// Test case where idMap is missing for this index
 	generator.idMap["entity"] = map[string]string{} // empty map
@@ -48,11 +52,9 @@ func TestIDMapConsistency(t *testing.T) {
 	row = generator.generateRowForEntity("entity", 0)
 
 	// Check that *some* ID was generated
-	if row[0] == "" {
-		t.Errorf("Expected non-empty ID when missing from idMap")
-	}
+	assert.NotEmpty(t, row[0], "Expected non-empty ID when missing from idMap")
 
-	if len(row[0]) < 10 {
-		t.Errorf("Expected ID to be a UUID-like value, got '%s'", row[0])
-	}
+	// Verify we have a UUID-like value (at least 36 characters long)
+	assert.GreaterOrEqual(t, len(row[0]), 36, 
+		"Expected ID to be a UUID-like value with at least 36 characters, got '%s'", row[0])
 }

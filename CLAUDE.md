@@ -164,6 +164,15 @@ The application accepts the following command-line flags:
 - When testing changes, use only the example files that already exist in the project or those explicitly provided by the user.
 - Never generate sample YAML files - they have very specific structure requirements and validation rules that must be met.
 
+### Important Design Guidelines
+
+1. **Field Name Analysis**:
+   - Do NOT infer relationships from field names
+   - Do NOT attempt to parse field names to determine if they are ID fields, primary keys, or foreign keys
+   - Field names should ONLY be used to generate appropriate non-relationship sample data (e.g., generating an email address for a field called "email")
+   - Relationships between entities must be explicitly defined through the relationship structures in the YAML definition
+   - When relationships exist, they should be processed using the defined relationship links, not by analyzing field name patterns
+
 ## Workflow Guidance for Claude
 
 ### Getting Started

@@ -3,6 +3,8 @@ package generators
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBooleanFieldDetection(t *testing.T) {
@@ -53,10 +55,7 @@ func TestBooleanFieldDetection(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.fieldName, func(t *testing.T) {
 			result := isBooleanField(tc.fieldName)
-			if result != tc.expected {
-				t.Errorf("Expected isBooleanField(%s) to be %v, got %v",
-					tc.fieldName, tc.expected, result)
-			}
+			assert.Equal(t, tc.expected, result, "isBooleanField(%s) should be %v", tc.fieldName, tc.expected)
 		})
 	}
 }

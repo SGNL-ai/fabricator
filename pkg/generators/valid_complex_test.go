@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidComplexRelationships(t *testing.T) {
@@ -184,15 +186,11 @@ func TestValidComplexRelationships(t *testing.T) {
 	// Set up the generator
 	var err error
 	err = g.Setup(entities, relationships)
-	if err != nil {
-		t.Fatalf("Failed to setup generator: %v", err)
-	}
+	require.NoError(t, err, "Failed to setup generator")
 
 	// Generate data
 	err = g.GenerateData()
-	if err != nil {
-		t.Fatalf("Failed to generate data: %v", err)
-	}
+	require.NoError(t, err, "Failed to generate data")
 
 	// Verify dependency order
 	fmt.Println("Generation was successful. Verifying dependencies...")
@@ -271,9 +269,8 @@ func validateReferences(t *testing.T, entityName, fieldName string, rows [][]str
 		}
 	}
 	
-	if invalid > 0 {
-		t.Errorf("%d %s entries have invalid %s values", invalid, entityName, fieldName)
-	} else {
+	assert.Equal(t, 0, invalid, "%d %s entries have invalid %s values", invalid, entityName, fieldName)
+	if invalid == 0 {
 		fmt.Printf("✓ All %s.%s references are valid\n", entityName, fieldName)
 	}
 }
@@ -294,9 +291,8 @@ func validateUniqueValues(t *testing.T, entityName, fieldName string, rows [][]s
 		}
 	}
 	
-	if duplicates > 0 {
-		t.Errorf("Found %d duplicate %s.%s values", duplicates, entityName, fieldName)
-	} else {
+	assert.Equal(t, 0, duplicates, "Found %d duplicate %s.%s values", duplicates, entityName, fieldName)
+	if duplicates == 0 {
 		fmt.Printf("✓ All %s.%s values are unique\n", entityName, fieldName)
 	}
 }

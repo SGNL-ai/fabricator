@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidationFunctions(t *testing.T) {
 	// Create a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "validation-functions-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Basic setup for validation testing
@@ -64,27 +64,21 @@ func TestValidationFunctions(t *testing.T) {
 
 		// Test ValidateRelationships
 		results := generator.ValidateRelationships()
-		if len(results) == 0 {
-			t.Errorf("Expected validation issues but got none")
-		} else {
-			// Should find 1 issue with 1 invalid row
-			found := false
-			for _, result := range results {
-				if result.FromEntity == "order" && result.ToEntity == "user" && result.InvalidRows == 1 {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("Expected to find 1 invalid row in order->user relationship")
+		assert.NotEmpty(t, results, "Expected validation issues but got none")
+		
+		// Should find 1 issue with 1 invalid row
+		found := false
+		for _, result := range results {
+			if result.FromEntity == "order" && result.ToEntity == "user" && result.InvalidRows == 1 {
+				found = true
+				break
 			}
 		}
+		assert.True(t, found, "Expected to find 1 invalid row in order->user relationship")
 
 		// Test ValidateUniqueValues with no duplicates
 		errors := generator.ValidateUniqueValues()
-		if len(errors) > 0 {
-			t.Errorf("Expected no uniqueness errors, but got %d", len(errors))
-		}
+		assert.Empty(t, errors, "Expected no uniqueness errors")
 
 		// Add a duplicate ID to test uniqueness validation
 		generator.EntityData["user"].Rows = append(
@@ -94,8 +88,6 @@ func TestValidationFunctions(t *testing.T) {
 
 		// Now validate uniqueness again
 		errors = generator.ValidateUniqueValues()
-		if len(errors) == 0 {
-			t.Errorf("Expected uniqueness errors after adding duplicate, but got none")
-		}
+		assert.NotEmpty(t, errors, "Expected uniqueness errors after adding duplicate, but got none")
 	})
 }

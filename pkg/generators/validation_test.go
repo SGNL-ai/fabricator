@@ -3,18 +3,17 @@ package generators
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCSVGenerator_LoadExistingCSVFiles(t *testing.T) {
 	// Create a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "csv-load-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create mock entities with namespace format
@@ -67,17 +66,14 @@ func TestCSVGenerator_LoadExistingCSVFiles(t *testing.T) {
 
 	// Write CSV files
 	err = generator.WriteCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to write CSV files: %v", err)
-	}
+	require.NoError(t, err, "Failed to write CSV files")
 
 	// Verify expected files exist
 	expectedFiles := []string{"Entity1.csv", "Entity2.csv"}
 	for _, filename := range expectedFiles {
 		path := filepath.Join(tempDir, filename)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Errorf("Expected file %s does not exist", path)
-		}
+		_, err := os.Stat(path)
+		assert.False(t, os.IsNotExist(err), "Expected file %s does not exist", path)
 	}
 
 	// Step 2: Create a new generator and load the CSV files
@@ -86,30 +82,18 @@ func TestCSVGenerator_LoadExistingCSVFiles(t *testing.T) {
 
 	// Load existing CSV files
 	err = loadGenerator.LoadExistingCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to load CSV files: %v", err)
-	}
+	require.NoError(t, err, "Failed to load CSV files")
 
 	// Verify the loaded data
 	for entityID, entity := range entities {
-		// We don't need to explicitly check the filename here since we already verified
-		// that the files were created and then loaded successfully
-
 		// Check that data was loaded
 		loadedData := loadGenerator.EntityData[entityID]
-		if loadedData == nil {
-			t.Fatalf("Failed to load data for entity %s", entityID)
-		}
+		require.NotNil(t, loadedData, "Failed to load data for entity %s", entityID)
 
 		// Check headers and rows
-		if len(loadedData.Headers) != len(entity.Attributes) {
-			t.Errorf("Expected %d headers for %s, got %d",
-				len(entity.Attributes), entityID, len(loadedData.Headers))
-		}
-
-		if len(loadedData.Rows) != 5 {
-			t.Errorf("Expected 5 rows for %s, got %d", entityID, len(loadedData.Rows))
-		}
+		assert.Len(t, loadedData.Headers, len(entity.Attributes), 
+			"Expected %d headers for %s", len(entity.Attributes), entityID)
+		assert.Len(t, loadedData.Rows, 5, "Expected 5 rows for %s", entityID)
 	}
 
 	// Step 3: Validate relationships
@@ -151,21 +135,15 @@ func TestCSVGenerator_LoadExistingCSVFiles_MissingDirectory(t *testing.T) {
 	err := generator.LoadExistingCSVFiles()
 
 	// Verify error is returned
-	if err == nil {
-		t.Errorf("Expected error when loading from non-existent directory, got nil")
-	}
-
-	if !strings.Contains(err.Error(), "directory does not exist") {
-		t.Errorf("Expected 'directory does not exist' error, got: %v", err)
-	}
+	assert.Error(t, err, "Expected error when loading from non-existent directory")
+	assert.Contains(t, err.Error(), "directory does not exist", 
+		"Expected 'directory does not exist' error, got: %v", err)
 }
 
 func TestCSVGenerator_LoadExistingCSVFiles_EmptyDirectory(t *testing.T) {
 	// Create an empty directory
 	tempDir, err := os.MkdirTemp("", "csv-empty-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create mock entities
@@ -190,21 +168,15 @@ func TestCSVGenerator_LoadExistingCSVFiles_EmptyDirectory(t *testing.T) {
 	err = generator.LoadExistingCSVFiles()
 
 	// Verify error is returned
-	if err == nil {
-		t.Errorf("Expected error when loading from empty directory, got nil")
-	}
-
-	if !strings.Contains(err.Error(), "no matching CSV files found") {
-		t.Errorf("Expected 'no matching CSV files found' error, got: %v", err)
-	}
+	assert.Error(t, err, "Expected error when loading from empty directory")
+	assert.Contains(t, err.Error(), "no matching CSV files found", 
+		"Expected 'no matching CSV files found' error, got: %v", err)
 }
 
 func TestCSVGenerator_LoadExistingCSVFiles_InvalidCSVFormat(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "csv-invalid-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a mock entity
@@ -225,9 +197,7 @@ func TestCSVGenerator_LoadExistingCSVFiles_InvalidCSVFormat(t *testing.T) {
 	invalidCSVPath := filepath.Join(tempDir, "Entity1.csv")
 	invalidContent := "id\none,two" // Extra column that breaks CSV format
 	err = os.WriteFile(invalidCSVPath, []byte(invalidContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create invalid CSV file: %v", err)
-	}
+	require.NoError(t, err, "Failed to create invalid CSV file")
 
 	// Initialize generator
 	generator := NewCSVGenerator(tempDir, 5, false)
@@ -237,17 +207,14 @@ func TestCSVGenerator_LoadExistingCSVFiles_InvalidCSVFormat(t *testing.T) {
 	err = generator.LoadExistingCSVFiles()
 
 	// Should get an error when parsing the invalid CSV
-	if err == nil || !strings.Contains(err.Error(), "parse") {
-		t.Errorf("Expected parse error for invalid CSV, got: %v", err)
-	}
+	assert.Error(t, err, "Expected parse error for invalid CSV")
+	assert.Contains(t, err.Error(), "parse", "Error should mention parsing issue")
 }
 
 func TestCSVGenerator_LoadExistingCSVFiles_NamespaceEntities(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "csv-namespace-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create entity with namespace (KeystoneV1/EntityName format)
@@ -268,9 +235,7 @@ func TestCSVGenerator_LoadExistingCSVFiles_NamespaceEntities(t *testing.T) {
 	csvPath := filepath.Join(tempDir, "User.csv")
 	csvContent := "id\n1\n2\n3"
 	err = os.WriteFile(csvPath, []byte(csvContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create CSV file: %v", err)
-	}
+	require.NoError(t, err, "Failed to create CSV file")
 
 	// Initialize generator
 	generator := NewCSVGenerator(tempDir, 5, false)
@@ -278,33 +243,24 @@ func TestCSVGenerator_LoadExistingCSVFiles_NamespaceEntities(t *testing.T) {
 
 	// Load the CSV file
 	err = generator.LoadExistingCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to load CSV file with namespace entity: %v", err)
-	}
+	require.NoError(t, err, "Failed to load CSV file with namespace entity")
 
 	// Verify the loaded data
 	loadedData := generator.EntityData["entity1"]
-	if loadedData == nil {
-		t.Fatalf("Failed to load data for entity with namespace")
-	}
+	require.NotNil(t, loadedData, "Failed to load data for entity with namespace")
 
 	// Check that rows were loaded correctly
-	if len(loadedData.Rows) != 3 {
-		t.Errorf("Expected 3 rows for namespace entity, got %d", len(loadedData.Rows))
-	}
+	assert.Len(t, loadedData.Rows, 3, "Expected 3 rows for namespace entity")
 
 	// Check that the header is correct
-	if len(loadedData.Headers) != 1 || loadedData.Headers[0] != "id" {
-		t.Errorf("Expected header [id] for namespace entity, got %v", loadedData.Headers)
-	}
+	assert.Len(t, loadedData.Headers, 1, "Expected 1 header for namespace entity")
+	assert.Equal(t, "id", loadedData.Headers[0], "Expected header to be 'id'")
 }
 
 func TestCSVGenerator_LoadExistingCSVFiles_EmptyCSVFile(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "csv-empty-file-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create entities
@@ -324,9 +280,7 @@ func TestCSVGenerator_LoadExistingCSVFiles_EmptyCSVFile(t *testing.T) {
 	// Create an empty CSV file with just the header row
 	emptyCSVPath := filepath.Join(tempDir, "Entity1.csv")
 	err = os.WriteFile(emptyCSVPath, []byte("id\n"), 0644) // Empty file with header only
-	if err != nil {
-		t.Fatalf("Failed to create empty CSV file: %v", err)
-	}
+	require.NoError(t, err, "Failed to create empty CSV file")
 
 	// Initialize generator
 	generator := NewCSVGenerator(tempDir, 5, false)
@@ -336,17 +290,13 @@ func TestCSVGenerator_LoadExistingCSVFiles_EmptyCSVFile(t *testing.T) {
 	err = generator.LoadExistingCSVFiles()
 
 	// Should succeed as the file exists with a valid header
-	if err != nil {
-		t.Errorf("Expected empty CSV file with header to be loaded successfully, got error: %v", err)
-	}
+	assert.NoError(t, err, "Empty CSV file with header should load successfully")
 }
 
 func TestCSVGenerator_LoadExistingCSVFiles_PartialMatch(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "csv-partial-match-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create multiple entities
@@ -378,9 +328,7 @@ func TestCSVGenerator_LoadExistingCSVFiles_PartialMatch(t *testing.T) {
 	csvPath := filepath.Join(tempDir, "Entity1.csv")
 	csvContent := "id\n1\n2\n3"
 	err = os.WriteFile(csvPath, []byte(csvContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create CSV file: %v", err)
-	}
+	require.NoError(t, err, "Failed to create CSV file")
 
 	// Initialize generator
 	generator := NewCSVGenerator(tempDir, 5, false)
@@ -388,29 +336,22 @@ func TestCSVGenerator_LoadExistingCSVFiles_PartialMatch(t *testing.T) {
 
 	// Load the CSV files - only partial match
 	err = generator.LoadExistingCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to load with partial match: %v", err)
-	}
+	require.NoError(t, err, "Loading with partial match should succeed")
 
 	// Verify only one entity was loaded
 	loadedData1 := generator.EntityData["entity1"]
-	if loadedData1 == nil || len(loadedData1.Rows) != 3 {
-		t.Errorf("Expected entity1 to be loaded with 3 rows")
-	}
+	assert.NotNil(t, loadedData1, "entity1 data should be loaded")
+	assert.Len(t, loadedData1.Rows, 3, "entity1 should have 3 rows")
 
 	// Entity2 should be initialized in the generator but might not have any loaded rows
 	loadedData2 := generator.EntityData["entity2"]
-	if loadedData2 == nil {
-		t.Errorf("Expected entity2 to be initialized")
-	}
+	assert.NotNil(t, loadedData2, "entity2 should be initialized")
 }
 
 func TestCSVGenerator_ValidateLoadedFiles(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "csv-validation-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create entities with a relationship
@@ -456,16 +397,12 @@ func TestCSVGenerator_ValidateLoadedFiles(t *testing.T) {
 	entity1CSV := filepath.Join(tempDir, "Entity1.csv")
 	entity1Content := "id\n1\n2\n3"
 	err = os.WriteFile(entity1CSV, []byte(entity1Content), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create entity1 CSV: %v", err)
-	}
+	require.NoError(t, err, "Failed to create entity1 CSV")
 
 	entity2CSV := filepath.Join(tempDir, "Entity2.csv")
 	entity2Content := "id,entity1Id\na,1\nb,2\nc,3" // Valid references to entity1
 	err = os.WriteFile(entity2CSV, []byte(entity2Content), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create entity2 CSV: %v", err)
-	}
+	require.NoError(t, err, "Failed to create entity2 CSV")
 
 	// Initialize generator
 	generator := NewCSVGenerator(tempDir, 5, false)
@@ -485,35 +422,21 @@ func TestCSVGenerator_ValidateLoadedFiles(t *testing.T) {
 
 	// Load CSV files
 	err = generator.LoadExistingCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to load CSV files: %v", err)
-	}
+	require.NoError(t, err, "Failed to load CSV files")
 
 	// Validate relationships
 	validationResults := generator.ValidateRelationships()
-	if len(validationResults) > 0 {
-		t.Errorf("Expected valid relationships, got %d validation errors", len(validationResults))
-		for _, result := range validationResults {
-			t.Logf("Validation error: %+v", result)
-		}
-	}
+	assert.Empty(t, validationResults, "Expected no validation errors in valid relationships")
 
 	// Validate unique constraints
 	uniqueErrors := generator.ValidateUniqueValues()
-	if len(uniqueErrors) > 0 {
-		t.Errorf("Expected no unique constraint violations, got %d errors", len(uniqueErrors))
-		for _, err := range uniqueErrors {
-			t.Logf("Unique error: %+v", err)
-		}
-	}
+	assert.Empty(t, uniqueErrors, "Expected no unique constraint violations")
 
 	// Now create a CSV file with invalid relationships
 	invalidEntity2CSV := filepath.Join(tempDir, "Entity2.csv")
 	invalidContent := "id,entity1Id\na,1\nb,2\nc,99" // 99 doesn't exist in entity1
 	err = os.WriteFile(invalidEntity2CSV, []byte(invalidContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create invalid entity2 CSV: %v", err)
-	}
+	require.NoError(t, err, "Failed to create invalid entity2 CSV")
 
 	// Load and validate again
 	invalidGenerator := NewCSVGenerator(tempDir, 5, false)
@@ -532,9 +455,7 @@ func TestCSVGenerator_ValidateLoadedFiles(t *testing.T) {
 	}
 
 	err = invalidGenerator.LoadExistingCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to load invalid CSV files: %v", err)
-	}
+	require.NoError(t, err, "Failed to load invalid CSV files")
 
 	// Relationship validation should detect the issue
 	validationResults = invalidGenerator.ValidateRelationships()
@@ -547,9 +468,7 @@ func TestCSVGenerator_ValidateLoadedFiles(t *testing.T) {
 	duplicateEntity1CSV := filepath.Join(tempDir, "Entity1.csv")
 	duplicateContent := "id\n1\n1\n2" // Duplicate ID value
 	err = os.WriteFile(duplicateEntity1CSV, []byte(duplicateContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create duplicate entity1 CSV: %v", err)
-	}
+	require.NoError(t, err, "Failed to create duplicate entity1 CSV")
 
 	// Load and validate again
 	duplicateGenerator := NewCSVGenerator(tempDir, 5, false)
@@ -562,15 +481,9 @@ func TestCSVGenerator_ValidateLoadedFiles(t *testing.T) {
 	}
 
 	err = duplicateGenerator.LoadExistingCSVFiles()
-	if err != nil {
-		t.Fatalf("Failed to load duplicate CSV files: %v", err)
-	}
+	require.NoError(t, err, "Failed to load duplicate CSV files")
 
 	// Uniqueness validation should detect the issue
 	uniqueErrors = duplicateGenerator.ValidateUniqueValues()
-	if len(uniqueErrors) == 0 {
-		t.Errorf("Expected uniqueness validation errors for duplicate ID")
-	} else {
-		t.Logf("Uniqueness validation detected %d errors", len(uniqueErrors))
-	}
+	assert.NotEmpty(t, uniqueErrors, "Expected uniqueness validation errors for duplicate ID")
 }

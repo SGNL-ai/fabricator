@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeRelationshipsConsistent(t *testing.T) {
@@ -39,13 +40,21 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		// Add to generator
 		generator.EntityData["user"] = &userEntity
 		generator.EntityData["order"] = &orderEntity
+		
+		// Mark 'id' as a unique attribute for the user entity
+		generator.uniqueIdAttributes = map[string][]string{
+			"user":  {"id"},
+			"order": {"id"},
+		}
 
 		// Create relationship link
 		link := models.RelationshipLink{
-			FromEntityID:  "user",
-			ToEntityID:    "order",
-			FromAttribute: "id",     // Primary key
-			ToAttribute:   "userId", // Foreign key
+			FromEntityID:      "user",
+			ToEntityID:        "order", 
+			FromAttribute:     "id",     // Primary key
+			ToAttribute:       "userId", // Foreign key
+			IsFromAttributeID: true,     // Mark the from attribute as a unique ID
+			IsToAttributeID:   false,    // The to attribute is not a unique ID
 		}
 
 		// Call function under test
@@ -54,9 +63,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		// Verify the foreign keys were updated
 		for _, row := range orderEntity.Rows {
 			// Check that userId column is not empty
-			if row[1] == "" {
-				t.Errorf("Expected userId to be populated, but found empty value")
-			}
+			assert.NotEmpty(t, row[1], "userId should be populated")
 
 			// Check that userId refers to a valid user id
 			validUserIds := map[string]bool{
@@ -65,9 +72,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 				"user-3": true,
 			}
 
-			if !validUserIds[row[1]] {
-				t.Errorf("Invalid userId value: %s", row[1])
-			}
+			assert.True(t, validUserIds[row[1]], "Invalid userId value: %s", row[1])
 		}
 	})
 
@@ -117,9 +122,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		// Verify the foreign keys were updated
 		for _, row := range orderEntity.Rows {
 			// Check that productId column is not empty
-			if row[1] == "" {
-				t.Errorf("Expected productId to be populated, but found empty value")
-			}
+			assert.NotEmpty(t, row[1], "productId should be populated")
 
 			// Check that productId refers to a valid product id
 			validProductIds := map[string]bool{
@@ -128,9 +131,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 				"product-3": true,
 			}
 
-			if !validProductIds[row[1]] {
-				t.Errorf("Invalid productId value: %s", row[1])
-			}
+			assert.True(t, validProductIds[row[1]], "Invalid productId value: %s", row[1])
 		}
 	})
 
@@ -192,22 +193,23 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		}
 
 		// Verify that at least one department is referenced
-		if len(deptGroups) < 1 {
-			t.Errorf("Expected at least 1 department group, got %d", len(deptGroups))
-		}
+		assert.GreaterOrEqual(t, len(deptGroups), 1, "Expected at least 1 department group")
 
 		// There should be at least one employee per department
 		for deptId, count := range deptGroups {
-			if count < 1 {
-				t.Errorf("Expected at least 1 employee for department %s, got %d", deptId, count)
-			}
+			assert.GreaterOrEqual(t, count, 1, "Expected at least 1 employee for department %s", deptId)
 		}
 
 		// Check that all employee deptIds are valid
+		validDeptIds := map[string]bool{
+			"dept-1": true,
+			"dept-2": true,
+		}
+
 		for _, row := range employeeEntity.Rows {
 			deptId := row[2]
-			if deptId != "" && deptId != "dept-1" && deptId != "dept-2" {
-				t.Errorf("Invalid department ID: %s", deptId)
+			if deptId != "" {
+				assert.True(t, validDeptIds[deptId], "Invalid department ID: %s", deptId)
 			}
 		}
 	})
@@ -242,8 +244,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		generator.makeRelationshipsConsistent("user", link)
 
 		// Make sure the original data wasn't damaged
-		if len(userEntity.Rows) != 1 || userEntity.Rows[0][0] != "user-1" {
-			t.Errorf("Expected original user data to be preserved")
-		}
+		assert.Len(t, userEntity.Rows, 1, "Expected original user data to be preserved")
+		assert.Equal(t, "user-1", userEntity.Rows[0][0], "Expected original user ID to be preserved")
 	})
 }

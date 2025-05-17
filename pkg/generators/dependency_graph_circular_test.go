@@ -1,11 +1,12 @@
 package generators
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/fatih/color"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCircularRelationshipDetection tests the handling of the circular relationship
@@ -93,36 +94,16 @@ func TestCircularRelationshipDetection(t *testing.T) {
 
 	// Build the dependency graph
 	graph, err := g.buildEntityDependencyGraph(entities, relationships)
-	if err != nil {
-		t.Fatalf("Failed to build entity dependency graph: %v", err)
-	}
-	if graph == nil {
-		t.Fatalf("Dependency graph should not be nil")
-	}
-
-	// Print the graph edges for debugging
-	fmt.Println("Graph edges:")
-	edges, _ := graph.Edges()
-	for _, edge := range edges {
-		fmt.Printf("Edge: %s -> %s\n", edge.Source, edge.Target)
-	}
+	require.NoError(t, err, "Failed to build entity dependency graph")
+	require.NotNil(t, graph, "Dependency graph should not be nil")
 
 	// Try to get a topological ordering
 	ordering, err := g.getTopologicalOrder(graph)
-	if err != nil {
-		t.Fatalf("Failed to get topological order: %v", err)
-	}
-	if ordering == nil {
-		t.Fatalf("Ordering should not be nil")
-	}
-
-	// Print the topological order for debugging
-	fmt.Println("Topological order:", ordering)
+	require.NoError(t, err, "Failed to get topological order")
+	require.NotNil(t, ordering, "Ordering should not be nil")
 
 	// Verify the ordering contains both entities
-	if len(ordering) != 2 {
-		t.Fatalf("Expected 2 entities in topological order, got %d", len(ordering))
-	}
+	require.Len(t, ordering, 2, "Expected 2 entities in topological order")
 
 	// Check that both entities are in the ordering
 	roleFound := false
@@ -141,19 +122,14 @@ func TestCircularRelationshipDetection(t *testing.T) {
 		}
 	}
 	
-	if !roleFound {
-		t.Errorf("Role should be in the topological order but was not found")
-	}
-	if !assignmentFound {
-		t.Errorf("Assignment should be in the topological order but was not found")
-	}
+	assert.True(t, roleFound, "Role should be in the topological order")
+	assert.True(t, assignmentFound, "Assignment should be in the topological order")
 
 	// In a correct topological sort with FK->PK filtering,
 	// Role should come before Assignment since Assignment depends on Role
-	if roleIndex >= assignmentIndex {
-		t.Errorf("Role should come before Assignment in the topological order, but found Role at index %d and Assignment at index %d", 
-			roleIndex, assignmentIndex)
-	}
+	assert.Less(t, roleIndex, assignmentIndex,
+		"Role should come before Assignment in the topological order, but found Role at index %d and Assignment at index %d", 
+		roleIndex, assignmentIndex)
 
 	// Verify that edges exist in the correct direction
 	// In our graph, "Role" should be processed before "Assignment",
@@ -172,10 +148,8 @@ func TestCircularRelationshipDetection(t *testing.T) {
 	_, errAssignmentToRole := graph.Edge("Assignment", "Role")
 	hasEdgeAssignmentToRole := errAssignmentToRole == nil
 
-	if !hasEdgeRoleToAssignment {
-		t.Errorf("There should be an edge from Role to Assignment (Role should be processed before Assignment)")
-	}
-	if hasEdgeAssignmentToRole {
-		t.Errorf("There should NOT be an edge from Assignment to Role (would create a cycle)")
-	}
+	assert.True(t, hasEdgeRoleToAssignment,
+		"There should be an edge from Role to Assignment (Role should be processed before Assignment)")
+	assert.False(t, hasEdgeAssignmentToRole,
+		"There should NOT be an edge from Assignment to Role (would create a cycle)")
 }

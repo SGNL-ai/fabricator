@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeRelationshipsConsistentExpanded(t *testing.T) {
@@ -59,13 +60,8 @@ func TestMakeRelationshipsConsistentExpanded(t *testing.T) {
 
 		for _, row := range productEntity.Rows {
 			categoryRef := row[2]
-			if categoryRef == "" {
-				t.Errorf("Expected product to have a category reference, but found empty value")
-			}
-
-			if !validRefs[categoryRef] {
-				t.Errorf("Invalid reference value: %s", categoryRef)
-			}
+			assert.NotEmpty(t, categoryRef, "Expected product to have a category reference")
+			assert.True(t, validRefs[categoryRef], "Invalid reference value: %s", categoryRef)
 		}
 	})
 
@@ -176,9 +172,7 @@ func TestMakeRelationshipsConsistentExpanded(t *testing.T) {
 				continue // This is OK, we just check that any assigned values are valid
 			}
 
-			if !validDeptIds[deptId] {
-				t.Errorf("Invalid department ID: %s", deptId)
-			}
+			assert.True(t, validDeptIds[deptId], "Invalid department ID: %s", deptId)
 		}
 	})
 
@@ -224,13 +218,11 @@ func TestMakeRelationshipsConsistentExpanded(t *testing.T) {
 		generator.makeRelationshipsConsistent("entityA", link)
 
 		// Verify the function didn't change the original data
-		if len(entityA.Rows) != 2 || entityA.Rows[0][0] != "id-1" {
-			t.Errorf("Expected original entityA data to be preserved")
-		}
-
-		if len(entityB.Rows) != 2 || entityB.Rows[0][0] != "id-3" {
-			t.Errorf("Expected original entityB data to be preserved")
-		}
+		assert.Len(t, entityA.Rows, 2, "Expected original entityA data to be preserved")
+		assert.Equal(t, "id-1", entityA.Rows[0][0], "Expected original entityA ID to be preserved")
+		
+		assert.Len(t, entityB.Rows, 2, "Expected original entityB data to be preserved")
+		assert.Equal(t, "id-3", entityB.Rows[0][0], "Expected original entityB ID to be preserved")
 	})
 
 	// Test handling of empty target values
@@ -275,5 +267,7 @@ func TestMakeRelationshipsConsistentExpanded(t *testing.T) {
 		generator.makeRelationshipsConsistent("source", link)
 
 		// No assertions needed - we're just testing that it doesn't crash
+		// But we can add a simple assertion to verify that source data is still there
+		assert.Len(t, sourceEntity.Rows, 2, "Source data should be preserved")
 	})
 }

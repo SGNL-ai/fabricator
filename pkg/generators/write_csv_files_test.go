@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteCSVFilesExtended(t *testing.T) {
 	// Setup a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "fabricator-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }() // Clean up after the test
 
 	// Test case 1: Write CSV files with namespace prefix
@@ -37,15 +37,12 @@ func TestWriteCSVFilesExtended(t *testing.T) {
 
 		// Call function under test
 		err := generator.WriteCSVFiles()
-		if err != nil {
-			t.Fatalf("WriteCSVFiles failed: %v", err)
-		}
+		require.NoError(t, err, "WriteCSVFiles should not fail")
 
 		// Verify file was created with expected name (without namespace prefix)
 		expectedFilePath := filepath.Join(tempDir, "User.csv")
-		if _, err := os.Stat(expectedFilePath); os.IsNotExist(err) {
-			t.Errorf("Expected file %s was not created", expectedFilePath)
-		}
+		_, err = os.Stat(expectedFilePath)
+		assert.False(t, os.IsNotExist(err), "Expected file %s was not created", expectedFilePath)
 	})
 
 	// Test case 2: Write CSV files without namespace prefix
@@ -69,15 +66,12 @@ func TestWriteCSVFilesExtended(t *testing.T) {
 
 		// Call function under test
 		err := generator.WriteCSVFiles()
-		if err != nil {
-			t.Fatalf("WriteCSVFiles failed: %v", err)
-		}
+		require.NoError(t, err, "WriteCSVFiles should not fail")
 
 		// Verify file was created
 		expectedFilePath := filepath.Join(tempDir, "User.csv")
-		if _, err := os.Stat(expectedFilePath); os.IsNotExist(err) {
-			t.Errorf("Expected file %s was not created", expectedFilePath)
-		}
+		_, err = os.Stat(expectedFilePath)
+		assert.False(t, os.IsNotExist(err), "Expected file %s was not created", expectedFilePath)
 	})
 
 	// Test case 3: Error creating directory
@@ -110,9 +104,7 @@ func TestWriteCSVFilesExtended(t *testing.T) {
 			}
 		}
 
-		if err == nil {
-			t.Errorf("Expected error when creating directory in protected location, but got nil")
-		}
+		assert.Error(t, err, "Expected error when creating directory in protected location")
 	})
 
 	// Removed unused mock implementation
@@ -124,9 +116,7 @@ func TestWriteCSVFilesExtended(t *testing.T) {
 		// Setup test data in clean directory
 		csvDir := filepath.Join(tempDir, "csv-contents")
 		err := os.MkdirAll(csvDir, 0755)
-		if err != nil {
-			t.Fatalf("Failed to create test directory: %v", err)
-		}
+		require.NoError(t, err, "Failed to create test directory")
 
 		generator := NewCSVGenerator(csvDir, 2, false)
 
@@ -146,22 +136,16 @@ func TestWriteCSVFilesExtended(t *testing.T) {
 
 		// Write the files
 		err = generator.WriteCSVFiles()
-		if err != nil {
-			t.Fatalf("WriteCSVFiles failed: %v", err)
-		}
+		require.NoError(t, err, "WriteCSVFiles should not fail")
 
 		// Read the file back to verify contents
 		csvFile := filepath.Join(csvDir, "Product.csv")
 		content, err := os.ReadFile(csvFile)
-		if err != nil {
-			t.Fatalf("Failed to read generated CSV: %v", err)
-		}
+		require.NoError(t, err, "Failed to read generated CSV")
 
 		// Very basic content check - headers must be first line
 		expectedHeader := "id,name,price"
-		if string(content[:len(expectedHeader)]) != expectedHeader {
-			t.Errorf("Expected CSV to start with '%s', got: '%s'",
-				expectedHeader, string(content[:len(expectedHeader)]))
-		}
+		assert.Equal(t, expectedHeader, string(content[:len(expectedHeader)]), 
+			"CSV should start with the expected header")
 	})
 }

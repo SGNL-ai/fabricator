@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMultiAttributeRelationships(t *testing.T) {
@@ -82,15 +84,11 @@ func TestMultiAttributeRelationships(t *testing.T) {
 	// Set up the generator
 	var err error
 	err = g.Setup(entities, relationships)
-	if err != nil {
-		t.Fatalf("Failed to setup generator: %v", err)
-	}
+	require.NoError(t, err, "Failed to setup generator")
 
 	// Generate data
 	err = g.GenerateData()
-	if err != nil {
-		t.Fatalf("Failed to generate data: %v", err)
-	}
+	require.NoError(t, err, "Failed to generate data")
 
 	// Verify the generated data
 	userData := g.EntityData["user1"]
@@ -101,10 +99,9 @@ func TestMultiAttributeRelationships(t *testing.T) {
 	ticketAssignedToIndex := findColumnIndex(ticketData.Headers, "assignedTo")
 	ticketCreatedByIndex := findColumnIndex(ticketData.Headers, "createdBy")
 
-	if userIdIndex == -1 || ticketAssignedToIndex == -1 || ticketCreatedByIndex == -1 {
-		t.Fatalf("Required columns not found. User.id: %d, Ticket.assignedTo: %d, Ticket.createdBy: %d",
-			userIdIndex, ticketAssignedToIndex, ticketCreatedByIndex)
-	}
+	require.NotEqual(t, -1, userIdIndex, "User.id column not found")
+	require.NotEqual(t, -1, ticketAssignedToIndex, "Ticket.assignedTo column not found")
+	require.NotEqual(t, -1, ticketCreatedByIndex, "Ticket.createdBy column not found")
 
 	// Collect all valid user IDs
 	validUserIds := make(map[string]bool)
@@ -134,13 +131,8 @@ func TestMultiAttributeRelationships(t *testing.T) {
 	}
 
 	// Assert that all references are valid
-	if invalidAssignedTo > 0 {
-		t.Errorf("%d tickets have invalid assignedTo values", invalidAssignedTo)
-	}
-
-	if invalidCreatedBy > 0 {
-		t.Errorf("%d tickets have invalid createdBy values", invalidCreatedBy)
-	}
+	assert.Zero(t, invalidAssignedTo, "All tickets should have valid assignedTo values")
+	assert.Zero(t, invalidCreatedBy, "All tickets should have valid createdBy values")
 
 	// Check for duplicated IDs in the User data
 	userIds := make(map[string]int)
@@ -154,9 +146,7 @@ func TestMultiAttributeRelationships(t *testing.T) {
 		userIds[userId] = i
 	}
 
-	if duplicateUserIds > 0 {
-		t.Errorf("Found %d duplicate User IDs", duplicateUserIds)
-	}
+	assert.Zero(t, duplicateUserIds, "User IDs should be unique")
 
 	// Check if assignedTo and createdBy are ever the same for a ticket
 	sameUserCount := 0

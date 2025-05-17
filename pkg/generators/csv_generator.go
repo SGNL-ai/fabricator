@@ -3,10 +3,8 @@ package generators
 import (
 	"encoding/csv"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -25,12 +23,12 @@ type CSVGenerator struct {
 	EntityData         map[string]*models.CSVData
 	idMap              map[string]map[string]string // Maps between entities for consistent relationships
 	relationshipMap    map[string][]models.RelationshipLink
-	generatedValues    map[string][]string        // Store generated values by type
-	namespacePrefix    string                     // Store the common namespace prefix
-	AutoCardinality    bool                       // Whether to enable automatic cardinality detection
-	usedUniqueValues   map[string]map[string]bool // Track used values for fields with uniqueId=true by entity:attribute
-	uniqueIdAttributes map[string][]string        // Track attributes with uniqueId=true by entity
-	existingFiles      map[string]bool            // Track existing CSV files in validation-only mode
+	generatedValues    map[string][]string         // Store generated values by type
+	namespacePrefix    string                      // Store the common namespace prefix
+	AutoCardinality    bool                        // Whether to enable automatic cardinality detection
+	usedUniqueValues   map[string]map[string]bool  // Track used values for fields with uniqueId=true by entity:attribute
+	uniqueIdAttributes map[string][]string         // Track attributes with uniqueId=true by entity
+	existingFiles      map[string]bool             // Track existing CSV files in validation-only mode
 	dependencyGraph    graph.Graph[string, string] // Entity dependency graph for topological generation
 }
 
@@ -105,7 +103,7 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 
 	// Store the dependency graph for use during generation
 	g.dependencyGraph = dependencyGraph
-	
+
 	// Log the generation order (needed for later, but don't display)
 	_, err = g.getTopologicalOrder(dependencyGraph)
 	if err != nil {
@@ -124,7 +122,7 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -258,7 +256,7 @@ func (g *CSVGenerator) LoadExistingCSVFiles() error {
 	// Find and load CSV files for each entity
 	for entityID, entityData := range g.EntityData {
 		// Determine the expected filename for this entity
-		entityFilename := getEntityFileName(entityData)
+		entityFilename := GetEntityFileName(entityData)
 		entityLoaded := false
 
 		// Look for an existing CSV file matching this entity
@@ -323,77 +321,6 @@ func (g *CSVGenerator) LoadExistingCSVFiles() error {
 }
 
 // generateCommonValues pre-generates common test data values
-func (g *CSVGenerator) generateCommonValues() {
-	// Define common data types that can be used across any SOR
-
-	// Common names for generic entities
-	g.generatedValues["entityNames"] = []string{
-		"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
-		"Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho",
-		"Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega",
-	}
-
-	// Common organization departments
-	g.generatedValues["departments"] = []string{
-		"Engineering", "Sales", "Marketing", "Finance", "HR", "Operations",
-		"IT", "Legal", "Executive", "Support", "Research", "Development",
-		"QA", "Product", "Design", "Customer Success", "Administration",
-	}
-
-	// Common person names
-	g.generatedValues["firstNames"] = []string{
-		"James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda",
-		"William", "Elizabeth", "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
-		"Thomas", "Sarah", "Charles", "Karen", "Christopher", "Nancy", "Daniel", "Lisa",
-		"Matthew", "Betty", "Anthony", "Margaret", "Mark", "Sandra", "Donald", "Ashley",
-		"Steven", "Kimberly", "Paul", "Emily", "Andrew", "Donna", "Joshua", "Michelle",
-		"Kenneth", "Dorothy", "Kevin", "Carol", "Brian", "Amanda", "George", "Melissa",
-	}
-
-	g.generatedValues["lastNames"] = []string{
-		"Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia",
-		"Rodriguez", "Wilson", "Martinez", "Anderson", "Taylor", "Thomas", "Hernandez",
-		"Moore", "Martin", "Jackson", "Thompson", "White", "Lopez", "Lee", "Gonzalez",
-		"Harris", "Clark", "Lewis", "Robinson", "Walker", "Perez", "Hall", "Young",
-		"Allen", "Sanchez", "Wright", "King", "Scott", "Green", "Baker", "Adams",
-		"Nelson", "Hill", "Ramirez", "Campbell", "Mitchell", "Roberts", "Carter",
-	}
-
-	// Common permission values
-	g.generatedValues["permissions"] = []string{
-		"read", "write", "create", "delete", "admin", "view", "execute", "publish",
-		"approve", "reject", "manage", "configure", "assign", "revoke", "audit",
-	}
-
-	// Status values
-	g.generatedValues["status"] = []string{
-		"active", "inactive", "pending", "approved", "rejected", "completed",
-		"in_progress", "cancelled", "suspended", "archived", "draft",
-	}
-
-	// Common types
-	g.generatedValues["types"] = []string{
-		"primary", "secondary", "tertiary", "standard", "custom", "system", "user",
-		"internal", "external", "public", "private", "shared", "restricted",
-	}
-
-	// Common keys
-	g.generatedValues["keys"] = []string{
-		"id", "name", "description", "type", "status", "category", "group",
-		"code", "value", "priority", "order", "level", "tier", "version",
-	}
-
-	// Common expressions
-	g.generatedValues["expressions"] = []string{
-		"user.department == 'Engineering'",
-		"item.status in ['active', 'pending']",
-		"resource.owner == currentUser",
-		"request.priority > 3",
-		"document.classification != 'restricted'",
-		"project.deadline < today()",
-		"task.assignee == null",
-	}
-}
 
 // GenerateData creates random data for all entities
 // following a topological ordering of dependencies
@@ -425,7 +352,7 @@ func (g *CSVGenerator) GenerateData() error {
 		}
 
 		csvData.Rows = rows
-		
+
 		// Make relationships consistent after each entity is generated
 		// This ensures that dependent entities have correct references
 		g.makeRelationshipsConsistentForEntity(entityID)
@@ -455,6 +382,17 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 
 	row := make([]string, len(headers))
 
+	// Use pre-generated IDs to ensure consistency across relationships
+	idKey := strconv.Itoa(index)
+	preGenID := ""
+	if id, exists := g.idMap[entityID][idKey]; exists {
+		preGenID = id
+	} else {
+		preGenID = uuid.New().String()
+		// Store it for future reference
+		g.idMap[entityID][idKey] = preGenID
+	}
+
 	for i, header := range headers {
 		// Check if this attribute is marked as uniqueId=true
 		isUnique := false
@@ -465,148 +403,28 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 			}
 		}
 
-		// Determine the type of data to generate based on the header
-		headerLower := strings.ToLower(header)
-
-		// Generate ID fields (primary keys)
-		if headerLower == "id" {
-			idKey := strconv.Itoa(index)
-			if id, exists := g.idMap[entityID][idKey]; exists {
-				row[i] = id
-			} else {
-				// If there's no ID in the map, generate one
-				if isUnique {
-					// Always use generateUniqueValue for unique ID fields to ensure tracking
-					row[i] = g.generateUniqueValue(entityID, header, "")
-				} else {
-					// Non-unique IDs can just be generated
-					row[i] = uuid.New().String()
-				}
-			}
+		// For primary key field (determined by uniqueId flag)
+		// Use the pre-generated ID for this entity/row
+		if isUnique {
+			row[i] = preGenID
 			continue
 		}
 
-		// Generate pointer/reference fields (foreign keys)
-		if strings.HasSuffix(headerLower, "id") && headerLower != "id" {
-			// This is likely a reference to another entity
-			referencedEntity := g.findEntityByReferenceField(headerLower)
-			if referencedEntity != "" && len(g.idMap[referencedEntity]) > 0 {
-				// Use a random existing ID from the referenced entity
-				refIds := make([]string, 0, len(g.idMap[referencedEntity]))
-				for _, id := range g.idMap[referencedEntity] {
-					refIds = append(refIds, id)
-				}
-				row[i] = refIds[rand.Intn(len(refIds))]
-			} else {
-				// Generate a random UUID as fallback
-				if isUnique {
-					// Always use generateUniqueValue for unique foreign key fields
-					row[i] = g.generateUniqueValue(entityID, header, "")
-				} else {
-					row[i] = uuid.New().String()
-				}
-			}
-			continue
+		// For all other fields, use our field generator
+		fieldType := DetectFieldType(header)
+
+		req := FieldRequest{
+			EntityID:    entityID,
+			Header:      header,
+			HeaderIndex: i,
+			RowIndex:    index,
+			IsUnique:    isUnique,
 		}
 
-		// Generate data based on common field names
-		var value string
-
-		if headerLower == "name" || strings.HasSuffix(headerLower, "name") {
-			value = g.generateName(index)
-		} else if headerLower == "description" || strings.HasSuffix(headerLower, "description") {
-			value = g.generateDescription(header, index)
-		} else if headerLower == "type" || strings.HasSuffix(headerLower, "type") {
-			types := g.generatedValues["types"]
-			value = types[index%len(types)]
-		} else if headerLower == "status" || strings.HasSuffix(headerLower, "status") {
-			statuses := g.generatedValues["status"]
-			value = statuses[index%len(statuses)]
-		} else if headerLower == "key" || strings.HasSuffix(headerLower, "key") {
-			keys := g.generatedValues["keys"]
-			value = keys[index%len(keys)] + "_" + strconv.Itoa(index)
-		} else if headerLower == "value" || strings.HasSuffix(headerLower, "value") {
-			value = g.generateValue(header, index)
-		} else if headerLower == "uuid" {
-			// For UUID fields, use the generateUniqueValue function to ensure uniqueness and tracking
-			if isUnique {
-				value = g.generateUniqueValue(entityID, header, "")
-			} else {
-				value = uuid.New().String()
-			}
-		} else if headerLower == "expression" || strings.HasSuffix(headerLower, "expression") {
-			expressions := g.generatedValues["expressions"]
-			value = expressions[index%len(expressions)]
-		} else if header == "valid" || header == "enabled" || header == "active" || header == "archived" {
-			value = strconv.FormatBool(index%2 == 0) // Alternate true/false
-		} else if headerLower == "enabled" || headerLower == "active" ||
-			headerLower == "valid" || headerLower == "archived" ||
-			strings.HasSuffix(headerLower, "enabled") ||
-			strings.HasSuffix(headerLower, "active") ||
-			strings.HasSuffix(headerLower, "valid") ||
-			strings.HasSuffix(headerLower, "archived") ||
-			strings.Contains(headerLower, "valid") ||
-			strings.Contains(headerLower, "archived") ||
-			strings.Contains(headerLower, "enabled") ||
-			strings.Contains(headerLower, "active") {
-			value = strconv.FormatBool(index%2 == 0) // Alternate true/false
-		} else if strings.Contains(headerLower, "date") ||
-			strings.Contains(headerLower, "time") ||
-			strings.Contains(headerLower, "created") ||
-			strings.Contains(headerLower, "updated") {
-			value = g.generateDate(index)
-		} else if strings.Contains(headerLower, "permission") ||
-			strings.Contains(headerLower, "access") {
-			perms := g.generatedValues["permissions"]
-			numPerms := rand.Intn(3) + 1 // 1-3 permissions
-			selectedPerms := make([]string, numPerms)
-
-			for j := 0; j < numPerms; j++ {
-				selectedPerms[j] = perms[(index+j)%len(perms)]
-			}
-
-			value = strings.Join(selectedPerms, ",")
-		} else {
-			// Default case - generate a generic value
-			value = g.generateGenericValue(header, index)
-		}
-
-		// For any unique attribute (that hasn't already been handled), ensure it's unique
-		if isUnique && value != "" {
-			value = g.generateUniqueValue(entityID, header, value)
-		}
-
-		row[i] = value
+		row[i] = g.GenerateFieldValue(req, fieldType)
 	}
 
 	return row
-}
-
-// findEntityByReferenceField attempts to find the entity referenced by a field
-func (g *CSVGenerator) findEntityByReferenceField(fieldName string) string {
-	// Extract the entity name from the field (e.g., "roleId" -> "role")
-	re := regexp.MustCompile(`(.+)Id$`)
-	matches := re.FindStringSubmatch(fieldName)
-	if len(matches) < 2 {
-		return ""
-	}
-
-	// Get the base entity name
-	entityName := matches[1]
-
-	// Look for an entity with a similar name (case-insensitive)
-	entityNameLower := strings.ToLower(entityName)
-
-	for id, data := range g.EntityData {
-		dataNameLower := strings.ToLower(data.EntityName)
-
-		// Check if the entity name contains the field name
-		if strings.Contains(dataNameLower, entityNameLower) {
-			return id
-		}
-	}
-
-	return ""
 }
 
 // ensureRelationshipConsistency enforces consistency across related entities
@@ -621,353 +439,20 @@ func (g *CSVGenerator) ensureRelationshipConsistency() {
 
 // makeRelationshipsConsistent ensures that related entities have consistent values
 func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link models.RelationshipLink) {
-	// Get the data for both entities
-	fromData := g.EntityData[fromEntityID]
-	toData := g.EntityData[link.ToEntityID]
-
-	if fromData == nil || toData == nil {
+	// Process relationship via the relationship handler
+	ctx := NewRelationshipContext(g, fromEntityID, link)
+	
+	// If we couldn't create a valid context, stop processing
+	if ctx == nil {
 		return
 	}
-
-	// Find the column indices for the attributes
-	fromAttrIndex := -1
-	fromAttrName := ""
-	for i, header := range fromData.Headers {
-		// Try to match directly
-		if strings.EqualFold(header, link.FromAttribute) ||
-			strings.EqualFold(header, link.FromAttribute+"Id") {
-			fromAttrIndex = i
-			fromAttrName = header
-			break
-		}
-
-		// Handle the common case of attribute aliases like "user_id" for "id"
-		// For the "from" entity, often the attribute is just "id"
-		if strings.HasSuffix(link.FromAttribute, "_id") && strings.EqualFold(header, "id") {
-			fromAttrIndex = i
-			fromAttrName = header
-			break
-		}
-	}
-
-	toAttrIndex := -1
-	toAttrName := ""
-	for i, header := range toData.Headers {
-		// Try to match directly
-		if strings.EqualFold(header, link.ToAttribute) ||
-			strings.EqualFold(header, link.ToAttribute+"Id") {
-			toAttrIndex = i
-			toAttrName = header
-			break
-		}
-
-		// Handle attribute aliases that include entity name
-		// E.g., "order_userId" might be just "userId" in the actual data
-		if strings.Contains(link.ToAttribute, "_") {
-			parts := strings.Split(link.ToAttribute, "_")
-			if len(parts) >= 2 && strings.EqualFold(header, parts[1]) {
-				toAttrIndex = i
-				toAttrName = header
-				break
-			}
-		}
-	}
-
-	if fromAttrIndex == -1 || toAttrIndex == -1 {
-		return
-	}
-
-	// Check if the attributes are unique (should have unique values)
-	fromIsUnique := isUniqueAttribute(fromEntityID, fromAttrName, g.uniqueIdAttributes)
-	// We might need toIsUnique in future enhancements
-	_ = isUniqueAttribute(link.ToEntityID, toAttrName, g.uniqueIdAttributes)
-
-	// Analyze the relationship to determine how to ensure consistency
-	// In typical relationships, we have primary keys (PKs) and foreign keys (FKs)
-
-	// Helper functions to identify field types
-	isPrimaryKeyField := func(name string) bool {
-		return name == "id" || strings.HasSuffix(strings.ToLower(name), "uuid") ||
-			strings.HasSuffix(strings.ToLower(name), "guid")
-	}
-
-	isForeignKeyField := func(name string) bool {
-		// Foreign keys usually contain "id" but are not just "id"
-		return name != "id" && strings.Contains(strings.ToLower(name), "id")
-	}
-
-	// Determine if the fields indicate a specific relationship direction
-	fromIsPrimary := isPrimaryKeyField(fromAttrName)
-	toIsPrimary := isPrimaryKeyField(toAttrName)
-	fromIsForeign := isForeignKeyField(fromAttrName)
-	toIsForeign := isForeignKeyField(toAttrName)
-
-	// First case: Primary key in "from" entity, foreign key in "to" entity
-	// Example: User.id -> Order.userId
-	if (fromIsPrimary && toIsForeign) ||
-		(fromAttrName == "id" && strings.Contains(strings.ToLower(toAttrName), "id")) {
-		// Collect all valid primary keys from the "from" entity
-		validPrimaryKeys := make([]string, 0, len(fromData.Rows))
-		for _, row := range fromData.Rows {
-			// Only add non-empty values
-			if row[fromAttrIndex] != "" {
-				validPrimaryKeys = append(validPrimaryKeys, row[fromAttrIndex])
-			}
-		}
-
-		// Nothing to do if we don't have any valid primary keys
-		if len(validPrimaryKeys) == 0 {
-			return
-		}
-
-		// Update all foreign keys in the "to" entity to reference valid primary keys
-		for i, row := range toData.Rows {
-			// Pick a random valid primary key
-			row[toAttrIndex] = validPrimaryKeys[rand.Intn(len(validPrimaryKeys))]
-			toData.Rows[i] = row
-		}
-
-		return
-	}
-
-	// Second case: Foreign key in "from" entity, primary key in "to" entity
-	// Example: Order.userId -> User.id
-	if (toIsPrimary && fromIsForeign) ||
-		(toAttrName == "id" && strings.Contains(strings.ToLower(fromAttrName), "id")) {
-		// Collect all valid primary keys from the "to" entity
-		validPrimaryKeys := make([]string, 0, len(toData.Rows))
-		for _, row := range toData.Rows {
-			// Only add non-empty values
-			if row[toAttrIndex] != "" {
-				validPrimaryKeys = append(validPrimaryKeys, row[toAttrIndex])
-			}
-		}
-
-		// Nothing to do if we don't have any valid primary keys
-		if len(validPrimaryKeys) == 0 {
-			return
-		}
-
-		// For unique attributes, ensure we don't reuse values
-		if fromIsUnique && len(fromData.Rows) > len(validPrimaryKeys) {
-			// If we have more rows than unique values, we need to generate more unique values
-			// Generate new unique values for each row beyond the available validPrimaryKeys
-			for i := range fromData.Rows {
-				if i < len(validPrimaryKeys) {
-					// Use existing values for the first set of rows
-					fromData.Rows[i][fromAttrIndex] = validPrimaryKeys[i]
-				} else {
-					// For additional rows, generate new unique values
-					fromData.Rows[i][fromAttrIndex] = g.generateUniqueValue(fromEntityID, fromAttrName, "")
-				}
-			}
-		} else {
-			// Standard case: assign values with potential reuse
-			// Track used indices to avoid duplicates for unique attributes
-			usedIndices := make(map[int]bool)
-			
-			for i, row := range fromData.Rows {
-				var valueIndex int
-				
-				if fromIsUnique {
-					// For unique attributes, ensure we don't reuse values
-					// Find an unused index
-					for {
-						valueIndex = rand.Intn(len(validPrimaryKeys))
-						if !usedIndices[valueIndex] || len(usedIndices) >= len(validPrimaryKeys) {
-							usedIndices[valueIndex] = true
-							break
-						}
-					}
-				} else {
-					// For non-unique attributes, just pick randomly
-					valueIndex = rand.Intn(len(validPrimaryKeys))
-				}
-				
-				// Assign the value
-				row[fromAttrIndex] = validPrimaryKeys[valueIndex]
-				fromData.Rows[i] = row
-			}
-		}
-		return
-	}
-
-	// Collect all values from the "to" entity's attribute (for other relationship types)
-	toValues := make(map[string]bool)
-	for _, row := range toData.Rows {
-		toValues[row[toAttrIndex]] = true
-	}
-
-	// Ensure "from" entity's values are in the "to" entity
-	toValuesSlice := make([]string, 0, len(toValues))
-	for val := range toValues {
-		toValuesSlice = append(toValuesSlice, val)
-	}
-
-	// If no values in "to" entity, we can't make them consistent
-	if len(toValuesSlice) == 0 {
-		return
-	}
-
-	// Default to 1:1 relationship if auto-cardinality is not enabled
-	if !g.AutoCardinality {
-		// Just use the default 1:1 mapping
-		// For unique attributes, ensure we don't reuse values
-		if fromIsUnique {
-			// For unique attributes in a 1:1 relationship, assign each value at most once
-			// If we have more rows than unique values, we need to generate more unique values
-			usedToValues := make(map[string]bool)
-			
-			for i, row := range fromData.Rows {
-				if i < len(toValuesSlice) {
-					// Use each target value once if possible
-					row[fromAttrIndex] = toValuesSlice[i]
-					usedToValues[toValuesSlice[i]] = true
-				} else {
-					// For additional rows, generate a new unique value
-					row[fromAttrIndex] = g.generateUniqueValue(fromEntityID, fromAttrName, "")
-				}
-				fromData.Rows[i] = row
-			}
-		} else {
-			// For non-unique attributes, just assign randomly
-			for i, row := range fromData.Rows {
-				// Use a random value from the "to" entity for each row in the "from" entity
-				row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
-				fromData.Rows[i] = row
-			}
-		}
-		return
-	}
-
-	// Use uniqueId information to determine cardinality
-	// If fromAttribute is not a uniqueId and toAttribute is a uniqueId: many-to-one relationship (N:1)
-	// If fromAttribute is a uniqueId and toAttribute is not a uniqueId: one-to-many relationship (1:N)
-	// If both are uniqueIds or both are not uniqueIds: default to 1:1 but use field naming as fallback
-
-	var isOneToMany, isManyToOne bool
-
-	// Primary cardinality determination: use uniqueId information
-	if link.IsFromAttributeID && !link.IsToAttributeID {
-		// From is unique ID, To is not: likely a 1:N relationship
-		isOneToMany = true
-	} else if !link.IsFromAttributeID && link.IsToAttributeID {
-		// From is not unique ID, To is: likely a N:1 relationship
-		isManyToOne = true
-	} else {
-		// Fallback to field naming conventions when uniqueId doesn't provide a clear signal
-		// (e.g., both are uniqueIds or neither are uniqueIds)
-		fromAttrLower := strings.ToLower(fromAttrName)
-		toAttrLower := strings.ToLower(toAttrName)
-
-		// Check for one-to-many (1:N) relationship
-		isOneToMany = strings.HasSuffix(fromAttrLower, "s") || // plural form
-			strings.Contains(fromAttrLower, "ids") // multiple IDs
-
-		// Check for many-to-one (N:1) relationship
-		isManyToOne = strings.HasSuffix(toAttrLower, "s") || // plural form
-			strings.Contains(toAttrLower, "ids") // multiple IDs
-	}
-
-	if isOneToMany {
-		// Handle one-to-many relationship with row duplication
-		newRows := [][]string{}
-
-		for _, row := range fromData.Rows {
-			// Determine how many relationships to create (1-3 for variety)
-			numRelationships := rand.Intn(3) + 1
-
-			// Create multiple rows with different relationship values
-			for j := 0; j < numRelationships; j++ {
-				// Clone the row
-				newRow := make([]string, len(row))
-				copy(newRow, row)
-
-				// Assign a random value from the target entity
-				newRow[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
-
-				// For ID and other unique fields, ensure uniqueness by generating new values
-				for i, header := range fromData.Headers {
-					if isUniqueAttribute(fromEntityID, header, g.uniqueIdAttributes) {
-						// Generate a new unique value
-						baseValue := newRow[i]
-						if baseValue == "" {
-							baseValue = uuid.New().String()
-						}
-						newRow[i] = g.generateUniqueValue(fromEntityID, header, baseValue)
-					}
-				}
-
-				newRows = append(newRows, newRow)
-			}
-		}
-
-		// Replace the original rows with our expanded set
-		fromData.Rows = newRows
-	} else if isManyToOne {
-		// Handle many-to-one relationship by clustering multiple rows to the same target
-		// Create clusters of values
-		numClusters := len(toValuesSlice)
-		if numClusters > 0 {
-			clusterSize := len(fromData.Rows) / numClusters
-			if clusterSize < 1 {
-				clusterSize = 1
-			}
-
-			for i, row := range fromData.Rows {
-				// Determine which cluster this row belongs to
-				clusterIndex := i / clusterSize
-				if clusterIndex >= numClusters {
-					clusterIndex = numClusters - 1
-				}
-
-				// Assign the value from the cluster
-				row[fromAttrIndex] = toValuesSlice[clusterIndex]
-				fromData.Rows[i] = row
-			}
-		}
-	} else {
-		// Default case: Use standard 1:1 mapping but ensure uniqueness if needed
-		if fromIsUnique {
-			// For unique attributes, ensure we don't reuse values
-			// If we have more rows than unique values, we need to generate more unique values
-				// We do not need to track indices since we assign sequentially
-			
-			for i, row := range fromData.Rows {
-				if i < len(toValuesSlice) {
-					// Try to use each target value once
-					row[fromAttrIndex] = toValuesSlice[i]
-				} else {
-					// We've used all available target values, so generate new ones
-					row[fromAttrIndex] = g.generateUniqueValue(fromEntityID, fromAttrName, "")
-				}
-				fromData.Rows[i] = row
-			}
-		} else {
-			// For non-unique attributes, just assign randomly
-			for i, row := range fromData.Rows {
-				// Use a random value from the "to" entity for each row in the "from" entity
-				row[fromAttrIndex] = toValuesSlice[rand.Intn(len(toValuesSlice))]
-				fromData.Rows[i] = row
-			}
-		}
-	}
+	
+	// Handle relationship based on its type (one-to-many, many-to-one, etc.)
+	// The handler will update the entity data directly
+	g.handleRelationship(ctx)
 }
 
-// Helper function to check if an attribute is marked as unique
-func isUniqueAttribute(entityID string, attrName string, uniqueIdMap map[string][]string) bool {
-	uniqueAttrs, exists := uniqueIdMap[entityID]
-	if !exists {
-		return false
-	}
 
-	for _, uniqueAttr := range uniqueAttrs {
-		if uniqueAttr == attrName {
-			return true
-		}
-	}
-	return false
-}
 
 // WriteCSVFiles writes all generated data to CSV files
 func (g *CSVGenerator) WriteCSVFiles() error {
@@ -979,17 +464,8 @@ func (g *CSVGenerator) WriteCSVFiles() error {
 
 	// Write each entity's data to a CSV file
 	for _, csvData := range g.EntityData {
-		// Parse the external ID to get the filename
-		var filename string
-
-		// Handle both formats: with namespace prefix (e.g., "KeystoneV1/Entity") and without
-		if strings.Contains(csvData.ExternalId, "/") {
-			parts := strings.Split(csvData.ExternalId, "/")
-			filename = parts[len(parts)-1] + ".csv"
-		} else {
-			// If no namespace prefix, just use the external ID
-			filename = csvData.ExternalId + ".csv"
-		}
+		// Get the filename based on the entity's external ID
+		filename := GetEntityFileName(csvData)
 
 		filePath := filepath.Join(g.OutputDir, filename)
 
@@ -1020,352 +496,4 @@ func (g *CSVGenerator) WriteCSVFiles() error {
 	}
 
 	return nil
-}
-
-// Helper functions for generating random data
-func (g *CSVGenerator) generateName(index int) string {
-	// Check if this is a person name or a general entity name, but only if we have entity data
-	entityID := g.findEntityByIndex(index)
-
-	if entityID != "" && g.EntityData[entityID] != nil {
-		entityName := strings.ToLower(g.EntityData[entityID].EntityName)
-
-		// Generate context-appropriate names based on entity type
-		switch {
-		// User-related entities should get person names
-		case strings.Contains(entityName, "user") ||
-			strings.Contains(entityName, "person") ||
-			strings.Contains(entityName, "employee") ||
-			strings.Contains(entityName, "customer") ||
-			strings.Contains(entityName, "contact"):
-			return sanitizeName(gofakeit.Name())
-
-		// Role-related entities should get job titles or role names
-		case strings.Contains(entityName, "role") ||
-			strings.Contains(entityName, "permission") ||
-			strings.Contains(entityName, "access") ||
-			strings.Contains(entityName, "privilege"):
-			return sanitizeName(gofakeit.JobTitle())
-
-		// Group-related entities should get department/team names
-		case strings.Contains(entityName, "group") ||
-			strings.Contains(entityName, "team") ||
-			strings.Contains(entityName, "department") ||
-			strings.Contains(entityName, "division") ||
-			strings.Contains(entityName, "unit"):
-			departments := []string{"Engineering", "Marketing", "Sales", "Finance", "HR", "Operations",
-				"IT", "Legal", "Research", "Development", "Support", "Customer Success"}
-			return sanitizeName(departments[index%len(departments)] + " " + gofakeit.JobDescriptor())
-
-		// Application or system entities
-		case strings.Contains(entityName, "app") ||
-			strings.Contains(entityName, "application") ||
-			strings.Contains(entityName, "system") ||
-			strings.Contains(entityName, "service") ||
-			strings.Contains(entityName, "software"):
-			return sanitizeName(gofakeit.AppName())
-
-		// Product entities
-		case strings.Contains(entityName, "product") ||
-			strings.Contains(entityName, "item") ||
-			strings.Contains(entityName, "merchandise") ||
-			strings.Contains(entityName, "asset"):
-			return sanitizeName(gofakeit.ProductName())
-
-		// Location entities
-		case strings.Contains(entityName, "location") ||
-			strings.Contains(entityName, "place") ||
-			strings.Contains(entityName, "address") ||
-			strings.Contains(entityName, "site") ||
-			strings.Contains(entityName, "facility"):
-			return sanitizeName(gofakeit.City() + " " + gofakeit.Street())
-
-		// Company or organization entities
-		case strings.Contains(entityName, "company") ||
-			strings.Contains(entityName, "organization") ||
-			strings.Contains(entityName, "vendor") ||
-			strings.Contains(entityName, "supplier") ||
-			strings.Contains(entityName, "client"):
-			return sanitizeName(gofakeit.Company())
-
-		// Project entities
-		case strings.Contains(entityName, "project") ||
-			strings.Contains(entityName, "initiative") ||
-			strings.Contains(entityName, "program"):
-			adjectives := []string{"Strategic", "Global", "Innovative", "Digital", "Advanced", "Enterprise"}
-			nouns := []string{"Transformation", "Optimization", "Modernization", "Integration", "Initiative", "Launch"}
-			return sanitizeName(adjectives[index%len(adjectives)] + " " + nouns[index%len(nouns)])
-
-		// Category/classification entities
-		case strings.Contains(entityName, "category") ||
-			strings.Contains(entityName, "type") ||
-			strings.Contains(entityName, "classification") ||
-			strings.Contains(entityName, "class"):
-			return sanitizeName(gofakeit.ProductCategory())
-
-		// For any other entity, use a company name as default
-		default:
-			return sanitizeName(gofakeit.Company())
-		}
-	}
-
-	// Fallback if we couldn't determine the entity type
-	return sanitizeName(gofakeit.Company())
-}
-
-// sanitizeName replaces commas and quotes in a name to avoid CSV parsing issues
-func sanitizeName(name string) string {
-	sanitized := strings.ReplaceAll(name, ",", "-")
-	return strings.ReplaceAll(sanitized, "\"", "'")
-}
-
-func (g *CSVGenerator) generateDescription(field string, index int) string {
-	// Generate a more realistic description
-	return gofakeit.Sentence(rand.Intn(5) + 3) // 3-8 words
-}
-
-func (g *CSVGenerator) generateValue(field string, index int) string {
-	// Generate a more realistic value based on the field name
-	fieldLower := strings.ToLower(field)
-
-	// Try to infer the field type from its name
-	switch {
-	case strings.Contains(fieldLower, "color"):
-		return gofakeit.Color()
-	case strings.Contains(fieldLower, "currency"):
-		return gofakeit.CurrencyShort()
-	case strings.Contains(fieldLower, "job") || strings.Contains(fieldLower, "title"):
-		return gofakeit.JobTitle()
-	case strings.Contains(fieldLower, "company"):
-		return gofakeit.Company()
-	case strings.Contains(fieldLower, "product"):
-		return gofakeit.ProductName()
-	default:
-		// Add a bit of randomness
-		adjective := gofakeit.Adjective()
-		noun := gofakeit.Noun()
-		return adjective + "_" + noun + "_" + strconv.Itoa(index)
-	}
-}
-
-func (g *CSVGenerator) generateDate(index int) string {
-	// Generate a date within the last 2 years
-	minTime := time.Now().AddDate(-2, 0, 0)
-	maxTime := time.Now()
-
-	// Use gofakeit for better randomization
-	date := gofakeit.DateRange(minTime, maxTime)
-
-	// Format as YYYY-MM-DD
-	return date.Format("2006-01-02")
-}
-
-// Helper function to find entity ID by index
-func (g *CSVGenerator) findEntityByIndex(index int) string {
-	// This is a simple utility to find an entity ID when we only have an index
-	// Takes the first entity if we can't determine which one
-	for entityID := range g.EntityData {
-		return entityID
-	}
-	return ""
-}
-
-func (g *CSVGenerator) generateGenericValue(field string, index int) string {
-	// Generate values based on the field name
-	fieldLower := strings.ToLower(field)
-
-	// More intelligent field type detection
-	switch {
-	// Numeric fields
-	case strings.Contains(fieldLower, "count") ||
-		strings.Contains(fieldLower, "number") ||
-		strings.Contains(fieldLower, "amount") ||
-		strings.Contains(fieldLower, "quantity"):
-		if strings.Contains(fieldLower, "price") || strings.Contains(fieldLower, "cost") {
-			// Generate a price with 2 decimal places (like $123.45)
-			return fmt.Sprintf("%.2f", gofakeit.Price(1, 1000))
-		}
-		return strconv.Itoa(gofakeit.Number(1, 1000))
-
-	// Percentage fields
-	case strings.Contains(fieldLower, "percent") ||
-		strings.Contains(fieldLower, "rate"):
-		return strconv.Itoa(gofakeit.Number(1, 100)) + "%"
-
-	// Email fields
-	case strings.Contains(fieldLower, "email"):
-		return gofakeit.Email()
-
-	// Phone number fields
-	case strings.Contains(fieldLower, "phone"):
-		return gofakeit.Phone()
-
-	// URL fields
-	case strings.Contains(fieldLower, "url") ||
-		strings.Contains(fieldLower, "website") ||
-		strings.Contains(fieldLower, "link"):
-		return gofakeit.URL()
-
-	// Username fields
-	case strings.Contains(fieldLower, "username") ||
-		strings.Contains(fieldLower, "user_name"):
-		return gofakeit.Username()
-
-	// Password fields
-	case strings.Contains(fieldLower, "password"):
-		return gofakeit.Password(true, true, true, true, false, 10)
-
-	// Address fields
-	case strings.Contains(fieldLower, "address"):
-		return gofakeit.Address().Address
-
-	case strings.Contains(fieldLower, "street"):
-		return gofakeit.Street()
-
-	case strings.Contains(fieldLower, "city"):
-		return gofakeit.City()
-
-	case strings.Contains(fieldLower, "state"):
-		return gofakeit.State()
-
-	case strings.Contains(fieldLower, "zip") ||
-		strings.Contains(fieldLower, "postal"):
-		return gofakeit.Zip()
-
-	case strings.Contains(fieldLower, "country"):
-		return gofakeit.Country()
-
-	// Name fields
-	case strings.Contains(fieldLower, "first_name") ||
-		strings.Contains(fieldLower, "firstname"):
-		return gofakeit.FirstName()
-
-	case strings.Contains(fieldLower, "last_name") ||
-		strings.Contains(fieldLower, "lastname"):
-		return gofakeit.LastName()
-
-	// Code fields
-	case strings.Contains(fieldLower, "code"):
-		prefix := string([]rune(gofakeit.LetterN(3)))
-		return strings.ToUpper(prefix) + "-" + strconv.Itoa(1000+index)
-
-	// IP address fields
-	case strings.Contains(fieldLower, "ip"):
-		return gofakeit.IPv4Address()
-
-	// Credit card fields
-	case strings.Contains(fieldLower, "card") ||
-		strings.Contains(fieldLower, "credit"):
-		return gofakeit.CreditCardNumber(&gofakeit.CreditCardOptions{})
-
-	// Datetime fields
-	case strings.Contains(fieldLower, "time") && !strings.Contains(fieldLower, "date"):
-		// Create a time within the last 24 hours
-		minTime := time.Now().Add(-24 * time.Hour)
-		maxTime := time.Now()
-		return gofakeit.DateRange(minTime, maxTime).Format("15:04:05")
-
-	// Color fields
-	case strings.Contains(fieldLower, "color") ||
-		strings.Contains(fieldLower, "colour"):
-		return gofakeit.Color()
-
-	// Department fields
-	case strings.Contains(fieldLower, "department") ||
-		strings.Contains(fieldLower, "dept"):
-		return gofakeit.JobTitle()
-
-	// Product fields
-	case strings.Contains(fieldLower, "product"):
-		return gofakeit.ProductName()
-
-	// Description or comment fields
-	case strings.Contains(fieldLower, "comment") ||
-		strings.Contains(fieldLower, "description") ||
-		strings.Contains(fieldLower, "summary") ||
-		strings.Contains(fieldLower, "notes"):
-		return gofakeit.Sentence(gofakeit.Number(5, 15))
-
-	// UUID fields
-	case strings.Contains(fieldLower, "uuid") ||
-		strings.Contains(fieldLower, "guid"):
-		return gofakeit.UUID()
-
-	// Default - generate a more interesting value using an adjective and noun
-	default:
-		return gofakeit.Word() + "_" + strconv.Itoa(index)
-	}
-}
-
-// generateUniqueValue creates a unique value for attributes marked as uniqueId=true
-func (g *CSVGenerator) generateUniqueValue(entityID string, attrName string, baseValue string) string {
-	attrKey := entityID + ":" + attrName
-
-	// If this is our first use of this attribute, initialize the map
-	if g.usedUniqueValues[attrKey] == nil {
-		g.usedUniqueValues[attrKey] = make(map[string]bool)
-	}
-
-	// For UUID-based values, we generate a new UUID and ensure it's unique
-	if strings.Contains(strings.ToLower(attrName), "uuid") || strings.HasSuffix(strings.ToLower(attrName), "id") {
-		uniqueVal := uuid.New().String()
-		
-		// Make sure the generated UUID isn't already used (extremely unlikely but possible)
-		// This is a safety check to ensure we never have duplicate UUIDs
-		attempt := 0
-		for g.usedUniqueValues[attrKey][uniqueVal] && attempt < 1000 {
-			uniqueVal = uuid.New().String()
-			attempt++
-		}
-		
-		// Also check if this value is used by any other entity with a unique attribute
-		// This helps prevent duplication across related entities
-		globalKey := "global:" + strings.ToLower(attrName)
-		if g.usedUniqueValues[globalKey] == nil {
-			g.usedUniqueValues[globalKey] = make(map[string]bool)
-		}
-		
-		// If this value is already used globally for this attribute type, generate a new one
-		attempt = 0
-		for g.usedUniqueValues[globalKey][uniqueVal] && attempt < 1000 {
-			uniqueVal = uuid.New().String()
-			attempt++
-			// Check entity-specific uniqueness again
-			if g.usedUniqueValues[attrKey][uniqueVal] {
-				continue
-			}
-		}
-		
-		// Mark as used both locally and globally
-		g.usedUniqueValues[attrKey][uniqueVal] = true
-		g.usedUniqueValues[globalKey][uniqueVal] = true
-		return uniqueVal
-	}
-
-	// For other types, try to make the base value unique
-	uniqueVal := baseValue
-	attempt := 0
-
-	// If this value is already used, append a suffix to make it unique
-	for g.usedUniqueValues[attrKey][uniqueVal] && attempt < 1000 {
-		// Add a suffix to make it unique
-		suffix := "_" + strconv.Itoa(attempt)
-
-		// If the value already has a numerical suffix, replace it
-		if idx := strings.LastIndex(baseValue, "_"); idx != -1 {
-			if _, err := strconv.Atoi(baseValue[idx+1:]); err == nil {
-				uniqueVal = baseValue[:idx] + suffix
-			} else {
-				uniqueVal = baseValue + suffix
-			}
-		} else {
-			uniqueVal = baseValue + suffix
-		}
-
-		attempt++
-	}
-
-	// Mark this value as used
-	g.usedUniqueValues[attrKey][uniqueVal] = true
-	return uniqueVal
 }

@@ -9,6 +9,8 @@ import (
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewCSVGenerator(t *testing.T) {
@@ -18,33 +20,14 @@ func TestNewCSVGenerator(t *testing.T) {
 
 	generator := NewCSVGenerator(outputDir, dataVolume, autoCardinality)
 
-	if generator.OutputDir != outputDir {
-		t.Errorf("Expected OutputDir to be %s, got %s", outputDir, generator.OutputDir)
-	}
-
-	if generator.DataVolume != dataVolume {
-		t.Errorf("Expected DataVolume to be %d, got %d", dataVolume, generator.DataVolume)
-	}
-
-	if generator.AutoCardinality != autoCardinality {
-		t.Errorf("Expected AutoCardinality to be %t, got %t", autoCardinality, generator.AutoCardinality)
-	}
-
-	if generator.EntityData == nil {
-		t.Error("Expected EntityData to be initialized, got nil")
-	}
-
-	if generator.idMap == nil {
-		t.Error("Expected idMap to be initialized, got nil")
-	}
-
-	if generator.relationshipMap == nil {
-		t.Error("Expected relationshipMap to be initialized, got nil")
-	}
-
-	if generator.generatedValues == nil {
-		t.Error("Expected generatedValues to be initialized, got nil")
-	}
+	assert.Equal(t, outputDir, generator.OutputDir, "OutputDir should match input value")
+	assert.Equal(t, dataVolume, generator.DataVolume, "DataVolume should match input value")
+	assert.Equal(t, autoCardinality, generator.AutoCardinality, "AutoCardinality should match input value")
+	
+	assert.NotNil(t, generator.EntityData, "EntityData should be initialized")
+	assert.NotNil(t, generator.idMap, "idMap should be initialized")
+	assert.NotNil(t, generator.relationshipMap, "relationshipMap should be initialized")
+	assert.NotNil(t, generator.generatedValues, "generatedValues should be initialized")
 }
 
 func TestSetup(t *testing.T) {
@@ -104,68 +87,36 @@ func TestSetup(t *testing.T) {
 	generator.Setup(entities, relationships)
 
 	// Check that the entity data was set up correctly
-	if len(generator.EntityData) != 2 {
-		t.Errorf("Expected 2 entities in EntityData, got %d", len(generator.EntityData))
-	}
+	assert.Len(t, generator.EntityData, 2, "Should have 2 entities in EntityData")
 
 	// Check entity1
 	entity1Data, exists := generator.EntityData["entity1"]
-	if !exists {
-		t.Error("Expected entity1 to exist in EntityData, but it doesn't")
-	} else {
-		if entity1Data.ExternalId != "Test/EntityOne" {
-			t.Errorf("Expected ExternalId to be Test/EntityOne, got %s", entity1Data.ExternalId)
-		}
-
-		if len(entity1Data.Headers) != 2 {
-			t.Errorf("Expected 2 headers, got %d", len(entity1Data.Headers))
-		}
-
-		if entity1Data.Headers[0] != "id" || entity1Data.Headers[1] != "name" {
-			t.Errorf("Expected headers [id, name], got %v", entity1Data.Headers)
-		}
-	}
+	assert.True(t, exists, "entity1 should exist in EntityData")
+	assert.Equal(t, "Test/EntityOne", entity1Data.ExternalId, "entity1 ExternalId should match")
+	assert.Len(t, entity1Data.Headers, 2, "entity1 should have 2 headers")
+	assert.Equal(t, []string{"id", "name"}, entity1Data.Headers, "entity1 headers should match")
 
 	// Check entity2
 	entity2Data, exists := generator.EntityData["entity2"]
-	if !exists {
-		t.Error("Expected entity2 to exist in EntityData, but it doesn't")
-	} else {
-		if entity2Data.ExternalId != "Test/EntityTwo" {
-			t.Errorf("Expected ExternalId to be Test/EntityTwo, got %s", entity2Data.ExternalId)
-		}
-
-		if len(entity2Data.Headers) != 2 {
-			t.Errorf("Expected 2 headers, got %d", len(entity2Data.Headers))
-		}
-
-		if entity2Data.Headers[0] != "id" || entity2Data.Headers[1] != "type" {
-			t.Errorf("Expected headers [id, type], got %v", entity2Data.Headers)
-		}
-	}
+	assert.True(t, exists, "entity2 should exist in EntityData")
+	assert.Equal(t, "Test/EntityTwo", entity2Data.ExternalId, "entity2 ExternalId should match")
+	assert.Len(t, entity2Data.Headers, 2, "entity2 should have 2 headers")
+	assert.Equal(t, []string{"id", "type"}, entity2Data.Headers, "entity2 headers should match")
 
 	// Check that the relationship map was set up correctly
-	if len(generator.relationshipMap) != 1 {
-		t.Errorf("Expected 1 relationship in relationshipMap, got %d", len(generator.relationshipMap))
-	}
+	assert.Len(t, generator.relationshipMap, 1, "Should have 1 relationship in relationshipMap")
 
 	// Check namespace prefix
-	if generator.namespacePrefix != "Test" {
-		t.Errorf("Expected namespacePrefix to be Test, got %s", generator.namespacePrefix)
-	}
+	assert.Equal(t, "Test", generator.namespacePrefix, "Namespace prefix should be 'Test'")
 
 	// Check generated values
-	if len(generator.generatedValues) == 0 {
-		t.Error("Expected generatedValues to be populated, but it's empty")
-	}
+	assert.NotEmpty(t, generator.generatedValues, "generatedValues should be populated")
 }
 
 func TestGenerateAndWriteCSVFiles(t *testing.T) {
 	// Create a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "csv-generator-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a test generator
@@ -203,70 +154,47 @@ func TestGenerateAndWriteCSVFiles(t *testing.T) {
 
 	// Check that the data was generated correctly
 	entity1Data := generator.EntityData["entity1"]
-	if len(entity1Data.Rows) != 3 {
-		t.Errorf("Expected 3 rows, got %d", len(entity1Data.Rows))
-	}
+	assert.Len(t, entity1Data.Rows, 3, "Should have 3 rows of data")
 
 	for _, row := range entity1Data.Rows {
-		if len(row) != 2 {
-			t.Errorf("Expected 2 columns per row, got %d", len(row))
-		}
-
-		// ID should not be empty
-		if row[0] == "" {
-			t.Error("Expected non-empty ID, got empty string")
-		}
-
-		// Name should not be empty
-		if row[1] == "" {
-			t.Error("Expected non-empty name, got empty string")
-		}
+		assert.Len(t, row, 2, "Each row should have 2 columns")
+		assert.NotEmpty(t, row[0], "ID should not be empty")
+		assert.NotEmpty(t, row[1], "Name should not be empty")
 	}
 
 	// Write CSV files
 	err = generator.WriteCSVFiles()
-	if err != nil {
-		t.Errorf("WriteCSVFiles() failed: %v", err)
-	}
+	assert.NoError(t, err, "WriteCSVFiles() should not fail")
 
 	// Check that the CSV file was created
 	files, err := os.ReadDir(tempDir)
-	if err != nil {
-		t.Errorf("Failed to read temp directory: %v", err)
-	}
-
-	if len(files) != 1 {
-		t.Errorf("Expected 1 file, got %d", len(files))
-	}
-
-	if files[0].Name() != "EntityOne.csv" {
-		t.Errorf("Expected file EntityOne.csv, got %s", files[0].Name())
-	}
+	assert.NoError(t, err, "Reading temp directory should not fail")
+	assert.Len(t, files, 1, "Should have created 1 file")
+	assert.Equal(t, "EntityOne.csv", files[0].Name(), "File should be named EntityOne.csv")
 
 	// Read the CSV file to verify it has the correct format
 	content, err := os.ReadFile(filepath.Join(tempDir, "EntityOne.csv"))
-	if err != nil {
-		t.Errorf("Failed to read CSV file: %v", err)
-	}
+	assert.NoError(t, err, "Reading CSV file should not fail")
 
 	lines := strings.Split(string(content), "\n")
 	// First line should be the header
-	if !strings.HasPrefix(lines[0], "id,name") {
-		t.Errorf("Expected header line to begin with 'id,name', got %s", lines[0])
-	}
+	assert.True(t, strings.HasPrefix(lines[0], "id,name"), "Header line should begin with 'id,name'")
 
-	// Should have 4 lines (header + 3 data rows + empty line at end)
-	if len(lines) != 5 {
-		t.Errorf("Expected 5 lines in CSV (header + 3 data rows + empty), got %d", len(lines))
-	}
+	// Should have 5 lines (header + 3 data rows + empty line at end)
+	assert.Len(t, lines, 5, "CSV should have 5 lines (header + 3 data rows + empty line)")
 }
 
 func TestDataGenerationFunctions(t *testing.T) {
 	generator := NewCSVGenerator("test_output", 5, false)
 	generator.generateCommonValues() // Initialize common values
 
-	t.Run("generateName", func(t *testing.T) {
-		name := generator.generateName(0)
+	t.Run("generateNameField", func(t *testing.T) {
+		req := FieldRequest{
+			EntityID: "",
+			Header: "name",
+			RowIndex: 0,
+		}
+		name := generator.generateNameField(req)
 		if name == "" {
 			t.Error("Generated name is empty")
 		}
@@ -274,8 +202,13 @@ func TestDataGenerationFunctions(t *testing.T) {
 		// but we can verify it's not empty
 	})
 
-	t.Run("generateDescription", func(t *testing.T) {
-		desc := generator.generateDescription("test", 1)
+	t.Run("generateDescriptionField", func(t *testing.T) {
+		req := FieldRequest{
+			EntityID: "test",
+			Header: "description",
+			RowIndex: 1,
+		}
+		desc := generator.generateDescriptionField(req)
 		if desc == "" {
 			t.Error("Generated description is empty")
 		}
@@ -296,8 +229,13 @@ func TestDataGenerationFunctions(t *testing.T) {
 		}
 	})
 
-	t.Run("generateDate", func(t *testing.T) {
-		date := generator.generateDate(3)
+	t.Run("generateDateField", func(t *testing.T) {
+		req := FieldRequest{
+			EntityID: "",
+			Header: "created",
+			RowIndex: 3,
+		}
+		date := generator.generateDateField(req)
 		if date == "" {
 			t.Error("Generated date is empty")
 		}
@@ -307,7 +245,7 @@ func TestDataGenerationFunctions(t *testing.T) {
 		}
 	})
 
-	t.Run("generateGenericValue", func(t *testing.T) {
+	t.Run("generateGenericField", func(t *testing.T) {
 		// Test different field types
 		testCases := []struct {
 			fieldName    string
@@ -354,7 +292,12 @@ func TestDataGenerationFunctions(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.fieldName, func(t *testing.T) {
-				value := generator.generateGenericValue(tc.fieldName, tc.index)
+				req := FieldRequest{
+					EntityID: "",
+					Header: tc.fieldName,
+					RowIndex: tc.index,
+				}
+				value := generator.generateGenericField(req)
 				if value == "" {
 					t.Errorf("Generated value for %s is empty", tc.fieldName)
 				}
@@ -369,44 +312,8 @@ func TestDataGenerationFunctions(t *testing.T) {
 	})
 }
 
-func TestFindEntityByReferenceField(t *testing.T) {
-	generator := NewCSVGenerator("test_output", 5, false)
-
-	// Set up some entity data
-	generator.EntityData = map[string]*models.CSVData{
-		"entity1": {
-			EntityName: "User",
-		},
-		"entity2": {
-			EntityName: "Role",
-		},
-		"entity3": {
-			EntityName: "Group",
-		},
-	}
-
-	// Test cases
-	testCases := []struct {
-		fieldName      string
-		expectedEntity string
-	}{
-		{"userId", "entity1"},
-		{"roleId", "entity2"},
-		{"groupId", "entity3"},
-		{"nonExistentId", ""},
-		{"id", ""}, // Should not match anything
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.fieldName, func(t *testing.T) {
-			entityID := generator.findEntityByReferenceField(tc.fieldName)
-			if entityID != tc.expectedEntity {
-				t.Errorf("Expected entity %s for field %s, got %s",
-					tc.expectedEntity, tc.fieldName, entityID)
-			}
-		})
-	}
-}
+// Note: The findEntityByReferenceField method was removed during refactoring.
+// This test is no longer applicable as the field references are now handled differently.
 
 func TestGenerateRowForEntity(t *testing.T) {
 	// Create a temporary directory

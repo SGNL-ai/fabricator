@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAutoCardinality(t *testing.T) {
 	// Create a temporary directory for test output
 	tempDir, err := os.MkdirTemp("", "auto-cardinality-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	require.NoError(t, err, "Failed to create temp directory")
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Test 1: One-to-Many relationship with uniqueId attributes
@@ -59,34 +59,16 @@ func TestAutoCardinality(t *testing.T) {
 		// and we should see clustering of values (multiple orders linked to same user)
 
 		orderRows := generator.EntityData["order"].Rows
-		if len(orderRows) < 2 {
-			t.Errorf("Expected at least 2 order rows, got %d", len(orderRows))
-		}
+		assert.GreaterOrEqual(t, len(orderRows), 2, "Expected at least 2 order rows")
 
 		// Check if userId is populated
+		validUserIds := map[string]bool{"user1": true, "user2": true}
 		for _, row := range orderRows {
 			userId := row[1] // userId is the second column
-			if userId == "" {
-				t.Errorf("Order has empty userId, expected a value")
-			}
-
+			assert.NotEmpty(t, userId, "Order has empty userId, expected a value")
+			
 			// Verify userId references a valid user
-			validUserIds := map[string]bool{"user1": true, "user2": true}
-			if !validUserIds[userId] {
-				t.Errorf("Order has userId %s which is not a valid user ID", userId)
-			}
-		}
-
-		// Verify that each order has a valid user ID
-		// With only 2 orders and 2 users, we can't guarantee clustering due to randomness
-		// But we can verify that all orders have a valid user ID assigned
-
-		for _, row := range orderRows {
-			userId := row[1]
-			validUserIds := map[string]bool{"user1": true, "user2": true}
-			if !validUserIds[userId] {
-				t.Errorf("Order has invalid userId %s", userId)
-			}
+			assert.True(t, validUserIds[userId], "Order has userId %s which is not a valid user ID", userId)
 		}
 
 		// Log the distribution but don't fail the test
@@ -142,17 +124,13 @@ func TestAutoCardinality(t *testing.T) {
 		productRows := generator.EntityData["product"].Rows
 
 		// Check if categoryId is populated
+		validCategoryIds := map[string]bool{"cat1": true, "cat2": true}
 		for _, row := range productRows {
 			categoryId := row[2] // categoryId is the third column
-			if categoryId == "" {
-				t.Errorf("Product has empty categoryId, expected a value")
-			}
+			assert.NotEmpty(t, categoryId, "Product has empty categoryId, expected a value")
 
 			// Verify categoryId references a valid category
-			validCategoryIds := map[string]bool{"cat1": true, "cat2": true}
-			if !validCategoryIds[categoryId] {
-				t.Errorf("Product has categoryId %s which is not a valid category ID", categoryId)
-			}
+			assert.True(t, validCategoryIds[categoryId], "Product has categoryId %s which is not a valid category ID", categoryId)
 		}
 
 		// Log the distribution but don't fail the test (similar to Test 1)
@@ -209,9 +187,7 @@ func TestAutoCardinality(t *testing.T) {
 
 		for _, row := range userRows {
 			accountIds := row[2] // account_ids is the third column
-			if accountIds == "" {
-				t.Errorf("User has empty account_ids, expected a value")
-			}
+			assert.NotEmpty(t, accountIds, "User has empty account_ids, expected a value")
 
 			// For 1:N relationships, we expect comma-separated lists
 			// This is the behavior of our row duplication approach
