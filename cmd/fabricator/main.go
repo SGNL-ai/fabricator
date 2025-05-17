@@ -165,11 +165,17 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		// Initialize CSV generator
 		color.Yellow("Initializing CSV generator...")
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		generator.Setup(def.Entities, def.Relationships)
+		err = generator.Setup(def.Entities, def.Relationships)
+			if err != nil {
+				return fmt.Errorf("failed to setup CSV generator: %w", err)
+			}
 
 		// Generate data
 		color.Yellow("Generating data for %d entities...", len(def.Entities))
-		generator.GenerateData()
+		err = generator.GenerateData()
+			if err != nil {
+				return fmt.Errorf("failed to generate data: %w", err)
+			}
 
 		// Write CSV files
 		color.Yellow("Writing CSV files to %s...", absOutputDir)
@@ -181,7 +187,10 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		// In validation-only mode, initialize without generating
 		color.Yellow("Validation-only mode: Loading existing CSV files from %s...", absOutputDir)
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		generator.Setup(def.Entities, def.Relationships)
+		err = generator.Setup(def.Entities, def.Relationships)
+			if err != nil {
+				return fmt.Errorf("failed to setup CSV generator: %w", err)
+			}
 
 		// Load existing CSV files for validation
 		err = generator.LoadExistingCSVFiles()

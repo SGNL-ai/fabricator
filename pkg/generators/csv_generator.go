@@ -13,6 +13,7 @@ import (
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/dominikbraun/graph"
 	"github.com/fatih/color"
 	"github.com/google/uuid"
 )
@@ -30,6 +31,7 @@ type CSVGenerator struct {
 	usedUniqueValues   map[string]map[string]bool // Track used values for fields with uniqueId=true by entity:attribute
 	uniqueIdAttributes map[string][]string        // Track attributes with uniqueId=true by entity
 	existingFiles      map[string]bool            // Track existing CSV files in validation-only mode
+	dependencyGraph    graph.Graph[string, string] // Entity dependency graph for topological generation
 }
 
 // NewCSVGenerator creates a new CSVGenerator instance
@@ -51,11 +53,12 @@ func NewCSVGenerator(outputDir string, dataVolume int, autoCardinality bool) *CS
 		usedUniqueValues:   make(map[string]map[string]bool),
 		uniqueIdAttributes: make(map[string][]string),
 		existingFiles:      make(map[string]bool),
+		dependencyGraph:    nil, // Will be initialized in Setup
 	}
 }
 
 // Setup prepares the generator with the necessary data
-func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships map[string]models.Relationship) {
+func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships map[string]models.Relationship) error {
 	// Extract the common namespace prefix
 	g.extractNamespacePrefix(entities)
 
@@ -94,6 +97,27 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 	// Process relationships
 	g.processRelationships(entities, relationships)
 
+	// Build entity dependency graph for generation order
+	dependencyGraph, err := g.buildEntityDependencyGraph(entities, relationships)
+	if err != nil {
+		return fmt.Errorf("failed to build entity dependency graph: %w", err)
+	}
+
+	// Store the dependency graph for use during generation
+	g.dependencyGraph = dependencyGraph
+	
+	// Log the generation order (for information only)
+	entityOrder, err := g.getTopologicalOrder(dependencyGraph)
+	if err != nil {
+		return fmt.Errorf("failed to determine entity generation order: %w", err)
+	}
+	
+	color.Green("Entity generation order determined:")
+	for i, entityID := range entityOrder {
+		entity := entities[entityID]
+		color.Green("  %d. %s (%s)", i+1, entity.DisplayName, entityID)
+	}
+
 	// Pre-generate some common values for generic data types
 	g.generateCommonValues()
 
@@ -106,6 +130,8 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 			}
 		}
 	}
+	
+	return nil
 }
 
 // extractNamespacePrefix finds the common namespace prefix from entity external IDs
@@ -376,24 +402,42 @@ func (g *CSVGenerator) generateCommonValues() {
 }
 
 // GenerateData creates random data for all entities
-func (g *CSVGenerator) GenerateData() {
+// following a topological ordering of dependencies
+func (g *CSVGenerator) GenerateData() error {
 	// First, generate IDs that will be consistent across relationships
 	g.generateConsistentIds()
 
-	// Then generate data for each entity
-	for id, csvData := range g.EntityData {
+	// If the dependency graph wasn't built during setup, this is an error
+	if g.dependencyGraph == nil {
+		return fmt.Errorf("dependency graph not initialized; Setup must be called before GenerateData")
+	}
+
+	// Get a topological ordering of entities for generation
+	// This ensures that entities are generated in dependency order
+	entityOrder, err := g.getTopologicalOrder(g.dependencyGraph)
+	if err != nil {
+		return fmt.Errorf("failed to determine entity generation order: %w", err)
+	}
+
+	// Generate data for each entity in topological order
+	for _, entityID := range entityOrder {
+		csvData := g.EntityData[entityID]
 		rows := [][]string{}
 
+		color.Green("Generating data for %s (%s)", csvData.EntityName, entityID)
 		for i := 0; i < g.DataVolume; i++ {
-			row := g.generateRowForEntity(id, i)
+			row := g.generateRowForEntity(entityID, i)
 			rows = append(rows, row)
 		}
 
 		csvData.Rows = rows
+		
+		// Make relationships consistent after each entity is generated
+		// This ensures that dependent entities have correct references
+		g.makeRelationshipsConsistentForEntity(entityID)
 	}
 
-	// Post-process for relationship consistency
-	g.ensureRelationshipConsistency()
+	return nil
 }
 
 // generateConsistentIds ensures that IDs used in relationships are consistent

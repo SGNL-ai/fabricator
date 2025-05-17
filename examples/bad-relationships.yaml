@@ -1,0 +1,71 @@
+displayName: Bad-Relationships-Test
+description: Test file with invalid relationships
+hostname: localhost:8080
+defaultSyncFrequency: DAILY
+defaultSyncMinInterval: 1
+defaultApiCallFrequency: SECONDLY
+defaultApiCallMinInterval: 1
+type: S3-1.0.0
+adapterConfig: 
+auth:
+  - basic:
+      username: TEST_USER
+entities:
+  User:
+    displayName: User
+    externalId: User
+    description: User entity
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: Unique user id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: name
+        externalId: name
+        description: User name
+        type: String
+        indexed: false
+        uniqueId: false
+  Role:
+    displayName: Role
+    externalId: Role
+    description: Role entity
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: Unique role id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: name
+        externalId: name
+        description: Role name
+        type: String
+        indexed: false
+        uniqueId: false
+relationships:
+  valid_relationship:
+    displayName: HAS_ROLE
+    name: HAS_ROLE
+    fromAttribute: User.id
+    toAttribute: Role.id
+  invalid_relationship1:
+    displayName: BAD_RELATIONSHIP
+    name: BAD_RELATIONSHIP
+    fromAttribute: User.nonexistent
+    toAttribute: Role.id
+  invalid_relationship2:
+    displayName: ANOTHER_BAD_RELATIONSHIP
+    name: ANOTHER_BAD_RELATIONSHIP
+    fromAttribute: User.id
+    toAttribute: NonExistentEntity.id
+  invalid_path_relationship:
+    displayName: BAD_PATH_RELATIONSHIP
+    name: BAD_PATH_RELATIONSHIP
+    path:
+      - relationship: nonexistent_relationship
+        direction: Forward
