@@ -169,8 +169,12 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 		if err != nil {
 			// For the diagram, we'll just skip invalid edges rather than failing
 			// This allows us to generate at least a partial diagram
-			fmt.Printf("Warning: Failed to add edge for relationship %s -> %s: %v\n",
-				rel.FromEntity, rel.ToEntity, err)
+			
+			// Don't show warnings for common edge-already-exists errors
+			if !errors.Is(err, graph.ErrEdgeAlreadyExists) {
+				fmt.Printf("Warning: Failed to add edge for relationship %s -> %s: %v\n",
+					rel.FromEntity, rel.ToEntity, err)
+			}
 			continue
 		}
 

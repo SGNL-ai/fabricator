@@ -33,27 +33,54 @@ func (g *CSVGenerator) buildEntityDependencyGraph(
 		return nil, err
 	}
 
-	// Debug relationship information for CSV generator
-	for relName, relationship := range relationships {
-		// Skip path-based relationships for now
-		if len(relationship.Path) > 0 {
-			continue
+	// Debug relationship information for CSV generator if --debug flag is set
+	// Note: in a real implementation we would check a debug flag here
+	debugRelationships := false
+	
+	if debugRelationships {
+		// Count skipped relationships instead of showing each one
+		skippedCount := 0
+		
+		// Summary counts of relationship types
+		fkToPk := 0
+		pkToFk := 0
+		pkToPk := 0
+		otherRel := 0
+		
+		for _, relationship := range relationships {
+			// Skip path-based relationships for now
+			if len(relationship.Path) > 0 {
+				continue
+			}
+
+			// Parse the entity-attribute pairs from the relationship using our implementation
+			fromEntityID, _, fromUniqueID := parseEntityAttribute(entities, relationship.FromAttribute)
+			toEntityID, _, toUniqueID := parseEntityAttribute(entities, relationship.ToAttribute)
+
+			// Count relationship types
+			if fromEntityID != "" && toEntityID != "" {
+				if !fromUniqueID && toUniqueID {
+					fkToPk++
+				} else if fromUniqueID && !toUniqueID {
+					pkToFk++
+				} else if fromUniqueID && toUniqueID {
+					pkToPk++
+				} else {
+					otherRel++
+				}
+			} else {
+				// If we couldn't identify both ends of the relationship, count it
+				skippedCount++
+			}
 		}
-
-		// Parse the entity-attribute pairs from the relationship using our implementation
-		// We'll create a local helper function for debugging output
-		fromEntityID, fromAttrName, fromUniqueID := parseEntityAttribute(entities, relationship.FromAttribute)
-		toEntityID, toAttrName, toUniqueID := parseEntityAttribute(entities, relationship.ToAttribute)
-
-		// Debug the relationship
-		color.Cyan("Relationship: %s -> %s", relationship.FromAttribute, relationship.ToAttribute)
-		color.Cyan("  From Entity: %s, Attribute: %s, UniqueID: %t", fromEntityID, fromAttrName, fromUniqueID)
-		color.Cyan("  To Entity: %s, Attribute: %s, UniqueID: %t", toEntityID, toAttrName, toUniqueID)
-
-		// If we couldn't identify both ends of the relationship, log it
-		if fromEntityID == "" || toEntityID == "" {
-			color.Yellow("Skipping relationship %s: couldn't identify entities", relName)
+		
+		// Log summary of relationship analysis
+		if skippedCount > 0 {
+			color.Yellow("Note: %d relationships couldn't be fully resolved", skippedCount)
 		}
+		
+		color.Cyan("Relationship types: %d standard (FK→PK), %d reverse (PK→FK), %d identity (PK→PK), %d other",
+			fkToPk, pkToFk, pkToPk, otherRel)
 	}
 
 	return entityGraph, nil
