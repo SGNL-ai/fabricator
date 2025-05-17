@@ -106,16 +106,10 @@ func (g *CSVGenerator) Setup(entities map[string]models.Entity, relationships ma
 	// Store the dependency graph for use during generation
 	g.dependencyGraph = dependencyGraph
 	
-	// Log the generation order (for information only)
-	entityOrder, err := g.getTopologicalOrder(dependencyGraph)
+	// Log the generation order (needed for later, but don't display)
+	_, err = g.getTopologicalOrder(dependencyGraph)
 	if err != nil {
 		return fmt.Errorf("failed to determine entity generation order: %w", err)
-	}
-	
-	color.Green("Entity generation order determined:")
-	for i, entityID := range entityOrder {
-		entity := entities[entityID]
-		color.Green("  %d. %s (%s)", i+1, entity.DisplayName, entityID)
 	}
 
 	// Pre-generate some common values for generic data types
@@ -424,7 +418,7 @@ func (g *CSVGenerator) GenerateData() error {
 		csvData := g.EntityData[entityID]
 		rows := [][]string{}
 
-		color.Green("Generating data for %s (%s)", csvData.EntityName, entityID)
+		// Generating data (removed from output)
 		for i := 0; i < g.DataVolume; i++ {
 			row := g.generateRowForEntity(entityID, i)
 			rows = append(rows, row)

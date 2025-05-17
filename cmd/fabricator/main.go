@@ -168,7 +168,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
 
 		// Initialize CSV generator
-		color.Yellow("Initializing CSV generator...")
+		// Initializing CSV generator (removed from output)
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
 		err = generator.Setup(def.Entities, def.Relationships)
 			if err != nil {
@@ -212,17 +212,16 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	if generateDiagram {
 		// Check if Graphviz is available (this is a double-check since flag might be manually set)
 		graphvizAvailable := diagrams.IsGraphvizAvailable()
-		outputFormat := "DOT"
+		// Output format (won't be displayed)
 		extension := ".dot"
 
 		if graphvizAvailable {
-			outputFormat = "SVG"
+			// Using SVG format
 			extension = ".svg"
 		}
 
 		color.Yellow("Generating Entity-Relationship diagram...")
-		color.Cyan("  - Format: %s", outputFormat)
-
+		
 		// Create diagram filename based on SOR name
 		diagramName := cleanNameForFilename(def.DisplayName)
 
@@ -261,7 +260,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Validating relationship consistency in generated files...")
 
 		// Validate relationship consistency
-		color.Cyan("  - Checking relationship consistency...")
+		// Checking relationship consistency (removed from output)
 		validationResults := generator.ValidateRelationships()
 
 		// Check if there are validation errors
@@ -303,7 +302,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		}
 
 		// Validate unique values
-		color.Cyan("  - Checking uniqueness constraints...")
+		// Checking uniqueness constraints (removed from output)
 		uniqueValueErrors := generator.ValidateUniqueValues()
 		if len(uniqueValueErrors) > 0 {
 			color.Yellow("\nFound uniqueness constraint violations:")
