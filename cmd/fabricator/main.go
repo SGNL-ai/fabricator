@@ -140,6 +140,11 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	parser := fabricator.NewParser(inputFile)
 	err := parser.Parse()
 	if err != nil {
+		// Extract details about relationship validation issues for better reporting
+		if strings.Contains(err.Error(), "relationship issues") {
+			// The full error message has detailed info, let's keep it
+			return fmt.Errorf("failed to parse YAML file due to relationship validation issues:\n%w", err)
+		}
 		return fmt.Errorf("failed to parse YAML file: %w", err)
 	}
 

@@ -161,6 +161,11 @@ func (p *Parser) validateRelationships() error {
 	validRelationships := 0
 	pathBasedRelationships := 0
 
+	// Track bidirectional relationships to detect potential cycles
+	// Map from "entityID1:entityID2" to relationship ID
+	// Used to check for reverse relationships that could create cycles
+	bidirectionalRelationships := make(map[string]string)
+
 	// Validate each relationship
 	for relID, rel := range p.Definition.Relationships {
 		// First, validate path-based relationships
@@ -168,11 +173,23 @@ func (p *Parser) validateRelationships() error {
 			pathBasedRelationships++
 			// For path-based relationships, ensure all the referenced relationships exist
 			for i, pathStep := range rel.Path {
-				if _, exists := p.Definition.Relationships[pathStep.Relationship]; !exists {
+				referencedRel, exists := p.Definition.Relationships[pathStep.Relationship]
+				if !exists {
 					invalidRelationships = append(invalidRelationships,
 						fmt.Sprintf("relationship %s: path step %d references non-existent relationship %s",
 							relID, i+1, pathStep.Relationship))
+					continue
 				}
+				
+				// Also verify the referenced relationship is a direct relationship, not another path
+				if len(referencedRel.Path) > 0 {
+					invalidRelationships = append(invalidRelationships,
+						fmt.Sprintf("relationship %s: path step %d references path-based relationship %s (nested paths not supported)",
+							relID, i+1, pathStep.Relationship))
+				}
+				
+				// Path direction is defined by external system and is not validated
+				// We just need to ensure the referenced relationship exists
 			}
 			continue
 		}
@@ -191,17 +208,37 @@ func (p *Parser) validateRelationships() error {
 		}
 
 		// Check if attributes match real entities - try both mapping approaches
+		var fromInfo, toInfo struct {
+			EntityID      string
+			AttributeName string
+			ExternalID    string
+			UniqueID      bool
+		}
 		var fromFound, toFound bool
 
 		// First check attribute alias mapping
-		_, fromFound = attributeAliasMap[rel.FromAttribute]
-		_, toFound = attributeAliasMap[rel.ToAttribute]
+		if info, found := attributeAliasMap[rel.FromAttribute]; found {
+			fromInfo = info
+			fromFound = true
+		}
+		
+		if info, found := attributeAliasMap[rel.ToAttribute]; found {
+			toInfo = info
+			toFound = true
+		}
 
 		// If not found, try Entity.Attribute mapping
-		if !fromFound || !toFound {
-			if strings.Contains(rel.FromAttribute, ".") && strings.Contains(rel.ToAttribute, ".") {
-				_, fromFound = entityAttributeMap[rel.FromAttribute]
-				_, toFound = entityAttributeMap[rel.ToAttribute]
+		if !fromFound && strings.Contains(rel.FromAttribute, ".") {
+			if info, found := entityAttributeMap[rel.FromAttribute]; found {
+				fromInfo = info
+				fromFound = true
+			}
+		}
+		
+		if !toFound && strings.Contains(rel.ToAttribute, ".") {
+			if info, found := entityAttributeMap[rel.ToAttribute]; found {
+				toInfo = info
+				toFound = true
 			}
 		}
 
@@ -218,15 +255,56 @@ func (p *Parser) validateRelationships() error {
 					relID, rel.ToAttribute))
 		}
 
-		if fromFound && toFound {
-			validRelationships++
+		// Skip further validation if either attribute wasn't found
+		if !fromFound || !toFound {
+			continue
+		}
+
+		// Advanced relationship validation when both attributes are found
+		validRelationships++
+
+		// Check for self-referential relationships within the same entity
+		if fromInfo.EntityID == toInfo.EntityID {
+			// Self-referential relationships can be valid but should be flagged for review
+			// For example, a user having a manager that is also a user
+			// We'll only warn if both attributes are marked as uniqueId
+			if fromInfo.UniqueID && toInfo.UniqueID {
+				invalidRelationships = append(invalidRelationships,
+					fmt.Sprintf("relationship %s: potential self-referential issue between uniqueId attributes '%s' and '%s' in entity '%s'",
+						relID, fromInfo.AttributeName, toInfo.AttributeName, fromInfo.EntityID))
+			}
+		} else {
+			// Check for bidirectional relationships between entities that could create cycles
+			// Create bidirectional keys for both directions
+			bidirKey1 := fromInfo.EntityID + ":" + toInfo.EntityID
+			bidirKey2 := toInfo.EntityID + ":" + fromInfo.EntityID
+
+			// Check if a relationship in the opposite direction exists
+			if existingRelID, exists := bidirectionalRelationships[bidirKey2]; exists {
+				// Bidirectional relationship detected, warn but don't error
+				// This is handled during dependency graph creation
+				invalidRelationships = append(invalidRelationships,
+					fmt.Sprintf("relationship %s: bidirectional dependency detected with relationship %s - may cause cycles during generation",
+						relID, existingRelID))
+			}
+
+			// Record this relationship direction
+			bidirectionalRelationships[bidirKey1] = relID
+
+			// Validate relationship attribute types (uniqueId status)
+			// Ideally, at least one side of the relationship should be a uniqueId
+			if !fromInfo.UniqueID && !toInfo.UniqueID {
+				invalidRelationships = append(invalidRelationships,
+					fmt.Sprintf("relationship %s: neither attribute is marked as uniqueId, which may cause inconsistent data generation",
+						relID))
+			}
 		}
 	}
 
 	// Report validation results
 	if len(invalidRelationships) > 0 {
 		// Build detailed error message
-		errorMsg := fmt.Sprintf("Found %d invalid relationships (out of %d total):\n",
+		errorMsg := fmt.Sprintf("Found %d relationship issues (out of %d total relationships):\n",
 			len(invalidRelationships), len(p.Definition.Relationships))
 
 		for _, msg := range invalidRelationships {

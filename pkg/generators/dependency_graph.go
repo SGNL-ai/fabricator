@@ -13,9 +13,12 @@ import (
 // TODO: Review this dependency graph implementation for edge cases and improvements
 // Possible enhancements:
 // 1. Handle more complex relationship types and paths
-// 2. Better cyclic dependency detection and reporting
-// 3. Consider additional metrics for entity generation order
-// 4. Add support for weighted edges based on relationship types
+// 2. Consider additional metrics for entity generation order
+// 3. Add support for weighted edges based on relationship types
+// 
+// Note: Cyclic dependency detection is now handled in two places:
+// 1. Basic detection in the YAML parser (validateRelationships)
+// 2. Detailed handling here during dependency graph construction
 
 // buildEntityDependencyGraph creates a directed graph of entity dependencies
 // based on the relationships in the SOR definition.
@@ -40,6 +43,9 @@ func (g *CSVGenerator) buildEntityDependencyGraph(
 
 	// Process relationships to add edges
 	// We need to identify which entities depend on others
+	// Note: The YAML Parser already performs basic validation of these relationships,
+	// including checking for attribute existence and potential cycle detection.
+	// Here we focus on building the dependency graph with optimal ordering.
 	for relName, relationship := range relationships {
 		// Skip path-based relationships for now
 		if len(relationship.Path) > 0 {
@@ -56,6 +62,7 @@ func (g *CSVGenerator) buildEntityDependencyGraph(
 		color.Cyan("  To Entity: %s, Attribute: %s, UniqueID: %t", toEntityID, toAttrName, toUniqueID)
 
 		// If we couldn't identify both ends of the relationship, skip it
+		// This should not happen if the YAML validation is working properly
 		if fromEntityID == "" || toEntityID == "" {
 			color.Yellow("Skipping relationship %s: couldn't identify entities", relName)
 			continue
@@ -137,10 +144,13 @@ func (g *CSVGenerator) buildEntityDependencyGraph(
 				// Handle the error based on its type
 				if errors.Is(err, graph.ErrEdgeCreatesCycle) {
 					// Edge would create a cycle
-					color.Yellow("Warning: Dependency cycle detected between %s and %s",
+					color.Yellow("Warning: Dependency cycle detected in relationship between %s and %s",
 						sourceEntityID, targetEntityID)
-					// Return the error since we want to prevent cycles
-					return nil, fmt.Errorf("dependency cycle detected: %w", err)
+					// We now have better relationship validation in the parser, but we still handle this.
+					// Log the error but continue building the dependency graph by skipping this edge,
+					// which is better than failing the entire process.
+					color.Yellow("  Skipping this dependency to prevent a cycle. Some relationships may not be fully consistent.")
+					continue
 				} else if errors.Is(err, graph.ErrEdgeAlreadyExists) {
 					// Edge already exists, we can ignore this
 					continue
