@@ -1,0 +1,272 @@
+package model
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/SGNL-ai/fabricator/pkg/models"
+)
+
+// Error definitions for Graph operations
+var (
+	ErrNilYAMLModel         = errors.New("YAML model cannot be nil")
+	ErrNoEntities           = errors.New("YAML model must contain at least one entity")
+	ErrEntityNotFound       = errors.New("entity not found")
+	ErrRelationshipNotFound = errors.New("relationship not found")
+	ErrCircularDependency   = errors.New("circular dependency detected in entity relationships")
+	ErrInvalidRelationship  = errors.New("invalid relationship definition")
+)
+
+// Graph represents the overall model including entities and relationships
+type Graph struct {
+	entities            map[string]EntityInterface         // Maps entity ID to Entity object
+	entitiesList        []EntityInterface                  // Pre-computed list of all entities
+	relationships       map[string]RelationshipInterface   // Maps relationship ID to Relationship object
+	relationshipsList   []RelationshipInterface            // Pre-computed list of all relationships
+	entityRelationships map[string][]RelationshipInterface // Maps entity ID to its relationships
+	attributeToEntity   map[string]EntityInterface         // Maps attribute externalID to its containing entity
+	yamlModel           *models.SORDefinition              // Reference to original YAML model
+}
+
+// NewGraph creates a new Graph from the YAML model
+// Following our four-step constructor pattern:
+// 1. Object creation - Initialize the Graph with empty maps and lists
+// 2. Validation - Validate the YAML model is not nil and has required elements
+// 3. Setup - Create entities and relationships from YAML
+// 4. Business logic - Validate graph integrity and build indexes
+func NewGraph(yamlModel *models.SORDefinition) (GraphInterface, error) {
+	// 1. Object creation - Create a new Graph with initialized data structures
+	graph := &Graph{
+		entities:            make(map[string]EntityInterface),
+		entitiesList:        make([]EntityInterface, 0),
+		relationships:       make(map[string]RelationshipInterface),
+		relationshipsList:   make([]RelationshipInterface, 0),
+		entityRelationships: make(map[string][]RelationshipInterface),
+		attributeToEntity:   make(map[string]EntityInterface),
+		yamlModel:           yamlModel,
+	}
+
+	// 2. Validate the YAML model
+	if yamlModel == nil {
+		return nil, ErrNilYAMLModel
+	}
+
+	if len(yamlModel.Entities) == 0 {
+		return nil, ErrNoEntities
+	}
+
+	// 3. Create entities and relationships from YAML
+	if err := graph.createEntitiesFromYAML(yamlModel.Entities); err != nil {
+		return nil, err
+	}
+
+	if err := graph.createRelationshipsFromYAML(yamlModel.Relationships); err != nil {
+		return nil, err
+	}
+
+	// 4. Build optimized data structures for access
+	if err := graph.buildIndexes(); err != nil {
+		return nil, err
+	}
+
+	// 5. Validate graph integrity
+	if err := graph.validateGraph(); err != nil {
+		return nil, err
+	}
+
+	return graph, nil
+}
+
+// GetEntity gets an entity by ID with existence check
+func (g *Graph) GetEntity(id string) (EntityInterface, bool) {
+	entity, exists := g.entities[id]
+	return entity, exists
+}
+
+// GetAllEntities returns all entities in the graph
+func (g *Graph) GetAllEntities() map[string]EntityInterface {
+	return g.entities
+}
+
+// GetEntitiesList returns a slice of all entities in the graph
+func (g *Graph) GetEntitiesList() []EntityInterface {
+	// Convert to interface slice
+	result := make([]EntityInterface, len(g.entitiesList))
+	for i, v := range g.entitiesList {
+		result[i] = v
+	}
+	return result
+}
+
+// GetRelationship gets a relationship by ID with existence check
+func (g *Graph) GetRelationship(id string) (RelationshipInterface, bool) {
+	relationship, exists := g.relationships[id]
+	return relationship, exists
+}
+
+// GetAllRelationships returns all relationships in the graph
+func (g *Graph) GetAllRelationships() []RelationshipInterface {
+	return g.relationshipsList
+}
+
+// GetRelationshipsForEntity returns all relationships that involve a specific entity
+func (g *Graph) GetRelationshipsForEntity(entityID string) []RelationshipInterface {
+	return g.entityRelationships[entityID]
+}
+
+// GetTopologicalOrder returns entities in dependency order for generation
+func (g *Graph) GetTopologicalOrder() ([]string, error) {
+	return nil, nil
+}
+
+// createEntitiesFromYAML creates Entity objects from YAML model definition
+func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]models.Entity) error {
+	// First, create all entities with their attributes
+	for entityID, yamlEntity := range yamlEntities {
+		// Convert YAML attributes to model attributes
+		attributes := make([]AttributeInterface, 0, len(yamlEntity.Attributes))
+
+		for _, yamlAttr := range yamlEntity.Attributes {
+			// Create attribute with all necessary details
+			attr := newAttribute(
+				yamlAttr.Name,
+				yamlAttr.ExternalId,
+				yamlAttr.Type,
+				yamlAttr.UniqueId,
+				yamlAttr.Description,
+				nil, // Parent entity will be set by newEntity
+			)
+			attributes = append(attributes, attr)
+		}
+
+		// Create entity with attributes
+		entity, err := newEntity(
+			entityID,
+			yamlEntity.ExternalId,
+			yamlEntity.DisplayName,
+			yamlEntity.Description,
+			attributes,
+			g,
+		)
+
+		if err != nil {
+			return fmt.Errorf("failed to create entity %s: %w", entityID, err)
+		}
+
+		// Add entity to the graph
+		g.entities[entityID] = entity
+	}
+
+	// Then build the attribute to entity lookup map
+	for _, entity := range g.entities {
+		for _, attr := range entity.GetAttributes() {
+			// Store mapping from external ID to entity
+			g.attributeToEntity[attr.GetExternalID()] = entity
+		}
+	}
+
+	return nil
+}
+
+// createRelationshipsFromYAML creates Relationship objects from YAML model definition
+func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]models.Relationship) error {
+	// Iterate over the relationships in the YAML
+	for relationshipID, yamlRel := range yamlRelationships {
+		// Skip relationships defined with path (complex relationships)
+		if len(yamlRel.Path) > 0 {
+			// TODO: Handle path-based relationships when needed
+			continue
+		}
+
+		// Get source entity from FromAttribute
+		sourceEntity := g.attributeToEntity[yamlRel.FromAttribute]
+		if sourceEntity == nil {
+			return fmt.Errorf("source entity not found for relationship %s (attribute: %s)",
+				relationshipID, yamlRel.FromAttribute)
+		}
+
+		// Get target entity from ToAttribute
+		targetEntity := g.attributeToEntity[yamlRel.ToAttribute]
+		if targetEntity == nil {
+			return fmt.Errorf("target entity not found for relationship %s (attribute: %s)",
+				relationshipID, yamlRel.ToAttribute)
+		}
+
+		// Call addRelationship on the source entity with the external IDs
+		// let addRelationship handle finding the actual attribute names
+		relationship, err := sourceEntity.addRelationship(
+			relationshipID,
+			yamlRel.Name,
+			targetEntity,
+			yamlRel.FromAttribute,
+			yamlRel.ToAttribute,
+		)
+
+		if err != nil {
+			return fmt.Errorf("failed to create relationship %s: %w", relationshipID, err)
+		}
+
+		// Only add non-nil relationships to the graph
+		if relationship != nil {
+			g.relationships[relationshipID] = relationship
+		}
+	}
+
+	return nil
+}
+
+// buildIndexes builds all the optimized data structures for faster lookups
+func (g *Graph) buildIndexes() error {
+	// Clear existing indexes
+	g.entitiesList = make([]EntityInterface, 0, len(g.entities))
+	g.relationshipsList = make([]RelationshipInterface, 0, len(g.relationships))
+	g.entityRelationships = make(map[string][]RelationshipInterface)
+
+	// Build entities list
+	for _, entity := range g.entities {
+		g.entitiesList = append(g.entitiesList, entity)
+
+		// Initialize empty relationship list for each entity
+		g.entityRelationships[entity.GetID()] = make([]RelationshipInterface, 0)
+	}
+
+	// Build relationships list and entity relationships map
+	for _, rel := range g.relationships {
+		g.relationshipsList = append(g.relationshipsList, rel)
+
+		// Add to source entity's relationships
+		sourceEntityID := rel.GetSourceEntity().GetID()
+		g.entityRelationships[sourceEntityID] = append(g.entityRelationships[sourceEntityID], rel)
+
+		// Add to target entity's relationships if different from source
+		targetEntityID := rel.GetTargetEntity().GetID()
+		if targetEntityID != sourceEntityID {
+			g.entityRelationships[targetEntityID] = append(g.entityRelationships[targetEntityID], rel)
+		}
+	}
+
+	return nil
+}
+
+// validateGraph validates entire graph structure and integrity
+func (g *Graph) validateGraph() error {
+	// Verify all entities have exactly one unique attribute
+	for _, entity := range g.entities {
+		if entity.GetPrimaryKey() == nil {
+			return fmt.Errorf("entity %s has no primary key", entity.GetID())
+		}
+	}
+
+	// Verify all relationships reference valid entities and attributes
+	for _, rel := range g.relationships {
+		if rel.GetSourceEntity() == nil || rel.GetTargetEntity() == nil {
+			return fmt.Errorf("relationship %s has invalid entity references", rel.GetID())
+		}
+
+		if rel.GetSourceAttribute() == nil || rel.GetTargetAttribute() == nil {
+			return fmt.Errorf("relationship %s has invalid attribute references", rel.GetID())
+		}
+	}
+
+	return nil
+}

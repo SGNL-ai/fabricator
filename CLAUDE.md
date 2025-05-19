@@ -164,6 +164,25 @@ The application accepts the following command-line flags:
 - When testing changes, use only the example files that already exist in the project or those explicitly provided by the user.
 - Never generate sample YAML files - they have very specific structure requirements and validation rules that must be met.
 
+### Testing Approach
+
+Our testing strategy follows these principles:
+
+1. **Table-Driven Tests**: We use table-driven testing patterns to test multiple scenarios with minimal repetition. Each test case should be a clear, self-contained scenario.
+
+2. **Test Fixtures**: Use the existing YAML fixtures in the examples directory to load realistic data for tests. Do not hardcode test data structures when possible.
+
+3. **Testify Framework**: All tests should use the testify/assert and testify/require packages for consistent assertion styles.
+
+4. **Test Isolation**: Each test should be independent and not rely on state from previous tests. Setup and teardown should be handled within each test function.
+
+5. **Test Hierarchy**:
+   - Unit tests: Test individual functions and methods in isolation
+   - Component tests: Test interactions between related components
+   - Integration tests: Test end-to-end flows from YAML to CSV output
+
+6. **Legacy Tests**: The pkg/generators/legacy_tests directory contains older test implementations for reference. New tests should be created in the main package directories.
+
 ### Important Design Guidelines
 
 1. **Field Name Analysis**:
@@ -223,3 +242,15 @@ This structured approach helps with:
 3. Ensuring test coverage is maintained
 4. Not overlooking documentation updates
 5. Better communication about the implementation strategy
+
+## Memories and Guidance
+
+- *important*: Always follow law of Demeter: A design principle that states a method of an object should only invoke methods of objects that are closely related to it, promoting loose coupling and better modular design
+- *important*: Always follow the DRY principle (don't repeat yourself): A software development principle aimed at reducing repetition of software patterns, encouraging code reuse and simplifying maintenance
+- Act as an expert Go developer; write clean concise code with clear separation of duties.
+- Do not try and cheat by hardcoding or bypassing the logical intent
+- Explain your plan to me before trying to write code. Ask me to confirm or clarify details of the plan before suggesting file edits.
+- when I say to write a stub test or stub logic that means to implement the final to define the func signature. Do not create logic
+
+## Workflow Guidance
+- We're practicing TDD. After each change to the code under test, rerun the tests to see if it's working. Make small incremental changes.
