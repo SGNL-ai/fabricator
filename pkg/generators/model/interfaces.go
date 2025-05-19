@@ -67,6 +67,7 @@ type RelationshipInterface interface {
 type AttributeInterface interface {
 	GetName() string
 	GetExternalID() string
+	GetAttributeAlias() string
 	GetDataType() string
 	IsUnique() bool
 	IsID() bool

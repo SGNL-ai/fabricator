@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
 )
@@ -54,6 +55,9 @@ func newEntity(id, externalID, name string, description string, attributes []Att
 			// Add to attribute maps and list
 			entity.attributes[attr.GetName()] = attr
 			entity.attributesByExtID[attr.GetExternalID()] = attr
+			if attr.GetAttributeAlias() != "" {
+				entity.attributesByExtID[attr.GetAttributeAlias()] = attr
+			}
 			entity.attrList = append(entity.attrList, attr)
 		}
 	}
@@ -155,7 +159,14 @@ func (e *Entity) GetAttribute(name string) (AttributeInterface, bool) {
 
 // GetAttributeByExternalID gets an attribute by its external ID
 func (e *Entity) GetAttributeByExternalID(externalID string) (AttributeInterface, bool) {
+
+	// If attribute is prefixed by entity name, strip that
+	if strings.Index(externalID, ".") > 0 {
+		externalID = strings.TrimPrefix(externalID, fmt.Sprintf("%s.", e.externalID))
+	}
+
 	attr, exists := e.attributesByExtID[externalID]
+
 	return attr, exists
 }
 

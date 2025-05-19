@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/util"
+	"github.com/dominikbraun/graph"
 )
 
 // Error definitions for Graph operations
@@ -116,7 +118,23 @@ func (g *Graph) GetRelationshipsForEntity(entityID string) []RelationshipInterfa
 
 // GetTopologicalOrder returns entities in dependency order for generation
 func (g *Graph) GetTopologicalOrder() ([]string, error) {
-	return nil, nil
+
+	// Use the existing YAML model directly
+	entityGraph, err := util.BuildEntityDependencyGraph(g.yamlModel.Entities, g.yamlModel.Relationships, true)
+	if err != nil {
+		if errors.Is(err, graph.ErrEdgeCreatesCycle) {
+			return nil, ErrCircularDependency
+		}
+		return nil, err
+	}
+
+	// Get topological order using the utility function
+	order, err := util.GetTopologicalOrder(entityGraph)
+	if err != nil {
+		fmt.Printf("GetTopologicalOrder error: %v\n", err)
+		return nil, err
+	}
+	return order, nil
 }
 
 // createEntitiesFromYAML creates Entity objects from YAML model definition
@@ -131,6 +149,7 @@ func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]models.Entity) er
 			attr := newAttribute(
 				yamlAttr.Name,
 				yamlAttr.ExternalId,
+				yamlAttr.AttributeAlias,
 				yamlAttr.Type,
 				yamlAttr.UniqueId,
 				yamlAttr.Description,
@@ -158,10 +177,14 @@ func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]models.Entity) er
 	}
 
 	// Then build the attribute to entity lookup map
-	for _, entity := range g.entities {
-		for _, attr := range entity.GetAttributes() {
-			// Store mapping from external ID to entity
-			g.attributeToEntity[attr.GetExternalID()] = entity
+	for entityID, entity := range g.entities {
+		yamlEntity := g.yamlModel.Entities[entityID]
+
+		for _, yamlAttr := range yamlEntity.Attributes {
+			g.attributeToEntity[fmt.Sprintf("%s.%s", entityID, yamlAttr.ExternalId)] = entity
+			if yamlAttr.AttributeAlias != "" {
+				g.attributeToEntity[yamlAttr.AttributeAlias] = entity
+			}
 		}
 	}
 
@@ -198,7 +221,7 @@ func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]models.
 			relationshipID,
 			yamlRel.Name,
 			targetEntity,
-			yamlRel.FromAttribute,
+			yamlRel.FromAttribute, //this could be dotted notation or attributeAlias
 			yamlRel.ToAttribute,
 		)
 

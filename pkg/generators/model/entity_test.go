@@ -3,153 +3,30 @@ package model
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-// MockGraph is a testify mock implementation of GraphInterface
-type MockGraph struct {
-	mock.Mock
+// We'll stop using global mocks in this test suite and create all objects within the test functions
 
-	// Keep entity storage for the tests that need it
-	entityStore map[string]EntityInterface
-}
-
-// GetEntity is a mock implementation for tests
-func (mg *MockGraph) GetEntity(id string) (EntityInterface, bool) {
-	args := mg.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Bool(1)
-	}
-	return args.Get(0).(EntityInterface), args.Bool(1)
-}
-
-// GetAllEntities returns all entities in the mock graph
-func (mg *MockGraph) GetAllEntities() map[string]EntityInterface {
-	args := mg.Called()
-	return args.Get(0).(map[string]EntityInterface)
-}
-
-// GetEntitiesList returns a slice of all entities
-func (mg *MockGraph) GetEntitiesList() []EntityInterface {
-	args := mg.Called()
-	return args.Get(0).([]EntityInterface)
-}
-
-// GetRelationship returns a relationship by ID
-func (mg *MockGraph) GetRelationship(id string) (RelationshipInterface, bool) {
-	args := mg.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Bool(1)
-	}
-	return args.Get(0).(RelationshipInterface), args.Bool(1)
-}
-
-// GetAllRelationships returns all relationships in the graph
-func (mg *MockGraph) GetAllRelationships() []RelationshipInterface {
-	args := mg.Called()
-	return args.Get(0).([]RelationshipInterface)
-}
-
-// GetRelationshipsForEntity returns relationships involving a specific entity
-func (mg *MockGraph) GetRelationshipsForEntity(entityID string) []RelationshipInterface {
-	args := mg.Called(entityID)
-	return args.Get(0).([]RelationshipInterface)
-}
-
-// GetTopologicalOrder returns entities in dependency order
-func (mg *MockGraph) GetTopologicalOrder() ([]string, error) {
-	args := mg.Called()
-	return args.Get(0).([]string), args.Error(1)
-}
-
-// Helper method for tests to register entities
-func (mg *MockGraph) RegisterEntity(entity EntityInterface) {
-	if mg.entityStore == nil {
-		mg.entityStore = make(map[string]EntityInterface)
-	}
-	mg.entityStore[entity.GetID()] = entity
-
-	// Set up the mock to return this entity when GetEntity is called
-	mg.On("GetEntity", entity.GetID()).Return(entity, true)
-}
-
-// Test fixtures - reusable entities and attributes for tests
-var (
-	// Mock graph for testing
-	mockGraph = &MockGraph{
-		entities:      make(map[string]EntityInterface),
-		relationships: make(map[string]RelationshipInterface),
-	}
-
-	// Mock entity for testing attributes
-	mockParentEntity = &Entity{
-		id:                "parent_entity",
-		externalID:        "parent_entity_ext",
-		name:              "Parent Entity",
-		description:       "Parent entity for testing",
-		attributes:        make(map[string]AttributeInterface),
-		attributesByExtID: make(map[string]AttributeInterface),
-		attrList:          []AttributeInterface{},
-		graph:             mockGraph,
-	}
-
-	// Mock unique attribute (represents a primary key)
-	mockUniqueAttr = &Attribute{
-		name:         "id",
-		externalID:   "id_ext",
-		dataType:     "string",
-		isUnique:     true,
-		description:  "Unique identifier",
-		parentEntity: nil, // Set during tests
-	}
-
-	// Mock foreign key attribute (represents a relationship)
-	mockForeignKeyAttr = &Attribute{
-		name:           "parent_id",
-		externalID:     "parent_id_ext",
-		dataType:       "string",
-		isUnique:       false,
-		isRelationship: true,
-		description:    "Foreign key to parent entity",
-		parentEntity:   nil, // Set during tests
-		relatedEntity:  "parent_entity",
-		relatedAttr:    "id",
-	}
-
-	// Mock regular attribute (non-unique, non-relationship)
-	mockRegularAttr = &Attribute{
-		name:         "name",
-		externalID:   "name_ext",
-		dataType:     "string",
-		isUnique:     false,
-		description:  "Regular string attribute",
-		parentEntity: nil, // Set during tests
-	}
-)
-
-// Helper function to create a test entity with attributes
-func createTestEntity(t *testing.T, attributes []AttributeInterface) EntityInterface {
-	// Create entity with attributes
-	entity, err := newEntity("test_entity", "test_entity_ext", "Test Entity", "Entity for testing", attributes, mockGraph)
-	require.NoError(t, err)
-	require.NotNil(t, entity)
-
-	// Register the entity in the mock graph for relationship tests
-	mockGraph.RegisterEntity(entity)
-
-	return entity
-}
+// Helper no longer needed - we'll create test entities directly in each test
 
 // Tests for entity constructor
 func TestNewEntity(t *testing.T) {
+	// Create a gomock controller for each test
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	t.Run("should create a new entity with the specified properties", func(t *testing.T) {
 		// Create entity
 		id := "test_entity"
 		externalID := "test_ext_id"
 		name := "Test Entity"
 		description := "Test entity description"
+
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
 
 		// Create with empty attributes list
 		entity, err := newEntity(id, externalID, name, description, []AttributeInterface{}, mockGraph)
@@ -172,6 +49,9 @@ func TestNewEntity(t *testing.T) {
 	})
 
 	t.Run("should validate entity has valid ID and name", func(t *testing.T) {
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Test with empty ID
 		entity, err := newEntity("", "ext_id", "Entity Name", "Description", []AttributeInterface{}, mockGraph)
 		assert.Error(t, err)
@@ -190,6 +70,9 @@ func TestNewEntity(t *testing.T) {
 
 	t.Run("should add attributes during entity creation", func(t *testing.T) {
 		// Set up test attributes
+		// For now, we'll continue to use concrete Attribute type since we're in the same package
+		// This would typically be replaced with a mock, but since we're in the same package
+		// it's simpler to use the real implementation
 		idAttr := &Attribute{
 			name:        "id",
 			externalID:  "id_ext",
@@ -205,6 +88,9 @@ func TestNewEntity(t *testing.T) {
 			isUnique:    false,
 			description: "Name field",
 		}
+
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description", []AttributeInterface{idAttr, nameAttr}, mockGraph)
@@ -239,6 +125,9 @@ func TestNewEntity(t *testing.T) {
 			description: "Second unique attribute",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with multiple unique attributes - should fail
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr, secondIDAttr}, mockGraph)
@@ -264,6 +153,9 @@ func TestNewEntity(t *testing.T) {
 			description: "Duplicate attribute",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with duplicate attribute names - should fail
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{firstAttr, duplicateAttr}, mockGraph)
@@ -274,6 +166,9 @@ func TestNewEntity(t *testing.T) {
 
 // Tests for attribute retrieval methods
 func TestGetAttributes(t *testing.T) {
+	// Create a gomock controller for each test
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	t.Run("should return all attributes in order", func(t *testing.T) {
 		// Create attributes in specific order
 		idAttr := &Attribute{
@@ -300,9 +195,12 @@ func TestGetAttributes(t *testing.T) {
 			description: "Foreign key",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
-			[]AttributeInterface{idAttr, nameAttr, parentAttr})
+			[]AttributeInterface{idAttr, nameAttr, parentAttr}, mockGraph)
 		require.NoError(t, err)
 
 		// Verify attributes are returned in order they were added
@@ -324,9 +222,12 @@ func TestGetAttributes(t *testing.T) {
 			description: "Test attribute",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with attribute
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
-			[]AttributeInterface{testAttr})
+			[]AttributeInterface{testAttr}, mockGraph)
 		require.NoError(t, err)
 
 		// Get attribute by name
@@ -342,8 +243,11 @@ func TestGetAttributes(t *testing.T) {
 	})
 
 	t.Run("should get primary key attribute", func(t *testing.T) {
+		// Create a mock graph for the empty entity
+		mockGraphEmpty := NewMockGraphInterface(ctrl)
+
 		// Create entity with no attributes first
-		emptyEntity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description", []AttributeInterface{}, mockGraph)
+		emptyEntity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description", []AttributeInterface{}, mockGraphEmpty)
 		require.NoError(t, err)
 
 		// No primary key initially
@@ -358,6 +262,9 @@ func TestGetAttributes(t *testing.T) {
 			isUnique:    true,
 			description: "Primary key",
 		}
+
+		// Create a new mock graph for the entity with primary key
+		mockGraph := NewMockGraphInterface(ctrl)
 
 		// Create entity with primary key
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -401,9 +308,12 @@ func TestGetAttributes(t *testing.T) {
 			description:    "Relationship attribute",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with various attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
-			[]AttributeInterface{idAttr, nameAttr, parentAttr})
+			[]AttributeInterface{idAttr, nameAttr, parentAttr}, mockGraph)
 		require.NoError(t, err)
 
 		// Test GetNonUniqueAttributes
@@ -427,6 +337,9 @@ func TestGetAttributes(t *testing.T) {
 
 // Tests for row management
 func TestEntityRows(t *testing.T) {
+	// Create a gomock controller for each test
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	t.Run("should add row with valid values", func(t *testing.T) {
 		// Create attributes
 		idAttr := &Attribute{
@@ -445,16 +358,19 @@ func TestEntityRows(t *testing.T) {
 			description: "Name attribute",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr, nameAttr}, mockGraph)
 		require.NoError(t, err)
 
 		// Add row with valid values
-		values := map[string]string{
+		values := &Row{values: map[string]string{
 			"id":   "1",
 			"name": "Test Row",
-		}
+		}}
 		err = entity.AddRow(values)
 		require.NoError(t, err)
 
@@ -472,17 +388,20 @@ func TestEntityRows(t *testing.T) {
 			description: "Primary key",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with primary key
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
-			[]AttributeInterface{idAttr})
+			[]AttributeInterface{idAttr}, mockGraph)
 		require.NoError(t, err)
 
 		// Add first row
-		err = entity.AddRow(map[string]string{"id": "1"})
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1"}})
 		require.NoError(t, err)
 
 		// Add row with duplicate primary key - should fail
-		err = entity.AddRow(map[string]string{"id": "1"})
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1"}})
 		assert.Error(t, err)
 
 		// Verify row count remains 1
@@ -507,13 +426,16 @@ func TestEntityRows(t *testing.T) {
 			description: "Name attribute",
 		}
 
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr, nameAttr}, mockGraph)
 		require.NoError(t, err)
 
 		// Add row missing primary key - should fail
-		err = entity.AddRow(map[string]string{"name": "Test Row"})
+		err = entity.AddRow(&Row{values: map[string]string{"name": "Test Row"}})
 		assert.Error(t, err)
 
 		// Verify no rows were added
@@ -521,6 +443,9 @@ func TestEntityRows(t *testing.T) {
 	})
 
 	t.Run("should validate foreign key references", func(t *testing.T) {
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create parent entity attributes
 		parentIDAttr := &Attribute{
 			name:        "id",
@@ -536,8 +461,11 @@ func TestEntityRows(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add row to parent
-		err = parentEntity.AddRow(map[string]string{"id": "parent1"})
+		err = parentEntity.AddRow(&Row{values: map[string]string{"id": "parent1"}})
 		require.NoError(t, err)
+
+		// Set up mockGraph to return the parent entity when GetEntity("parent") is called
+		mockGraph.EXPECT().GetEntity("parent").Return(parentEntity, true).AnyTimes()
 
 		// Create child entity attributes
 		childIDAttr := &Attribute{
@@ -566,7 +494,6 @@ func TestEntityRows(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add row with valid foreign key reference - should succeed
-		// This will fail until foreign key validation is implemented
 		err = childEntity.AddRow(&Row{
 			values: map[string]string{
 				"id":        "child1",
@@ -588,6 +515,9 @@ func TestEntityRows(t *testing.T) {
 
 // Tests for CSV generation
 func TestEntityToCSV(t *testing.T) {
+	// Create a gomock controller for each test
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	t.Run("should convert entity to CSV data", func(t *testing.T) {
 		// Create attributes
 		idAttr := &Attribute{
@@ -605,6 +535,9 @@ func TestEntityToCSV(t *testing.T) {
 			isUnique:    false,
 			description: "Name attribute",
 		}
+
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -653,7 +586,13 @@ func TestEntityToCSV(t *testing.T) {
 
 // Tests for relationship creation
 func TestAddRelationship(t *testing.T) {
+	// Create a gomock controller for each test
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	t.Run("should create relationship between two entities", func(t *testing.T) {
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create source entity with unique attribute
 		sourceID := "source_entity"
 		sourceExternalID := "source_ext"
@@ -723,6 +662,9 @@ func TestAddRelationship(t *testing.T) {
 	})
 
 	t.Run("should handle one-to-many relationship", func(t *testing.T) {
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create source entity with unique attribute (one side)
 		sourceIDAttr := &Attribute{
 			name:        "id",
@@ -782,6 +724,9 @@ func TestAddRelationship(t *testing.T) {
 	})
 
 	t.Run("should fail when source attribute not found", func(t *testing.T) {
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create source entity
 		sourceIDAttr := &Attribute{
 			name:        "id",
@@ -824,6 +769,9 @@ func TestAddRelationship(t *testing.T) {
 	})
 
 	t.Run("should fail when target attribute not found", func(t *testing.T) {
+		// Create a mock graph
+		mockGraph := NewMockGraphInterface(ctrl)
+
 		// Create source entity
 		sourceIDAttr := &Attribute{
 			name:        "id",

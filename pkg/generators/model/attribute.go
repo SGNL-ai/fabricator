@@ -11,18 +11,20 @@ type Attribute struct {
 	parentEntity   EntityInterface
 	relatedEntity  string
 	relatedAttr    string
+	attributeAlias string
 }
 
 // newAttribute creates a new attribute with the specified properties
 // Not exported as only Entity should create attributes
-func newAttribute(name, externalID string, dataType string, isUnique bool, description string, parentEntity EntityInterface) AttributeInterface {
+func newAttribute(name, externalID string, attributeAlias string, dataType string, isUnique bool, description string, parentEntity EntityInterface) AttributeInterface {
 	return &Attribute{
-		name:         name,
-		externalID:   externalID,
-		dataType:     dataType,
-		isUnique:     isUnique,
-		description:  description,
-		parentEntity: parentEntity,
+		name:           name,
+		externalID:     externalID,
+		dataType:       dataType,
+		isUnique:       isUnique,
+		description:    description,
+		parentEntity:   parentEntity,
+		attributeAlias: attributeAlias,
 	}
 }
 
@@ -34,6 +36,11 @@ func (a *Attribute) GetName() string {
 // GetExternalID returns the attribute's external ID
 func (a *Attribute) GetExternalID() string {
 	return a.externalID
+}
+
+// GetAttributeAlias returns the attribute's external ID
+func (a *Attribute) GetAttributeAlias() string {
+	return a.attributeAlias
 }
 
 // GetDataType returns the attribute's data type
