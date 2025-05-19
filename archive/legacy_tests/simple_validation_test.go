@@ -65,7 +65,7 @@ func TestValidationFunctions(t *testing.T) {
 		// Test ValidateRelationships
 		results := generator.ValidateRelationships()
 		assert.NotEmpty(t, results, "Expected validation issues but got none")
-		
+
 		// Should find 1 issue with 1 invalid row
 		found := false
 		for _, result := range results {

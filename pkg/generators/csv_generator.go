@@ -441,18 +441,16 @@ func (g *CSVGenerator) ensureRelationshipConsistency() {
 func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link models.RelationshipLink) {
 	// Process relationship via the relationship handler
 	ctx := NewRelationshipContext(g, fromEntityID, link)
-	
+
 	// If we couldn't create a valid context, stop processing
 	if ctx == nil {
 		return
 	}
-	
+
 	// Handle relationship based on its type (one-to-many, many-to-one, etc.)
 	// The handler will update the entity data directly
 	g.handleRelationship(ctx)
 }
-
-
 
 // WriteCSVFiles writes all generated data to CSV files
 func (g *CSVGenerator) WriteCSVFiles() error {

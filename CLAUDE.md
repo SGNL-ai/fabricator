@@ -254,3 +254,7 @@ This structured approach helps with:
 
 ## Workflow Guidance
 - We're practicing TDD. After each change to the code under test, rerun the tests to see if it's working. Make small incremental changes.
+```
+
+- **IMPORTANT GUIDELINE**: 
+  - NEVER NEVER NEVER NEVER NEVER NEVER TRY TO FAKE TESTS!

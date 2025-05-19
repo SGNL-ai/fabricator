@@ -153,12 +153,12 @@ func TestMultiAttributeRelationships(t *testing.T) {
 	for i, row := range ticketData.Rows {
 		if row[ticketAssignedToIndex] == row[ticketCreatedByIndex] {
 			sameUserCount++
-			fmt.Printf("Note: Ticket %d has same user for assignedTo and createdBy: %s\n", 
+			fmt.Printf("Note: Ticket %d has same user for assignedTo and createdBy: %s\n",
 				i, row[ticketAssignedToIndex])
 		}
 	}
-	
-	fmt.Printf("Number of tickets with same assignedTo and createdBy: %d out of %d\n", 
+
+	fmt.Printf("Number of tickets with same assignedTo and createdBy: %d out of %d\n",
 		sameUserCount, len(ticketData.Rows))
 }
 

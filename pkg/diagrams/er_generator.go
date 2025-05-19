@@ -85,7 +85,7 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 
 	// Extract entity and relationship data
 	g.extractEntities()
-	
+
 	// Create the graph using our shared utilities
 	// We don't need to prevent cycles in the diagram
 	entityGraph, err := util.BuildEntityDependencyGraph(g.Definition.Entities, g.Definition.Relationships, false)
@@ -169,7 +169,7 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 		if err != nil {
 			// For the diagram, we'll just skip invalid edges rather than failing
 			// This allows us to generate at least a partial diagram
-			
+
 			// Don't show warnings for common edge-already-exists errors
 			if !errors.Is(err, graph.ErrEdgeAlreadyExists) {
 				fmt.Printf("Warning: Failed to add edge for relationship %s -> %s: %v\n",
@@ -300,49 +300,49 @@ func (g *ERDiagramGenerator) extractRelationshipsFromGraph(entityGraph graph.Gra
 	for _, edge := range edges {
 		// Create a unique key for this edge
 		edgeKey := fmt.Sprintf("%s->%s", edge.Source, edge.Target)
-		
+
 		// Skip edges we've already processed
 		if processedEdges[edgeKey] {
 			continue
 		}
-		
+
 		// Find a relationship between these entities
 		var displayName string
 		var isPathBased bool
-		
+
 		// Try to match it to one of our original relationships
 		for relID, rel := range g.Definition.Relationships {
 			// Skip path-based for direct lookup
 			if len(rel.Path) > 0 {
 				continue
 			}
-			
+
 			// Look up the entities from the attribute aliases
 			fromInfo, fromOK := aliasToEntity[rel.FromAttribute]
 			toInfo, toOK := aliasToEntity[rel.ToAttribute]
-			
+
 			if fromOK && toOK {
 				// If this relationship matches our edge
 				if (fromInfo.EntityID == edge.Source && toInfo.EntityID == edge.Target) ||
-				   (fromInfo.EntityID == edge.Target && toInfo.EntityID == edge.Source) {
-					
+					(fromInfo.EntityID == edge.Target && toInfo.EntityID == edge.Source) {
+
 					// Use this relationship's display name
 					displayName = rel.DisplayName
 					if displayName == "" {
 						displayName = rel.Name
 					}
-					
+
 					isPathBased = pathBasedRels[relID]
 					break
 				}
 			}
 		}
-		
+
 		// If we couldn't find a matching relationship, use a generic name
 		if displayName == "" {
 			displayName = "Related"
 		}
-		
+
 		// Create the relationship object for our diagram
 		g.Relationships = append(g.Relationships, Relationship{
 			ID:          edgeKey,
@@ -351,7 +351,7 @@ func (g *ERDiagramGenerator) extractRelationshipsFromGraph(entityGraph graph.Gra
 			ToEntity:    edge.Target,
 			PathBased:   isPathBased,
 		})
-		
+
 		// Mark this edge as processed
 		processedEdges[edgeKey] = true
 	}

@@ -3,7 +3,7 @@ package generators
 import (
 	"fmt"
 	"strings"
-	
+
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/SGNL-ai/fabricator/pkg/util"
 	"github.com/dominikbraun/graph"
@@ -15,7 +15,7 @@ import (
 // 1. Handle more complex relationship types and paths
 // 2. Consider additional metrics for entity generation order
 // 3. Add support for weighted edges based on relationship types
-// 
+//
 // Note: Cyclic dependency detection is now handled in two places:
 // 1. Basic detection in the YAML parser (validateRelationships)
 // 2. Detailed handling here during dependency graph construction
@@ -36,17 +36,17 @@ func (g *CSVGenerator) buildEntityDependencyGraph(
 	// Debug relationship information for CSV generator if --debug flag is set
 	// Note: in a real implementation we would check a debug flag here
 	debugRelationships := false
-	
+
 	if debugRelationships {
 		// Count skipped relationships instead of showing each one
 		skippedCount := 0
-		
+
 		// Summary counts of relationship types
 		fkToPk := 0
 		pkToFk := 0
 		pkToPk := 0
 		otherRel := 0
-		
+
 		for _, relationship := range relationships {
 			// Skip path-based relationships for now
 			if len(relationship.Path) > 0 {
@@ -73,12 +73,12 @@ func (g *CSVGenerator) buildEntityDependencyGraph(
 				skippedCount++
 			}
 		}
-		
+
 		// Log summary of relationship analysis
 		if skippedCount > 0 {
 			color.Yellow("Note: %d relationships couldn't be fully resolved", skippedCount)
 		}
-		
+
 		color.Cyan("Relationship types: %d standard (FK→PK), %d reverse (PK→FK), %d identity (PK→PK), %d other",
 			fkToPk, pkToFk, pkToPk, otherRel)
 	}
@@ -94,7 +94,7 @@ func (g *CSVGenerator) getTopologicalOrder(
 ) ([]string, error) {
 	// Use shared utility to get topological ordering
 	ordering, err := util.GetTopologicalOrder(entityGraph)
-	
+
 	if err != nil {
 		// If topological sort fails, output the error and stop
 		color.Red("Error: Cannot generate data in dependency order: %v", err)
@@ -118,7 +118,7 @@ func parseEntityAttribute(
 		if len(parts) == 2 {
 			entityName := parts[0]
 			attributeName := parts[1]
-			
+
 			// Find the entity by external ID
 			for id, entity := range entities {
 				if entity.ExternalId == entityName {
@@ -132,6 +132,6 @@ func parseEntityAttribute(
 			}
 		}
 	}
-	
+
 	return "", "", false
 }

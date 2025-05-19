@@ -162,13 +162,13 @@ func TestEntityCreation(t *testing.T) {
 		require.NoError(t, err)
 
 		// Get specific entity
-		userEntity, exists := graph.GetEntity("user_entity")
+		userEntity, exists := graph.GetEntity("User")
 		require.True(t, exists)
 		require.NotNil(t, userEntity)
 
 		// Verify entity properties
 		assert.Equal(t, "User", userEntity.GetName())
-		assert.Equal(t, "test/User", userEntity.GetExternalID())
+		assert.Equal(t, "User", userEntity.GetExternalID())
 
 		// Verify attributes were created
 		attrs := userEntity.GetAttributes()
@@ -243,19 +243,20 @@ func TestRelationshipCreation(t *testing.T) {
 		sourceEntity := rel.GetSourceEntity()
 		targetEntity := rel.GetTargetEntity()
 
-		assert.Equal(t, "User", sourceEntity.GetName())
-		assert.Equal(t, "UserRole", targetEntity.GetName())
+		// The relationship is defined as UserRole.user_ref -> User.id
+		assert.Equal(t, "UserRole", sourceEntity.GetName())
+		assert.Equal(t, "User", targetEntity.GetName())
 
 		// Verify source and target attributes
 		sourceAttr := rel.GetSourceAttribute()
 		targetAttr := rel.GetTargetAttribute()
 
-		assert.Equal(t, "id", sourceAttr.GetName())
-		assert.Equal(t, "user_id", targetAttr.GetName())
+		assert.Equal(t, "user_id", sourceAttr.GetName())
+		assert.Equal(t, "id", targetAttr.GetName())
 
-		// Verify cardinality (should be 1:N as source has unique ID and target doesn't)
-		assert.Equal(t, OneToMany, rel.GetCardinality())
-		assert.True(t, rel.IsOneToMany())
+		// Verify cardinality (FK->PK means N:1)
+		assert.Equal(t, ManyToOne, rel.GetCardinality())
+		assert.True(t, rel.IsManyToOne())
 	})
 
 	t.Run("should validate relationship references existing entities and attributes", func(t *testing.T) {
@@ -422,7 +423,7 @@ func TestAccessorMethods(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test GetEntity
-		entity, exists := graph.GetEntity("user_entity")
+		entity, exists := graph.GetEntity("User")
 		assert.True(t, exists)
 		assert.NotNil(t, entity)
 		assert.Equal(t, "User", entity.GetName())
@@ -450,7 +451,7 @@ func TestAccessorMethods(t *testing.T) {
 		require.NoError(t, err)
 
 		// Get relationships for User entity
-		userRels := graph.GetRelationshipsForEntity("user_entity")
+		userRels := graph.GetRelationshipsForEntity("User")
 		// We should have at least one relationship
 		assert.GreaterOrEqual(t, len(userRels), 1)
 
@@ -465,7 +466,7 @@ func TestAccessorMethods(t *testing.T) {
 		assert.True(t, found, "Expected to find user_to_userrole relationship")
 
 		// Get relationships for UserRole entity (should have relationships)
-		userRoleRels := graph.GetRelationshipsForEntity("user_role_entity")
+		userRoleRels := graph.GetRelationshipsForEntity("UserRole")
 		assert.NotEmpty(t, userRoleRels, "UserRole entity should have relationships")
 
 		// Test entity with no relationships

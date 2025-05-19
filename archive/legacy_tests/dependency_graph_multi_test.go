@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEntityDependencySort(t *testing.T) {
+func TestEntityDependencyWithMultipleRelationships(t *testing.T) {
 	// Create test generator
 	g := NewCSVGenerator("test_output", 10, false)
 
-	// Define test entities based on the given YAML example
+	// Define test entities with multiple relationships
 	entities := map[string]models.Entity{
 		"user1": {
 			DisplayName: "User",
@@ -39,8 +39,14 @@ func TestEntityDependencySort(t *testing.T) {
 					UniqueId:   true,
 				},
 				{
-					Name:       "uuid",
-					ExternalId: "uuid",
+					Name:       "assignedToUUID",
+					ExternalId: "assignedToUUID",
+					Type:       "String",
+					UniqueId:   false,
+				},
+				{
+					Name:       "createdByUUID",
+					ExternalId: "createdByUUID",
 					Type:       "String",
 					UniqueId:   false,
 				},
@@ -48,34 +54,42 @@ func TestEntityDependencySort(t *testing.T) {
 		},
 	}
 
-	// Define the relationship from Assignment.uuid to User.uuid
+	// Define two relationships from Assignment to User
 	relationships := map[string]models.Relationship{
 		"assigned_to_user": {
 			DisplayName:   "assigned_to_user",
 			Name:          "assigned_to_user",
-			FromAttribute: "Assignment.uuid",
+			FromAttribute: "Assignment.assignedToUUID",
+			ToAttribute:   "User.uuid",
+		},
+		"created_by_user": {
+			DisplayName:   "created_by_user",
+			Name:          "created_by_user",
+			FromAttribute: "Assignment.createdByUUID",
 			ToAttribute:   "User.uuid",
 		},
 	}
 
 	// Build the dependency graph
-	var err error
-	g.dependencyGraph, err = g.buildEntityDependencyGraph(entities, relationships)
+	graph, err := g.buildEntityDependencyGraph(entities, relationships)
 	require.NoError(t, err, "Failed to build entity dependency graph")
 
-	// We don't need edges for this test
-	// Uncomment if needed for edge verification:
-	// edges, _ := g.dependencyGraph.Edges()
+	// Get the graph edges
+	edges, _ := graph.Edges()
 
 	// Get the topological order
-	order, err := g.getTopologicalOrder(g.dependencyGraph)
+	order, err := g.getTopologicalOrder(graph)
 	require.NoError(t, err, "Failed to get topological order")
 
-	// In this case, User should come before Assignment
-	// because Assignment depends on User (Assignment.uuid -> User.uuid)
+	// In this case, User should still come before Assignment
+	// despite having multiple relationships between them
 	require.Len(t, order, 2, "Expected 2 entities in topological order")
 
 	// The first entity should be User and the second should be Assignment
 	assert.Equal(t, "user1", order[0], "First entity should be 'user1'")
 	assert.Equal(t, "assignment1", order[1], "Second entity should be 'assignment1'")
+
+	// Importantly, we should only have one edge in the graph
+	// Multiple relationships should not create multiple edges between the same entities
+	assert.Len(t, edges, 1, "Expected exactly 1 edge in the graph")
 }

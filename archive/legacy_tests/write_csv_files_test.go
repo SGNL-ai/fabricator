@@ -145,7 +145,7 @@ func TestWriteCSVFilesExtended(t *testing.T) {
 
 		// Very basic content check - headers must be first line
 		expectedHeader := "id,name,price"
-		assert.Equal(t, expectedHeader, string(content[:len(expectedHeader)]), 
+		assert.Equal(t, expectedHeader, string(content[:len(expectedHeader)]),
 			"CSV should start with the expected header")
 	})
 }

@@ -66,7 +66,7 @@ func TestAutoCardinality(t *testing.T) {
 		for _, row := range orderRows {
 			userId := row[1] // userId is the second column
 			assert.NotEmpty(t, userId, "Order has empty userId, expected a value")
-			
+
 			// Verify userId references a valid user
 			assert.True(t, validUserIds[userId], "Order has userId %s which is not a valid user ID", userId)
 		}

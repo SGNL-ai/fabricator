@@ -59,7 +59,7 @@ func TestFieldTypeDetection(t *testing.T) {
 	assert.NotEmpty(t, row[typeIdx], "Type field should not be empty")
 
 	// Check permissions field (should be a comma-separated list)
-	assert.True(t, strings.Contains(row[permissionsIdx], ",") || len(row[permissionsIdx]) >= 3, 
+	assert.True(t, strings.Contains(row[permissionsIdx], ",") || len(row[permissionsIdx]) >= 3,
 		"Permissions field should be a comma-separated list")
 
 	// Check expression field
@@ -85,7 +85,7 @@ func TestFieldTypeDetection(t *testing.T) {
 
 	for _, field := range booleanFields {
 		value := row[field.index]
-		assert.Contains(t, []string{"true", "false"}, value, 
+		assert.Contains(t, []string{"true", "false"}, value,
 			"Field %s should be a boolean (true/false)", field.name)
 	}
 

@@ -2,7 +2,7 @@ package generators
 
 import (
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,7 +63,7 @@ func TestIsUniqueAttribute(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := IsUniqueAttribute(tc.entityID, tc.attrName, tc.uniqueIdMap)
-			assert.Equal(t, tc.expectedOutcome, result, 
+			assert.Equal(t, tc.expectedOutcome, result,
 				"IsUniqueAttribute(%s, %s, map) = %v; want %v",
 				tc.entityID, tc.attrName, result, tc.expectedOutcome)
 		})

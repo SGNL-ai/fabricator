@@ -180,14 +180,14 @@ func (p *Parser) validateRelationships() error {
 							relID, i+1, pathStep.Relationship))
 					continue
 				}
-				
+
 				// Also verify the referenced relationship is a direct relationship, not another path
 				if len(referencedRel.Path) > 0 {
 					invalidRelationships = append(invalidRelationships,
 						fmt.Sprintf("relationship %s: path step %d references path-based relationship %s (nested paths not supported)",
 							relID, i+1, pathStep.Relationship))
 				}
-				
+
 				// Path direction is defined by external system and is not validated
 				// We just need to ensure the referenced relationship exists
 			}
@@ -221,7 +221,7 @@ func (p *Parser) validateRelationships() error {
 			fromInfo = info
 			fromFound = true
 		}
-		
+
 		if info, found := attributeAliasMap[rel.ToAttribute]; found {
 			toInfo = info
 			toFound = true
@@ -234,7 +234,7 @@ func (p *Parser) validateRelationships() error {
 				fromFound = true
 			}
 		}
-		
+
 		if !toFound && strings.Contains(rel.ToAttribute, ".") {
 			if info, found := entityAttributeMap[rel.ToAttribute]; found {
 				toInfo = info

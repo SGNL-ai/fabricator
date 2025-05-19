@@ -26,16 +26,16 @@ func TestIdentityRelationships(t *testing.T) {
 			Description: "User entity for testing",
 			Attributes: []models.Attribute{
 				{
-					Name:      "id",
+					Name:       "id",
 					ExternalId: "id",
-					Type:      "String",
-					UniqueId:  true, // This is a primary key
+					Type:       "String",
+					UniqueId:   true, // This is a primary key
 				},
 				{
-					Name:      "name",
+					Name:       "name",
 					ExternalId: "name",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 			},
 		},
@@ -45,22 +45,22 @@ func TestIdentityRelationships(t *testing.T) {
 			Description: "Profile entity for testing",
 			Attributes: []models.Attribute{
 				{
-					Name:      "id",
+					Name:       "id",
 					ExternalId: "id",
-					Type:      "String",
-					UniqueId:  true, // This is a primary key
+					Type:       "String",
+					UniqueId:   true, // This is a primary key
 				},
 				{
-					Name:      "userId",
+					Name:       "userId",
 					ExternalId: "userId",
-					Type:      "String",
-					UniqueId:  true, // This is a foreign key that's also unique (identity relationship)
+					Type:       "String",
+					UniqueId:   true, // This is a foreign key that's also unique (identity relationship)
 				},
 				{
-					Name:      "bio",
+					Name:       "bio",
 					ExternalId: "bio",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 			},
 		},
@@ -73,14 +73,14 @@ func TestIdentityRelationships(t *testing.T) {
 		"user_to_profile": {
 			DisplayName:   "user_to_profile",
 			Name:          "user_to_profile",
-			FromAttribute: "Profile.userId",  // FK
-			ToAttribute:   "User.id",         // PK
+			FromAttribute: "Profile.userId", // FK
+			ToAttribute:   "User.id",        // PK
 		},
 		"profile_to_user": {
 			DisplayName:   "profile_to_user",
-			Name:          "profile_to_user", 
-			FromAttribute: "User.id",         // PK
-			ToAttribute:   "Profile.userId",  // FK
+			Name:          "profile_to_user",
+			FromAttribute: "User.id",        // PK
+			ToAttribute:   "Profile.userId", // FK
 		},
 	}
 
@@ -103,7 +103,7 @@ func TestIdentityRelationships(t *testing.T) {
 	// Check that both entities are in the ordering
 	userFound := false
 	profileFound := false
-	
+
 	for _, entity := range ordering {
 		if entity == "User" {
 			userFound = true
@@ -112,7 +112,7 @@ func TestIdentityRelationships(t *testing.T) {
 			profileFound = true
 		}
 	}
-	
+
 	assert.True(t, userFound, "User should be in the topological order")
 	assert.True(t, profileFound, "Profile should be in the topological order")
 
@@ -125,8 +125,8 @@ func TestIdentityRelationships(t *testing.T) {
 	foundEdge := false
 
 	for _, edge := range edges {
-		if (edge.Source == "User" && edge.Target == "Profile") || 
-		   (edge.Source == "Profile" && edge.Target == "User") {
+		if (edge.Source == "User" && edge.Target == "Profile") ||
+			(edge.Source == "Profile" && edge.Target == "User") {
 			foundEdge = true
 		}
 	}

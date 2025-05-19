@@ -103,7 +103,7 @@ func TestRelationshipValidation(t *testing.T) {
 				},
 				"group_owner": {
 					DisplayName:   "Group Owner",
-					FromAttribute: "Group.ownerId", 
+					FromAttribute: "Group.ownerId",
 					ToAttribute:   "User.id",
 				},
 			},
@@ -148,7 +148,7 @@ func TestRelationshipValidation(t *testing.T) {
 					ExternalId:  "Comment",
 					Attributes: []models.Attribute{
 						{Name: "id", ExternalId: "id", UniqueId: true, AttributeAlias: "Comment.id"},
-						{Name: "text", ExternalId: "text", AttributeAlias: "Comment.text"}, // Not a uniqueId
+						{Name: "text", ExternalId: "text", AttributeAlias: "Comment.text"},                      // Not a uniqueId
 						{Name: "productName", ExternalId: "productName", AttributeAlias: "Comment.productName"}, // Not a uniqueId
 					},
 				},
@@ -157,7 +157,7 @@ func TestRelationshipValidation(t *testing.T) {
 				"product_comment": {
 					DisplayName:   "Product Comment",
 					FromAttribute: "Comment.productName", // Not a uniqueId
-					ToAttribute:   "Product.name", // Not a uniqueId
+					ToAttribute:   "Product.name",        // Not a uniqueId
 				},
 			},
 			shouldValidate: false,
@@ -277,10 +277,10 @@ func TestRelationshipValidation(t *testing.T) {
 			} else {
 				assert.Error(t, err)
 				errorMsg := err.Error()
-				
+
 				// Check if all expected error messages are present
 				for _, expectedMsg := range tt.errorMessages {
-					assert.True(t, strings.Contains(errorMsg, expectedMsg), 
+					assert.True(t, strings.Contains(errorMsg, expectedMsg),
 						"Expected error message to contain '%s', but got: %s", expectedMsg, errorMsg)
 				}
 			}

@@ -124,7 +124,7 @@ func TestRelationshipValidation(t *testing.T) {
 
 		// Should have errors
 		assert.NotEmpty(t, results, "Expected validation errors in invalid relationship")
-		
+
 		if len(results) > 0 {
 			result := results[0]
 			assert.Equal(t, 2, result.InvalidRows, "Expected 2 invalid rows in order->user relationship")
@@ -167,7 +167,7 @@ func TestRelationshipValidation(t *testing.T) {
 
 		// Should have errors for the duplicate email
 		assert.NotEmpty(t, errors, "Expected validation errors for duplicate email")
-		
+
 		foundUserEntity := false
 		foundDuplicateError := false
 

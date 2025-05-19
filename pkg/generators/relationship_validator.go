@@ -209,7 +209,7 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 			}
 
 			// Check that all values are unique
-			usedValues := make(map[string]int) // Map value to its row count
+			usedValues := make(map[string]int)        // Map value to its row count
 			duplicateValues := make(map[string][]int) // Map of value to list of row indices where it appears
 
 			for i, row := range csvData.Rows {
@@ -224,7 +224,7 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 
 				// Track occurrences of this value
 				usedValues[value]++
-				
+
 				// If we've seen this value before, add it to duplicates
 				if usedValues[value] > 1 {
 					if duplicateValues[value] == nil {
@@ -248,11 +248,11 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 				for _, rowIndices := range duplicateValues {
 					totalDuplicates += len(rowIndices)
 				}
-				
+
 				// Base message about duplicates
 				entityErrors.Messages = append(entityErrors.Messages,
 					fmt.Sprintf("Attribute %s has %d duplicate values", uniqueAttr, len(duplicateValues)))
-				
+
 				// Add detailed information for each duplicate value
 				if len(duplicateValues) <= 5 { // Limit detail to avoid overwhelming output
 					for value, rowIndices := range duplicateValues {
@@ -269,16 +269,16 @@ func (g *CSVGenerator) ValidateUniqueValues() []UniqueValueError {
 							for i, rowIdx := range rowIndices[:5] {
 								rowNumbers[i] = fmt.Sprintf("%d", rowIdx)
 							}
-							rowDisplay = strings.Join(rowNumbers, ", ") + "... (and " + 
+							rowDisplay = strings.Join(rowNumbers, ", ") + "... (and " +
 								fmt.Sprintf("%d", len(rowIndices)-5) + " more)"
 						}
-						
+
 						// Truncate very long values
 						displayValue := value
 						if len(displayValue) > 30 {
 							displayValue = displayValue[:27] + "..."
 						}
-						
+
 						entityErrors.Messages = append(entityErrors.Messages,
 							fmt.Sprintf("  - Value '%s' appears in rows: %s", displayValue, rowDisplay))
 					}

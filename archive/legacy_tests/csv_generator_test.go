@@ -23,7 +23,7 @@ func TestNewCSVGenerator(t *testing.T) {
 	assert.Equal(t, outputDir, generator.OutputDir, "OutputDir should match input value")
 	assert.Equal(t, dataVolume, generator.DataVolume, "DataVolume should match input value")
 	assert.Equal(t, autoCardinality, generator.AutoCardinality, "AutoCardinality should match input value")
-	
+
 	assert.NotNil(t, generator.EntityData, "EntityData should be initialized")
 	assert.NotNil(t, generator.idMap, "idMap should be initialized")
 	assert.NotNil(t, generator.relationshipMap, "relationshipMap should be initialized")
@@ -191,7 +191,7 @@ func TestDataGenerationFunctions(t *testing.T) {
 	t.Run("generateNameField", func(t *testing.T) {
 		req := FieldRequest{
 			EntityID: "",
-			Header: "name",
+			Header:   "name",
 			RowIndex: 0,
 		}
 		name := generator.generateNameField(req)
@@ -205,7 +205,7 @@ func TestDataGenerationFunctions(t *testing.T) {
 	t.Run("generateDescriptionField", func(t *testing.T) {
 		req := FieldRequest{
 			EntityID: "test",
-			Header: "description",
+			Header:   "description",
 			RowIndex: 1,
 		}
 		desc := generator.generateDescriptionField(req)
@@ -232,7 +232,7 @@ func TestDataGenerationFunctions(t *testing.T) {
 	t.Run("generateDateField", func(t *testing.T) {
 		req := FieldRequest{
 			EntityID: "",
-			Header: "created",
+			Header:   "created",
 			RowIndex: 3,
 		}
 		date := generator.generateDateField(req)
@@ -294,7 +294,7 @@ func TestDataGenerationFunctions(t *testing.T) {
 			t.Run(tc.fieldName, func(t *testing.T) {
 				req := FieldRequest{
 					EntityID: "",
-					Header: tc.fieldName,
+					Header:   tc.fieldName,
 					RowIndex: tc.index,
 				}
 				value := generator.generateGenericField(req)

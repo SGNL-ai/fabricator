@@ -171,14 +171,14 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		// Initializing CSV generator (removed from output)
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
 		err = generator.Setup(def.Entities, def.Relationships)
-			if err != nil {
-				return fmt.Errorf("failed to setup CSV generator: %w", err)
-			}
+		if err != nil {
+			return fmt.Errorf("failed to setup CSV generator: %w", err)
+		}
 
 		// Generate data
 		totalEntities := len(def.Entities)
 		color.Yellow("Generating data for %d entities...", totalEntities)
-		
+
 		// For simplicity and avoid adding a callback function in this PR, we'll keep the current approach
 		// In the future, we could add progress tracking for large entity sets
 		err = generator.GenerateData()
@@ -197,9 +197,9 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Validation-only mode: Loading existing CSV files from %s...", absOutputDir)
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
 		err = generator.Setup(def.Entities, def.Relationships)
-			if err != nil {
-				return fmt.Errorf("failed to setup CSV generator: %w", err)
-			}
+		if err != nil {
+			return fmt.Errorf("failed to setup CSV generator: %w", err)
+		}
 
 		// Load existing CSV files for validation
 		err = generator.LoadExistingCSVFiles()
@@ -221,7 +221,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		}
 
 		color.Yellow("Generating Entity-Relationship diagram...")
-		
+
 		// Create diagram filename based on SOR name
 		diagramName := cleanNameForFilename(def.DisplayName)
 
@@ -272,7 +272,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 				break
 			}
 		}
-		
+
 		if validIssues {
 			color.Yellow("Found relationship consistency issues:")
 			for _, result := range validationResults {

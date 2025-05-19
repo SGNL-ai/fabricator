@@ -35,49 +35,49 @@ const (
 type FieldRequest struct {
 	// Entity and field information
 	EntityID    string
-	Header      string 
+	Header      string
 	HeaderIndex int
 	RowIndex    int
-	
+
 	// Special field flags
-	IsUnique    bool
+	IsUnique bool
 }
 
 // DetectFieldType determines the type of a field based on its header name
 func DetectFieldType(header string) FieldType {
 	headerLower := strings.ToLower(header)
-	
+
 	// Name field detection
 	if headerLower == "name" || strings.HasSuffix(headerLower, "name") {
 		return FieldTypeName
 	}
-	
+
 	// Description field detection
 	if headerLower == "description" || strings.HasSuffix(headerLower, "description") ||
-	   strings.Contains(headerLower, "desc") || strings.Contains(headerLower, "comment") ||
-	   strings.Contains(headerLower, "summary") || strings.Contains(headerLower, "notes") {
+		strings.Contains(headerLower, "desc") || strings.Contains(headerLower, "comment") ||
+		strings.Contains(headerLower, "summary") || strings.Contains(headerLower, "notes") {
 		return FieldTypeDescription
 	}
-	
+
 	// Boolean field detection
-	if headerLower == "valid" || headerLower == "enabled" || headerLower == "active" || 
-	   headerLower == "archived" || strings.HasSuffix(headerLower, "enabled") ||
-	   strings.HasSuffix(headerLower, "active") || strings.HasSuffix(headerLower, "valid") ||
-	   strings.HasSuffix(headerLower, "archived") {
+	if headerLower == "valid" || headerLower == "enabled" || headerLower == "active" ||
+		headerLower == "archived" || strings.HasSuffix(headerLower, "enabled") ||
+		strings.HasSuffix(headerLower, "active") || strings.HasSuffix(headerLower, "valid") ||
+		strings.HasSuffix(headerLower, "archived") {
 		return FieldTypeBoolean
 	}
-	
+
 	// Date field detection
 	if strings.Contains(headerLower, "date") || strings.Contains(headerLower, "time") ||
-	   strings.Contains(headerLower, "created") || strings.Contains(headerLower, "updated") {
+		strings.Contains(headerLower, "created") || strings.Contains(headerLower, "updated") {
 		return FieldTypeDate
 	}
-	
+
 	// Status field detection
 	if headerLower == "status" || strings.HasSuffix(headerLower, "status") {
 		return FieldTypeStatus
 	}
-	
+
 	// Default type
 	return FieldTypeGeneric
 }
@@ -85,7 +85,7 @@ func DetectFieldType(header string) FieldType {
 // GenerateFieldValue creates a value for a field based on its type and context
 func (g *CSVGenerator) GenerateFieldValue(req FieldRequest, fieldType FieldType) string {
 	var value string
-	
+
 	switch fieldType {
 	case FieldTypeName:
 		value = g.generateNameField(req)
@@ -102,22 +102,21 @@ func (g *CSVGenerator) GenerateFieldValue(req FieldRequest, fieldType FieldType)
 	default:
 		value = g.generateGenericField(req)
 	}
-	
+
 	// For unique fields, ensure the value is unique
 	if req.IsUnique && value != "" {
 		value = g.ensureUniqueValue(req.EntityID, req.Header, value)
 	}
-	
+
 	return value
 }
-
 
 // generateNameField creates values for name fields
 func (g *CSVGenerator) generateNameField(req FieldRequest) string {
 	// Use the entity ID directly from the request
 	if req.EntityID != "" && g.EntityData[req.EntityID] != nil {
 		entityName := strings.ToLower(g.EntityData[req.EntityID].EntityName)
-		
+
 		// Generate context-appropriate names based on entity type
 		switch {
 		// User-related entities should get person names
@@ -126,12 +125,12 @@ func (g *CSVGenerator) generateNameField(req FieldRequest) string {
 			strings.Contains(entityName, "employee") ||
 			strings.Contains(entityName, "customer"):
 			return sanitizeName(gofakeit.Name())
-			
+
 		// Role-related entities should get job titles
 		case strings.Contains(entityName, "role") ||
 			strings.Contains(entityName, "job"):
 			return sanitizeName(gofakeit.JobTitle())
-			
+
 		// Group-related entities should get department names
 		case strings.Contains(entityName, "group") ||
 			strings.Contains(entityName, "team") ||
@@ -141,23 +140,23 @@ func (g *CSVGenerator) generateNameField(req FieldRequest) string {
 				return sanitizeName(gofakeit.Company() + " Department")
 			}
 			return sanitizeName(departments[req.RowIndex%len(departments)])
-			
+
 		// Product entities
 		case strings.Contains(entityName, "product") ||
 			strings.Contains(entityName, "item"):
 			return sanitizeName(gofakeit.ProductName())
-			
+
 		// Company entities
 		case strings.Contains(entityName, "company") ||
 			strings.Contains(entityName, "organization"):
 			return sanitizeName(gofakeit.Company())
-			
+
 		// Default to a company name
 		default:
 			return sanitizeName(gofakeit.Company())
 		}
 	}
-	
+
 	// Fallback if we couldn't determine the entity type
 	return sanitizeName(gofakeit.Company())
 }
@@ -177,10 +176,10 @@ func (g *CSVGenerator) generateDateField(req FieldRequest) string {
 	// Generate a date within the last 2 years
 	minTime := time.Now().AddDate(-2, 0, 0)
 	maxTime := time.Now()
-	
+
 	// Use gofakeit for better randomization
 	date := gofakeit.DateRange(minTime, maxTime)
-	
+
 	// Format as YYYY-MM-DD
 	return date.Format("2006-01-02")
 }
@@ -194,7 +193,7 @@ func (g *CSVGenerator) generateStatusField(req FieldRequest) string {
 // generateGenericField creates values for generic fields
 func (g *CSVGenerator) generateGenericField(req FieldRequest) string {
 	headerLower := strings.ToLower(req.Header)
-	
+
 	// More intelligent field type detection
 	switch {
 	// Numeric fields
@@ -207,83 +206,83 @@ func (g *CSVGenerator) generateGenericField(req FieldRequest) string {
 			return fmt.Sprintf("%.2f", gofakeit.Price(1, 1000))
 		}
 		return strconv.Itoa(gofakeit.Number(1, 1000))
-		
+
 	// Percentage fields
 	case strings.Contains(headerLower, "percent") ||
 		strings.Contains(headerLower, "rate"):
 		return strconv.Itoa(gofakeit.Number(1, 100)) + "%"
-		
+
 	// Email fields
 	case strings.Contains(headerLower, "email"):
 		return gofakeit.Email()
-		
+
 	// Phone number fields
 	case strings.Contains(headerLower, "phone"):
 		return gofakeit.Phone()
-		
+
 	// URL fields
 	case strings.Contains(headerLower, "url") ||
 		strings.Contains(headerLower, "website") ||
 		strings.Contains(headerLower, "link"):
 		return gofakeit.URL()
-		
+
 	// Address fields
 	case strings.Contains(headerLower, "address"):
 		return gofakeit.Address().Address
-		
+
 	case strings.Contains(headerLower, "street"):
 		return gofakeit.Street()
-		
+
 	case strings.Contains(headerLower, "city"):
 		return gofakeit.City()
-		
+
 	case strings.Contains(headerLower, "state"):
 		return gofakeit.State()
-		
+
 	case strings.Contains(headerLower, "zip") ||
 		strings.Contains(headerLower, "postal"):
 		return gofakeit.Zip()
-		
+
 	case strings.Contains(headerLower, "country"):
 		return gofakeit.Country()
-		
+
 	// Color fields
 	case strings.Contains(headerLower, "color") ||
 		strings.Contains(headerLower, "colour"):
 		return gofakeit.Color()
-		
+
 	// Time fields (excluding date fields)
 	case strings.Contains(headerLower, "time") && !strings.Contains(headerLower, "date"):
 		return gofakeit.Date().Format("15:04:05")
-		
+
 	// Password fields
 	case strings.Contains(headerLower, "password"):
 		return gofakeit.Password(true, true, true, true, false, 12)
-		
+
 	// Credit card fields
 	case strings.Contains(headerLower, "credit") || strings.Contains(headerLower, "creditcard"):
 		return gofakeit.CreditCardNumber(&gofakeit.CreditCardOptions{Types: []string{"visa", "mastercard"}})
-		
+
 	// IP address fields
 	case headerLower == "ip" || strings.Contains(headerLower, "ipaddress"):
 		return gofakeit.IPv4Address()
-		
+
 	// Comment/notes/summary fields (should be sentences)
 	case strings.Contains(headerLower, "comment") ||
 		strings.Contains(headerLower, "notes") ||
 		strings.Contains(headerLower, "summary"):
 		return gofakeit.Sentence(rand.Intn(5) + 3) // 3-8 words
-		
-	// UUID/GUID fields 
+
+	// UUID/GUID fields
 	case strings.Contains(headerLower, "uuid") ||
 		strings.Contains(headerLower, "guid"):
 		return uuid.New().String()
-		
+
 	// Code fields
 	case strings.Contains(headerLower, "code"):
 		prefix := string([]rune(gofakeit.LetterN(3)))
 		return strings.ToUpper(prefix) + "-" + strconv.Itoa(1000+req.RowIndex)
-		
+
 	// Default - generate a more interesting value using an adjective and noun
 	default:
 		return gofakeit.Word() + "_" + strconv.Itoa(req.RowIndex)
@@ -318,28 +317,28 @@ func (g *CSVGenerator) generateValue(field string, index int) string {
 // ensureUniqueValue ensures a value is unique within its entity and attribute scope
 func (g *CSVGenerator) ensureUniqueValue(entityID, attrName, baseValue string) string {
 	attrKey := entityID + ":" + attrName
-	
+
 	// If this is our first use of this attribute, initialize the map
 	if g.usedUniqueValues[attrKey] == nil {
 		g.usedUniqueValues[attrKey] = make(map[string]bool)
 	}
-	
+
 	// For UUID values, just use a new UUID (they're already unique)
 	if strings.Contains(strings.ToLower(attrName), "uuid") || strings.HasSuffix(strings.ToLower(attrName), "id") {
 		uniqueVal := uuid.New().String()
 		g.usedUniqueValues[attrKey][uniqueVal] = true
 		return uniqueVal
 	}
-	
+
 	// For other types, try to make the base value unique
 	uniqueVal := baseValue
 	attempt := 0
-	
+
 	// If this value is already used, append a suffix to make it unique
 	for g.usedUniqueValues[attrKey][uniqueVal] && attempt < 1000 {
 		// Add a suffix to make it unique
 		suffix := "_" + strconv.Itoa(attempt)
-		
+
 		// If the value already has a numerical suffix, replace it
 		if idx := strings.LastIndex(baseValue, "_"); idx != -1 {
 			if _, err := strconv.Atoi(baseValue[idx+1:]); err == nil {
@@ -350,15 +349,14 @@ func (g *CSVGenerator) ensureUniqueValue(entityID, attrName, baseValue string) s
 		} else {
 			uniqueVal = baseValue + suffix
 		}
-		
+
 		attempt++
 	}
-	
+
 	// Mark this value as used
 	g.usedUniqueValues[attrKey][uniqueVal] = true
 	return uniqueVal
 }
-
 
 // sanitizeName replaces commas and quotes in a name to avoid CSV parsing issues
 func sanitizeName(name string) string {

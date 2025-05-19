@@ -28,7 +28,7 @@ func TestEnsureUniqueValue(t *testing.T) {
 
 			// Check it was marked as used
 			attrKey := entityID + ":" + field
-			assert.True(t, generator.usedUniqueValues[attrKey][result1], 
+			assert.True(t, generator.usedUniqueValues[attrKey][result1],
 				"Value %s should be marked as used in the map for %s", result1, field)
 
 			// Second call should generate a different UUID
@@ -50,7 +50,7 @@ func TestEnsureUniqueValue(t *testing.T) {
 
 		// Verify the value was marked as used
 		attrKey := entityID + ":" + attrName
-		assert.True(t, generator.usedUniqueValues[attrKey][baseValue], 
+		assert.True(t, generator.usedUniqueValues[attrKey][baseValue],
 			"Value should be marked as used in the map")
 	})
 
@@ -71,11 +71,11 @@ func TestEnsureUniqueValue(t *testing.T) {
 		result := generator.ensureUniqueValue(entityID, attrName, baseValue)
 
 		assert.NotEqual(t, baseValue, result, "Expected a modified value to avoid duplicates")
-		assert.True(t, strings.HasPrefix(result, baseValue+"_"), 
+		assert.True(t, strings.HasPrefix(result, baseValue+"_"),
 			"Expected value with suffix, got: %s", result)
 
 		// Check that the new value is marked as used
-		assert.True(t, generator.usedUniqueValues[attrKey][result], 
+		assert.True(t, generator.usedUniqueValues[attrKey][result],
 			"New value %s should be marked as used", result)
 	})
 
@@ -96,11 +96,11 @@ func TestEnsureUniqueValue(t *testing.T) {
 		result := generator.ensureUniqueValue(entityID, attrName, baseValue)
 
 		assert.NotEqual(t, baseValue, result, "Expected a modified value to avoid duplicates")
-		assert.True(t, strings.HasPrefix(result, "value_"), 
+		assert.True(t, strings.HasPrefix(result, "value_"),
 			"Expected value with replaced suffix, got: %s", result)
 
 		// Check that the new value is marked as used
-		assert.True(t, generator.usedUniqueValues[attrKey][result], 
+		assert.True(t, generator.usedUniqueValues[attrKey][result],
 			"New value %s should be marked as used", result)
 	})
 
@@ -125,7 +125,7 @@ func TestEnsureUniqueValue(t *testing.T) {
 		assert.NotEqual(t, baseValue+"_0", result, "Expected a different suffix to avoid duplicates")
 
 		// Check that the new value is marked as used
-		assert.True(t, generator.usedUniqueValues[attrKey][result], 
+		assert.True(t, generator.usedUniqueValues[attrKey][result],
 			"New value %s should be marked as used", result)
 	})
 
@@ -147,11 +147,11 @@ func TestEnsureUniqueValue(t *testing.T) {
 
 		// Check that the maps were initialized
 		attrKey := entityID + ":" + attrName
-		assert.NotNil(t, freshGen.usedUniqueValues[attrKey], 
+		assert.NotNil(t, freshGen.usedUniqueValues[attrKey],
 			"Used values map should be initialized for new entity/attribute")
 
 		// Check that the value was marked as used
-		assert.True(t, freshGen.usedUniqueValues[attrKey][baseValue], 
+		assert.True(t, freshGen.usedUniqueValues[attrKey][baseValue],
 			"Value should be marked as used in the newly initialized map")
 	})
 }

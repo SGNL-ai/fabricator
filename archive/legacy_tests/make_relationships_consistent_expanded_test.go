@@ -220,7 +220,7 @@ func TestMakeRelationshipsConsistentExpanded(t *testing.T) {
 		// Verify the function didn't change the original data
 		assert.Len(t, entityA.Rows, 2, "Expected original entityA data to be preserved")
 		assert.Equal(t, "id-1", entityA.Rows[0][0], "Expected original entityA ID to be preserved")
-		
+
 		assert.Len(t, entityB.Rows, 2, "Expected original entityB data to be preserved")
 		assert.Equal(t, "id-3", entityB.Rows[0][0], "Expected original entityB ID to be preserved")
 	})

@@ -20,7 +20,7 @@ func (g *CSVGenerator) makeRelationshipsConsistentForEntity(entityID string) {
 	}
 
 	// Ensuring consistency (removed from output)
-	
+
 	// Process each relationship
 	for _, link := range relationships {
 		// We only process relationships where this entity is the "from" entity
@@ -30,12 +30,12 @@ func (g *CSVGenerator) makeRelationshipsConsistentForEntity(entityID string) {
 			if toData, exists := g.EntityData[link.ToEntityID]; exists && toData != nil {
 				toEntityName = toData.EntityName
 			}
-			
+
 			// Display relationship information in a human-readable format
-			color.Green("✓ Linking: %s.%s → %s.%s", 
+			color.Green("✓ Linking: %s.%s → %s.%s",
 				entityName, link.FromAttribute,
 				toEntityName, link.ToAttribute)
-				
+
 			g.makeRelationshipsConsistent(entityID, link)
 		}
 	}

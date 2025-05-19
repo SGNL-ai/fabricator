@@ -109,7 +109,7 @@ func TestAutoCardinalityRelationshipConsistency(t *testing.T) {
 
 	userIdIndex := 1 // Order.userId is the second column (index 1)
 	invalidReferences := 0
-	
+
 	for _, row := range generator.EntityData["order"].Rows {
 		if userIdIndex < len(row) {
 			userId := row[userIdIndex]

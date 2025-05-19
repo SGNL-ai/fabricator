@@ -40,7 +40,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		// Add to generator
 		generator.EntityData["user"] = &userEntity
 		generator.EntityData["order"] = &orderEntity
-		
+
 		// Mark 'id' as a unique attribute for the user entity
 		generator.uniqueIdAttributes = map[string][]string{
 			"user":  {"id"},
@@ -50,7 +50,7 @@ func TestMakeRelationshipsConsistent(t *testing.T) {
 		// Create relationship link
 		link := models.RelationshipLink{
 			FromEntityID:      "user",
-			ToEntityID:        "order", 
+			ToEntityID:        "order",
 			FromAttribute:     "id",     // Primary key
 			ToAttribute:       "userId", // Foreign key
 			IsFromAttributeID: true,     // Mark the from attribute as a unique ID

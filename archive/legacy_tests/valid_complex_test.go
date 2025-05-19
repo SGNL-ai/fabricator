@@ -268,7 +268,7 @@ func validateReferences(t *testing.T, entityName, fieldName string, rows [][]str
 			fmt.Printf("Warning: %s %d has invalid %s: %s\n", entityName, i, fieldName, row[colIndex])
 		}
 	}
-	
+
 	assert.Equal(t, 0, invalid, "%d %s entries have invalid %s values", invalid, entityName, fieldName)
 	if invalid == 0 {
 		fmt.Printf("✓ All %s.%s references are valid\n", entityName, fieldName)
@@ -279,7 +279,7 @@ func validateReferences(t *testing.T, entityName, fieldName string, rows [][]str
 func validateUniqueValues(t *testing.T, entityName, fieldName string, rows [][]string, colIndex int) {
 	values := make(map[string]int)
 	duplicates := 0
-	
+
 	for i, row := range rows {
 		value := row[colIndex]
 		if prevIndex, exists := values[value]; exists {
@@ -290,7 +290,7 @@ func validateUniqueValues(t *testing.T, entityName, fieldName string, rows [][]s
 			values[value] = i
 		}
 	}
-	
+
 	assert.Equal(t, 0, duplicates, "Found %d duplicate %s.%s values", duplicates, entityName, fieldName)
 	if duplicates == 0 {
 		fmt.Printf("✓ All %s.%s values are unique\n", entityName, fieldName)

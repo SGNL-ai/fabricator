@@ -91,7 +91,7 @@ func TestCSVGenerator_LoadExistingCSVFiles(t *testing.T) {
 		require.NotNil(t, loadedData, "Failed to load data for entity %s", entityID)
 
 		// Check headers and rows
-		assert.Len(t, loadedData.Headers, len(entity.Attributes), 
+		assert.Len(t, loadedData.Headers, len(entity.Attributes),
 			"Expected %d headers for %s", len(entity.Attributes), entityID)
 		assert.Len(t, loadedData.Rows, 5, "Expected 5 rows for %s", entityID)
 	}
@@ -136,7 +136,7 @@ func TestCSVGenerator_LoadExistingCSVFiles_MissingDirectory(t *testing.T) {
 
 	// Verify error is returned
 	assert.Error(t, err, "Expected error when loading from non-existent directory")
-	assert.Contains(t, err.Error(), "directory does not exist", 
+	assert.Contains(t, err.Error(), "directory does not exist",
 		"Expected 'directory does not exist' error, got: %v", err)
 }
 
@@ -169,7 +169,7 @@ func TestCSVGenerator_LoadExistingCSVFiles_EmptyDirectory(t *testing.T) {
 
 	// Verify error is returned
 	assert.Error(t, err, "Expected error when loading from empty directory")
-	assert.Contains(t, err.Error(), "no matching CSV files found", 
+	assert.Contains(t, err.Error(), "no matching CSV files found",
 		"Expected 'no matching CSV files found' error, got: %v", err)
 }
 

@@ -79,7 +79,7 @@ func TestUniqueAttributeValues(t *testing.T) {
 				if _, isUnique := uniqueValues[header]; isUnique {
 					value := row[i]
 					// Check if we've seen this value before
-					assert.False(t, uniqueValues[header][value], 
+					assert.False(t, uniqueValues[header][value],
 						"Duplicate value %s found for unique attribute %s", value, header)
 					uniqueValues[header][value] = true
 				}
@@ -213,7 +213,7 @@ func TestUniqueAttributeValues(t *testing.T) {
 			for i, header := range userHeaders {
 				if _, isUnique := userUniqueValues[header]; isUnique {
 					value := row[i]
-					assert.False(t, userUniqueValues[header][value], 
+					assert.False(t, userUniqueValues[header][value],
 						"Duplicate value %s found for unique user attribute %s", value, header)
 					userUniqueValues[header][value] = true
 				}
@@ -228,7 +228,7 @@ func TestUniqueAttributeValues(t *testing.T) {
 			for i, header := range orderHeaders {
 				if _, isUnique := orderUniqueValues[header]; isUnique {
 					value := row[i]
-					assert.False(t, orderUniqueValues[header][value], 
+					assert.False(t, orderUniqueValues[header][value],
 						"Duplicate value %s found for unique order attribute %s", value, header)
 					orderUniqueValues[header][value] = true
 				}
@@ -292,9 +292,9 @@ func TestUniqueAttributeValues(t *testing.T) {
 			}
 
 			// Print summary
-			assert.Zero(t, invalidRefs, "There should be no invalid references (found %d valid, %d invalid)", 
+			assert.Zero(t, invalidRefs, "There should be no invalid references (found %d valid, %d invalid)",
 				validRefs, invalidRefs)
-			
+
 			if invalidRefs == 0 {
 				t.Logf("All references are valid: %d total", validRefs)
 			}

@@ -26,22 +26,22 @@ func TestCircularRelationshipDetection(t *testing.T) {
 			Description: "Role entity for testing",
 			Attributes: []models.Attribute{
 				{
-					Name:      "id",
+					Name:       "id",
 					ExternalId: "id",
-					Type:      "String",
-					UniqueId:  true, // This is a primary key
+					Type:       "String",
+					UniqueId:   true, // This is a primary key
 				},
 				{
-					Name:      "appId",
+					Name:       "appId",
 					ExternalId: "appId",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 				{
-					Name:      "name",
+					Name:       "name",
 					ExternalId: "name",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 			},
 		},
@@ -51,22 +51,22 @@ func TestCircularRelationshipDetection(t *testing.T) {
 			Description: "Assignment entity for testing",
 			Attributes: []models.Attribute{
 				{
-					Name:      "id",
+					Name:       "id",
 					ExternalId: "id",
-					Type:      "String",
-					UniqueId:  true, // This is a primary key
+					Type:       "String",
+					UniqueId:   true, // This is a primary key
 				},
 				{
-					Name:      "roleId",
+					Name:       "roleId",
 					ExternalId: "roleId",
-					Type:      "String",
-					UniqueId:  false, // This is a foreign key
+					Type:       "String",
+					UniqueId:   false, // This is a foreign key
 				},
 				{
-					Name:      "uuid",
+					Name:       "uuid",
 					ExternalId: "uuid",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 			},
 		},
@@ -77,18 +77,18 @@ func TestCircularRelationshipDetection(t *testing.T) {
 		// FK -> PK relationship: Assignment.roleId points to Role.id
 		// This represents "Assignment has a reference to Role"
 		"assigned_to_role": {
-			DisplayName:    "assigned_to_role",
-			Name:           "assigned_to_role",
-			FromAttribute:  "Assignment.roleId",  // FK
-			ToAttribute:    "Role.id",            // PK
+			DisplayName:   "assigned_to_role",
+			Name:          "assigned_to_role",
+			FromAttribute: "Assignment.roleId", // FK
+			ToAttribute:   "Role.id",           // PK
 		},
 		// PK -> FK relationship: Role.id is referenced by Assignment.roleId
 		// This creates a circular dependency with the above
 		"role_to_assignment": {
-			DisplayName:    "role_to_assignment",
-			Name:           "role_to_assignment", 
-			FromAttribute:  "Role.id",            // PK
-			ToAttribute:    "Assignment.roleId",  // FK
+			DisplayName:   "role_to_assignment",
+			Name:          "role_to_assignment",
+			FromAttribute: "Role.id",           // PK
+			ToAttribute:   "Assignment.roleId", // FK
 		},
 	}
 
@@ -110,7 +110,7 @@ func TestCircularRelationshipDetection(t *testing.T) {
 	assignmentFound := false
 	roleIndex := -1
 	assignmentIndex := -1
-	
+
 	for i, entity := range ordering {
 		if entity == "Role" {
 			roleFound = true
@@ -121,28 +121,28 @@ func TestCircularRelationshipDetection(t *testing.T) {
 			assignmentIndex = i
 		}
 	}
-	
+
 	assert.True(t, roleFound, "Role should be in the topological order")
 	assert.True(t, assignmentFound, "Assignment should be in the topological order")
 
 	// In a correct topological sort with FK->PK filtering,
 	// Role should come before Assignment since Assignment depends on Role
 	assert.Less(t, roleIndex, assignmentIndex,
-		"Role should come before Assignment in the topological order, but found Role at index %d and Assignment at index %d", 
+		"Role should come before Assignment in the topological order, but found Role at index %d and Assignment at index %d",
 		roleIndex, assignmentIndex)
 
 	// Verify that edges exist in the correct direction
 	// In our graph, "Role" should be processed before "Assignment",
 	// so we should have an edge from Role to Assignment
-	
+
 	// The edge direction is from entity that should be processed first
 	// to entity that depends on it (reverse of data flow)
-	
+
 	// Check the correct edge: Role -> Assignment
 	// This represents "Role must be generated before Assignment"
 	_, errRoleToAssignment := graph.Edge("Role", "Assignment")
 	hasEdgeRoleToAssignment := errRoleToAssignment == nil
-	
+
 	// Check the wrong direction: Assignment -> Role
 	// This should not exist as it would create a cycle
 	_, errAssignmentToRole := graph.Edge("Assignment", "Role")

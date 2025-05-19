@@ -26,16 +26,16 @@ func TestPrimaryKeyToPrimaryKeyRelationships(t *testing.T) {
 			Description: "Account entity for testing",
 			Attributes: []models.Attribute{
 				{
-					Name:      "id",
+					Name:       "id",
 					ExternalId: "id",
-					Type:      "String",
-					UniqueId:  true, // Primary key
+					Type:       "String",
+					UniqueId:   true, // Primary key
 				},
 				{
-					Name:      "name",
+					Name:       "name",
 					ExternalId: "name",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 			},
 		},
@@ -45,22 +45,22 @@ func TestPrimaryKeyToPrimaryKeyRelationships(t *testing.T) {
 			Description: "Settings entity for testing",
 			Attributes: []models.Attribute{
 				{
-					Name:      "id",
+					Name:       "id",
 					ExternalId: "id",
-					Type:      "String",
-					UniqueId:  true, // Primary key
+					Type:       "String",
+					UniqueId:   true, // Primary key
 				},
 				{
-					Name:      "accountId",
+					Name:       "accountId",
 					ExternalId: "accountId",
-					Type:      "String",
-					UniqueId:  true, // This is a foreign key that's also unique (PK-PK relationship)
+					Type:       "String",
+					UniqueId:   true, // This is a foreign key that's also unique (PK-PK relationship)
 				},
 				{
-					Name:      "theme",
+					Name:       "theme",
 					ExternalId: "theme",
-					Type:      "String",
-					UniqueId:  false,
+					Type:       "String",
+					UniqueId:   false,
 				},
 			},
 		},
@@ -97,7 +97,7 @@ func TestPrimaryKeyToPrimaryKeyRelationships(t *testing.T) {
 	settingsFound := false
 	accountIndex := -1
 	settingsIndex := -1
-	
+
 	for i, entity := range ordering {
 		if entity == "Account" {
 			accountFound = true
@@ -108,12 +108,12 @@ func TestPrimaryKeyToPrimaryKeyRelationships(t *testing.T) {
 			settingsIndex = i
 		}
 	}
-	
+
 	assert.True(t, accountFound, "Account should be in the topological order")
 	assert.True(t, settingsFound, "Settings should be in the topological order")
 
 	// Account should come before Settings since Settings depends on Account's id
-	assert.Less(t, accountIndex, settingsIndex, 
+	assert.Less(t, accountIndex, settingsIndex,
 		"Account should come before Settings in the topological order")
 
 	// Verify edges

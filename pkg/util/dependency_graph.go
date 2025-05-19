@@ -17,6 +17,7 @@ func BuildEntityDependencyGraph(
 	relationships map[string]models.Relationship,
 	preventCycles bool,
 ) (graph.Graph[string, string], error) {
+
 	// Create a directed graph where vertices are entity IDs
 	var entityGraph graph.Graph[string, string]
 	if preventCycles {
@@ -89,9 +90,9 @@ func BuildEntityDependencyGraph(
 		}
 
 		// Parse the entity-attribute pairs from the relationship
-		fromEntityID, fromAttrName, fromUniqueID := ParseEntityAttribute(
+		fromEntityID, _, fromUniqueID := ParseEntityAttribute(
 			entities, relationship.FromAttribute, attributeAliasMap, entityAttributeMap)
-		toEntityID, toAttrName, toUniqueID := ParseEntityAttribute(
+		toEntityID, _, toUniqueID := ParseEntityAttribute(
 			entities, relationship.ToAttribute, attributeAliasMap, entityAttributeMap)
 
 		// If we couldn't identify both ends of the relationship, skip it
@@ -104,69 +105,44 @@ func BuildEntityDependencyGraph(
 			// In YAML files, relationships are typically:
 			// fromAttribute: contains FK (e.g., Role.appId)
 			// toAttribute: contains PK (e.g., App.id)
-			
+
 			// For topological sort, we need entities with PKs to be processed
 			// before entities with FKs that reference them
-			
+
 			// Determine the direction of the edge for topological sort
 			var sourceEntityID, targetEntityID string
-			
-			// Check if the reverse edge already exists (to avoid cycles)
-			_, errExistingEdge := entityGraph.Edge(fromEntityID, toEntityID)
-			hasReverseEdge := errExistingEdge == nil
 
 			if !fromUniqueID && toUniqueID {
 				// Case 1: Standard FK->PK relationship
-				// Skip if the reverse edge exists to prevent cycles
-				if hasReverseEdge && preventCycles {
-					continue
-				}
+
 				// For topological sort, PK entity should come before FK entity
-				sourceEntityID = toEntityID    // Entity with PK
-				targetEntityID = fromEntityID  // Entity with FK
+				sourceEntityID = toEntityID   // Entity with PK
+				targetEntityID = fromEntityID // Entity with FK
+
 			} else if fromUniqueID && !toUniqueID {
-				// Case 2: Reverse PK->FK relationship (could create cycles)
-				if preventCycles {
-					continue
-				}
-				sourceEntityID = fromEntityID
-				targetEntityID = toEntityID
+				// Case 2: Reverse PK->FK relationship (ignore)
+				continue
+
 			} else if fromUniqueID && toUniqueID {
 				// Case 3: PK->PK identity relationship
-				// Skip if the reverse edge exists to prevent cycles
-				if hasReverseEdge && preventCycles {
-					continue
-				}
-				
-				// If fromAttr looks like a reference (e.g., accountId), then toEntity should come first
-				isReference := strings.Contains(fromAttrName, "Id") || strings.Contains(fromAttrName, "ID")
-				if isReference && toAttrName == "id" {
-					sourceEntityID = toEntityID
-					targetEntityID = fromEntityID
-				} else {
-					sourceEntityID = toEntityID
-					targetEntityID = fromEntityID
-				}
-			} else {
-				// Case 4: Neither attribute is a unique ID
-				// Skip if the reverse edge exists to prevent cycles
-				if hasReverseEdge && preventCycles {
-					continue
-				}
-				
-				// Default to standard relationship direction
 				sourceEntityID = toEntityID
 				targetEntityID = fromEntityID
+
+			} else {
+				// Case 4: Neither attribute is a unique ID
+				// Skip this is not a valid relationship
+				// TOOD raise error here?
+				continue
 			}
-			
+
 			// Add the edge: source -> target means "source should be processed before target"
+
 			err := entityGraph.AddEdge(sourceEntityID, targetEntityID)
 			if err != nil {
+
 				// Handle the error based on its type
 				if errors.Is(err, graph.ErrEdgeCreatesCycle) {
-					if preventCycles {
-						continue // Skip this edge to prevent cycles
-					}
+					return nil, err
 				} else if errors.Is(err, graph.ErrEdgeAlreadyExists) {
 					// Edge already exists, we can ignore this
 					continue
@@ -202,14 +178,14 @@ func ParseEntityAttribute(
 	if info, found := attributeAliasMap[attributeRef]; found {
 		return info.EntityID, info.AttributeName, info.UniqueID
 	}
-	
+
 	// Check if it's in Entity.Attribute format
 	if strings.Contains(attributeRef, ".") {
 		parts := strings.Split(attributeRef, ".")
 		if len(parts) == 2 {
 			entityName := parts[0]
 			attributeName := parts[1]
-			
+
 			// Find the entity by external ID
 			for id, entity := range entities {
 				if entity.ExternalId == entityName {
@@ -223,12 +199,12 @@ func ParseEntityAttribute(
 			}
 		}
 	}
-	
+
 	// Try entity attribute map as a fallback
 	if info, found := entityAttributeMap[attributeRef]; found {
 		return info.EntityID, info.AttributeName, info.UniqueID
 	}
-	
+
 	return "", "", false
 }
 
@@ -241,7 +217,7 @@ func GetTopologicalOrder(entityGraph graph.Graph[string, string]) ([]string, err
 	ordering, err := graph.StableTopologicalSort(entityGraph, func(a, b string) bool {
 		return strings.Compare(a, b) < 0
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform topological sort: %w", err)
 	}

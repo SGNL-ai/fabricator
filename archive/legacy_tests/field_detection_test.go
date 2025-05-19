@@ -22,7 +22,7 @@ func TestIDMapConsistency(t *testing.T) {
 			Headers:    []string{"id", "name"},
 		},
 	}
-	
+
 	// Mark the id field as a unique attribute
 	generator.uniqueIdAttributes = map[string][]string{
 		"entity": {"id"},
@@ -55,6 +55,6 @@ func TestIDMapConsistency(t *testing.T) {
 	assert.NotEmpty(t, row[0], "Expected non-empty ID when missing from idMap")
 
 	// Verify we have a UUID-like value (at least 36 characters long)
-	assert.GreaterOrEqual(t, len(row[0]), 36, 
+	assert.GreaterOrEqual(t, len(row[0]), 36,
 		"Expected ID to be a UUID-like value with at least 36 characters, got '%s'", row[0])
 }

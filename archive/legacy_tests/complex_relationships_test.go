@@ -138,19 +138,19 @@ func TestComplexRelationshipsTopologicalSort(t *testing.T) {
 	// Setup should handle these circular dependencies gracefully
 	err := g.Setup(entities, relationships)
 	require.NoError(t, err, "Failed to set up complex relationships")
-	
+
 	// Verify that we can get a valid topological order
 	entityOrder, err := g.getTopologicalOrder(g.dependencyGraph)
 	require.NoError(t, err, "Failed to get topological order")
-	
+
 	// Verify that all entities are included in the ordering
 	assert.Len(t, entityOrder, 3, "Expected all 3 entities in order")
-	
+
 	// Verify each entity is in the ordering
 	expectedEntities := map[string]bool{"user": true, "team": true, "ticket": true}
 	for _, entity := range entityOrder {
 		delete(expectedEntities, entity)
 	}
-	
+
 	assert.Empty(t, expectedEntities, "All entities should be present in topological order")
 }
