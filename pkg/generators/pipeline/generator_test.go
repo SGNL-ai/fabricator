@@ -146,13 +146,13 @@ func TestDataGenerator_Generate(t *testing.T) {
 
 			// Create generator with mocks
 			generator := &DataGenerator{
-				idGenerator:       mockIDGen,
+				idGenerator:        mockIDGen,
 				relationshipLinker: mockRelLinker,
-				fieldGenerator:    mockFieldGen,
-				validator:         mockValidator,
-				csvWriter:         mockCSVWriter,
-				dataVolume:        tt.dataVolume,
-				autoCardinality:   tt.autoCardinality,
+				fieldGenerator:     mockFieldGen,
+				validator:          mockValidator,
+				csvWriter:          mockCSVWriter,
+				dataVolume:         tt.dataVolume,
+				autoCardinality:    tt.autoCardinality,
 			}
 
 			// Initialize a graph if needed

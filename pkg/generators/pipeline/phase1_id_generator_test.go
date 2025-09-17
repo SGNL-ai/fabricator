@@ -41,9 +41,9 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 			// This is just a stub
 			generator := NewIDGenerator()
 			graph := tt.setupGraph()
-			
+
 			err := generator.GenerateIDs(graph, tt.dataVolume)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

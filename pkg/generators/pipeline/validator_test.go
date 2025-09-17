@@ -10,10 +10,10 @@ import (
 
 func TestValidator_ValidateRelationships(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupGraph  func() *model.Graph
-		wantErrors  bool
-		errorCount  int
+		name       string
+		setupGraph func() *model.Graph
+		wantErrors bool
+		errorCount int
 	}{
 		{
 			name: "Valid relationships",
@@ -74,9 +74,9 @@ func TestValidator_ValidateRelationships(t *testing.T) {
 			// This is just a stub
 			validator := NewValidator()
 			graph := tt.setupGraph()
-			
+
 			errors := validator.ValidateRelationships(graph)
-			
+
 			if tt.wantErrors {
 				assert.Len(t, errors, tt.errorCount)
 			} else {
@@ -88,10 +88,10 @@ func TestValidator_ValidateRelationships(t *testing.T) {
 
 func TestValidator_ValidateUniqueValues(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupGraph  func() *model.Graph
-		wantErrors  bool
-		errorCount  int
+		name       string
+		setupGraph func() *model.Graph
+		wantErrors bool
+		errorCount int
 	}{
 		{
 			name: "Valid unique values",
@@ -152,9 +152,9 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 			// This is just a stub
 			validator := NewValidator()
 			graph := tt.setupGraph()
-			
+
 			errors := validator.ValidateUniqueValues(graph)
-			
+
 			if tt.wantErrors {
 				assert.Len(t, errors, tt.errorCount)
 			} else {

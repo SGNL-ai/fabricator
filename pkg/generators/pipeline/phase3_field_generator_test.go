@@ -38,9 +38,9 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 			// This is just a stub
 			generator := NewFieldGenerator()
 			graph := tt.setupGraph()
-			
+
 			err := generator.GenerateFields(graph)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

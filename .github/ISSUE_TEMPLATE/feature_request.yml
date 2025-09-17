@@ -1,0 +1,74 @@
+name: 🚀 Feature Request
+description: Suggest a new feature or enhancement for Fabricator
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! 🚀
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem would this feature solve?
+      placeholder: "As a user, I want to... so that I can..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How do you envision this feature working?
+      placeholder: Describe your proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches did you consider?
+      placeholder: Describe alternative solutions you've considered
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case Example
+      description: Provide a concrete example of how this would be used
+      placeholder: |
+        # Example usage
+        ./fabricator --new-feature-flag my-template.yaml
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - "Low - Nice to have"
+        - "Medium - Would significantly improve my workflow"
+        - "High - Blocking my use case"
+        - "Critical - Required for production use"
+
+  - type: checkboxes
+    id: implementation
+    attributes:
+      label: Implementation
+      description: Are you interested in contributing to this feature?
+      options:
+        - label: I'd be willing to implement this feature
+        - label: I'd be willing to help test this feature
+        - label: I'd be willing to help document this feature
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

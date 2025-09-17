@@ -50,9 +50,9 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			// This is just a stub
 			linker := NewRelationshipLinker()
 			graph := tt.setupGraph()
-			
+
 			err := linker.LinkRelationships(graph, tt.autoCardinality)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

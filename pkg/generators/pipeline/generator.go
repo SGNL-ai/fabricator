@@ -35,11 +35,11 @@ type CSVWriterInterface interface {
 // DataGenerator coordinates the entire CSV generation process using the pipeline components
 type DataGenerator struct {
 	// Pipeline components
-	idGenerator       IDGeneratorInterface
+	idGenerator        IDGeneratorInterface
 	relationshipLinker RelationshipLinkerInterface
-	fieldGenerator    FieldGeneratorInterface
-	validator         ValidatorInterface
-	csvWriter         CSVWriterInterface
+	fieldGenerator     FieldGeneratorInterface
+	validator          ValidatorInterface
+	csvWriter          CSVWriterInterface
 
 	// Configuration
 	dataVolume      int
@@ -50,12 +50,12 @@ type DataGenerator struct {
 // NewDataGenerator creates a new DataGenerator with all pipeline components
 func NewDataGenerator(outputDir string, dataVolume int, autoCardinality bool) *DataGenerator {
 	return &DataGenerator{
-		idGenerator:       NewIDGenerator(),
+		idGenerator:        NewIDGenerator(),
 		relationshipLinker: NewRelationshipLinker(),
-		fieldGenerator:    NewFieldGenerator(),
-		validator:         NewValidator(),
-		csvWriter:         NewCSVWriter(outputDir),
-		
+		fieldGenerator:     NewFieldGenerator(),
+		validator:          NewValidator(),
+		csvWriter:          NewCSVWriter(outputDir),
+
 		dataVolume:      dataVolume,
 		outputDir:       outputDir,
 		autoCardinality: autoCardinality,
