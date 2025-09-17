@@ -1,9 +1,8 @@
 package generators
 
 import (
-	"math/rand"
-
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/util"
 )
 
 // RelationshipType represents the type of relationship between entities
@@ -154,7 +153,7 @@ func (g *CSVGenerator) handleManyToOneRelationship(ctx *RelationshipContext) {
 		// With auto-cardinality, use fewer clusters to create more visible grouping
 		if ctx.AutoCardinality && numClusters > 2 {
 			// For stronger many-to-one effect, use just 2-3 clusters
-			numClusters = 2 + rand.Intn(2) // 2-3 clusters
+			numClusters = 2 + util.CryptoRandInt(2) // 2-3 clusters
 		}
 
 		clusterSize := len(ctx.FromData.Rows) / numClusters
@@ -203,7 +202,7 @@ func (g *CSVGenerator) handleOneToOneRelationship(ctx *RelationshipContext) {
 		// For non-unique attributes, just assign randomly
 		for i, row := range ctx.FromData.Rows {
 			// Use a random value from the "to" entity for each row in the "from" entity
-			row[ctx.FromAttrIndex] = toValues[rand.Intn(len(toValues))]
+			row[ctx.FromAttrIndex] = toValues[util.CryptoRandInt(len(toValues))]
 			ctx.FromData.Rows[i] = row
 		}
 	}

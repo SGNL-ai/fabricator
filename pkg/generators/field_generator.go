@@ -2,11 +2,11 @@ package generators
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/SGNL-ai/fabricator/pkg/util"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 )
@@ -163,7 +163,7 @@ func (g *CSVGenerator) generateNameField(req FieldRequest) string {
 
 // generateDescriptionField creates values for description fields
 func (g *CSVGenerator) generateDescriptionField(req FieldRequest) string {
-	return gofakeit.Sentence(rand.Intn(5) + 3) // 3-8 words
+	return gofakeit.Sentence(util.CryptoRandInt(5) + 3) // 3-8 words
 }
 
 // generateBooleanField creates values for boolean fields
@@ -271,7 +271,7 @@ func (g *CSVGenerator) generateGenericField(req FieldRequest) string {
 	case strings.Contains(headerLower, "comment") ||
 		strings.Contains(headerLower, "notes") ||
 		strings.Contains(headerLower, "summary"):
-		return gofakeit.Sentence(rand.Intn(5) + 3) // 3-8 words
+		return gofakeit.Sentence(util.CryptoRandInt(5) + 3) // 3-8 words
 
 	// UUID/GUID fields
 	case strings.Contains(headerLower, "uuid") ||
