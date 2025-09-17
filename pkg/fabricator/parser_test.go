@@ -119,6 +119,39 @@ type: Test-1.0.0
 			t.Error("Parse() succeeded on non-existent file")
 		}
 	})
+
+	// Test schema validation with invalid data types
+	t.Run("Parse YAML with invalid schema", func(t *testing.T) {
+		invalidSchemaYAML := `
+displayName: ""
+description: Test description
+entities:
+  entity1:
+    displayName: "Test Entity"
+    externalId: "Test/Entity"
+    attributes:
+      - name: "id"
+        externalId: "id"
+        type: "InvalidType"
+        uniqueId: true
+`
+		invalidSchemaPath := filepath.Join(tempDir, "invalid-schema.yaml")
+		err := os.WriteFile(invalidSchemaPath, []byte(invalidSchemaYAML), 0644)
+		if err != nil {
+			t.Fatalf("Failed to write invalid schema test file: %v", err)
+		}
+
+		parser := NewParser(invalidSchemaPath)
+		err = parser.Parse()
+		if err == nil {
+			t.Error("Parse() should fail on YAML with invalid schema")
+		}
+
+		// Verify it's a schema validation error
+		if !strings.Contains(err.Error(), "schema validation failed") {
+			t.Errorf("Expected schema validation error, got: %v", err)
+		}
+	})
 }
 
 func TestGetCSVFilenames(t *testing.T) {

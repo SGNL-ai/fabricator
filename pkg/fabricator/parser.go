@@ -1,25 +1,66 @@
 package fabricator
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed sor_schema.json
+var sorSchemaJSON string
 
 // Parser handles the parsing of YAML definition files
 type Parser struct {
 	Definition *models.SORDefinition
 	FilePath   string
+	schema     *jsonschema.Schema
 }
 
 // NewParser creates a new Parser instance
 func NewParser(filePath string) *Parser {
-	return &Parser{
+	parser := &Parser{
 		FilePath: filePath,
 	}
+
+	// Compile the JSON schema for validation
+	if err := parser.initSchema(); err != nil {
+		// Log the error but don't fail parser creation
+		// The Parse() method will catch schema validation issues
+		fmt.Printf("Warning: Failed to initialize JSON schema: %v\n", err)
+	}
+
+	return parser
+}
+
+// initSchema compiles the JSON schema for SOR template validation
+func (p *Parser) initSchema() error {
+	// Parse the embedded JSON schema
+	var schemaData interface{}
+	err := json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
+	if err != nil {
+		return fmt.Errorf("failed to parse embedded schema JSON: %w", err)
+	}
+
+	compiler := jsonschema.NewCompiler()
+
+	// Add the parsed schema data
+	if err := compiler.AddResource("sor_schema.json", schemaData); err != nil {
+		return fmt.Errorf("failed to add schema resource: %w", err)
+	}
+
+	schema, err := compiler.Compile("sor_schema.json")
+	if err != nil {
+		return fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	p.schema = schema
+	return nil
 }
 
 // Parse loads and parses the YAML file
@@ -30,6 +71,12 @@ func (p *Parser) Parse() error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
+	// First, perform JSON Schema validation on the raw YAML
+	err = p.validateSchema(data)
+	if err != nil {
+		return fmt.Errorf("schema validation failed: %w", err)
+	}
+
 	// Parse the YAML content
 	p.Definition = &models.SORDefinition{}
 	err = yaml.Unmarshal(data, p.Definition)
@@ -37,10 +84,52 @@ func (p *Parser) Parse() error {
 		return fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
-	// Validate the parsed data
+	// Validate the parsed data (business logic validation)
 	err = p.validate()
 	if err != nil {
 		return fmt.Errorf("validation failed: %w", err)
+	}
+
+	return nil
+}
+
+// validateSchema validates the YAML data against the JSON schema
+func (p *Parser) validateSchema(data []byte) error {
+	if p.schema == nil {
+		// Try to initialize schema if it wasn't done during construction
+		if err := p.initSchema(); err != nil {
+			return fmt.Errorf("schema not available for validation: %w", err)
+		}
+	}
+
+	// Convert YAML to a generic interface for JSON schema validation
+	var yamlData interface{}
+	err := yaml.Unmarshal(data, &yamlData)
+	if err != nil {
+		return fmt.Errorf("failed to parse YAML for schema validation: %w", err)
+	}
+
+	// Convert to JSON-compatible format (yaml.v3 produces map[string]interface{} which is compatible)
+	// But we need to handle the case where YAML might produce different types
+	jsonData, err := json.Marshal(yamlData)
+	if err != nil {
+		return fmt.Errorf("failed to convert YAML to JSON for schema validation: %w", err)
+	}
+
+	var jsonInterface interface{}
+	err = json.Unmarshal(jsonData, &jsonInterface)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON for schema validation: %w", err)
+	}
+
+	// Validate against schema
+	err = p.schema.Validate(jsonInterface)
+	if err != nil {
+		// Format validation errors nicely
+		if validationErr, ok := err.(*jsonschema.ValidationError); ok {
+			return fmt.Errorf("schema validation error at %s: %s", validationErr.InstanceLocation, validationErr.Error())
+		}
+		return fmt.Errorf("schema validation error: %w", err)
 	}
 
 	return nil
@@ -281,22 +370,19 @@ func (p *Parser) validateRelationships() error {
 
 			// Check if a relationship in the opposite direction exists
 			if existingRelID, exists := bidirectionalRelationships[bidirKey2]; exists {
-				// Bidirectional relationship detected, warn but don't error
-				// This is handled during dependency graph creation
-				invalidRelationships = append(invalidRelationships,
-					fmt.Sprintf("relationship %s: bidirectional dependency detected with relationship %s - may cause cycles during generation",
-						relID, existingRelID))
+				// Bidirectional relationship detected - this is normal in many systems
+				// Just log it as info, don't treat as validation error
+				// The dependency graph creation will handle any actual cycles
+				fmt.Printf("INFO: Bidirectional relationship detected: %s ↔ %s\n", relID, existingRelID)
 			}
 
 			// Record this relationship direction
 			bidirectionalRelationships[bidirKey1] = relID
 
 			// Validate relationship attribute types (uniqueId status)
-			// Ideally, at least one side of the relationship should be a uniqueId
+			// Warn if neither attribute is a uniqueId (may cause data generation issues)
 			if !fromInfo.UniqueID && !toInfo.UniqueID {
-				invalidRelationships = append(invalidRelationships,
-					fmt.Sprintf("relationship %s: neither attribute is marked as uniqueId, which may cause inconsistent data generation",
-						relID))
+				fmt.Printf("WARNING: Relationship %s has no uniqueId attributes - may cause data generation issues\n", relID)
 			}
 		}
 	}

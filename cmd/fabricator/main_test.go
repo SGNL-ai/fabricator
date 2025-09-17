@@ -248,10 +248,12 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: test-id
       - name: name
         externalId: name
+        type: String
         attributeAlias: test-name
 `
 	yamlPath := filepath.Join(tempDir, "test.yaml")
