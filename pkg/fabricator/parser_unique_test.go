@@ -106,16 +106,20 @@ func TestUniqueAttributeValidation(t *testing.T) {
 	t.Run("Default uniqueId value should be false", func(t *testing.T) {
 		yamlContent := `
 displayName: Test SOR
+description: Test SOR for validation
 entities:
   entity1:
     displayName: Entity1
     externalId: Test/Entity1
+    description: Test entity
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
       - name: name
         externalId: name
+        type: String
         # uniqueId is intentionally omitted and should default to false
 `
 
