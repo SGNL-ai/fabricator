@@ -50,9 +50,9 @@ jobs:
         queries: security-and-quality
 
     - name: Run gosec Security Scanner
-      run: |
-        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-        gosec -quiet ./...
+      uses: securego/gosec@master
+      with:
+        args: '-quiet ./...'
 
     - name: Run tests with race detection
       run: go test -race -v ./...
