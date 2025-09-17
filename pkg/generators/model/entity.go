@@ -228,6 +228,32 @@ func (e *Entity) AddRow(row *Row) error {
 	return nil
 }
 
+// ForEachRow iterates over all rows and allows modification during iteration
+// Any changes made to the row are validated using AddRow validation
+// Row order is preserved after iteration completes
+func (e *Entity) ForEachRow(fn func(row *Row) error) error {
+	originalRowCount := len(e.rows)
+
+	// Process each row by popping from front and re-adding at end
+	for i := range originalRowCount {
+		// Pop the first row
+		row := e.rows[0]
+		e.rows = e.rows[1:]
+
+		// Call the function to potentially modify the row
+		if err := fn(row); err != nil {
+			return fmt.Errorf("error processing row %d in entity %s: %w", i, e.name, err)
+		}
+
+		// Re-add the row using AddRow for validation
+		if err := e.AddRow(row); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
 // ToCSV returns CSV representation of the entity
 func (e *Entity) ToCSV() *models.CSVData {
 	// Create headers from attribute external IDs
@@ -257,7 +283,6 @@ func (e *Entity) ToCSV() *models.CSVData {
 }
 
 // validateRow validates a row against entity constraints
-// Checks primary key uniqueness and foreign key references validity
 func (e *Entity) validateRow(row *Row) error {
 	// If we have no primary key, we can't validate rows
 	if e.primaryKey == nil && len(e.attributes) > 0 {
@@ -274,46 +299,32 @@ func (e *Entity) validateRow(row *Row) error {
 			return fmt.Errorf("missing required primary key value for attribute '%s'", pkName)
 		}
 
-		// Check uniqueness constraint
-		if e.isUniqueValueUsed(pkValue) {
-			return fmt.Errorf("duplicate value '%s' for unique attribute '%s'", pkValue, pkName)
+		// Check uniqueness constraint (simple check since ForEachRow pops the row)
+		for _, existingRow := range e.rows {
+			if existingRow.values[pkName] == pkValue {
+				return fmt.Errorf("duplicate value '%s' for unique attribute '%s'", pkValue, pkName)
+			}
 		}
 	}
 
-	// Validate foreign key references
+	// Validate foreign key references (only if values are provided)
 	for _, attr := range e.GetRelationshipAttributes() {
 		attrName := attr.GetName()
 		value, exists := row.values[attrName]
 
-		// Foreign key values are required
-		if !exists || value == "" {
-			return fmt.Errorf("missing required value for relationship attribute '%s'", attrName)
-		}
-
-		// Validate foreign key references if it's a relationship
-		if err := e.validateForeignKeyValue(attrName, value); err != nil {
-			return err
+		// Foreign key values are optional - only validate if provided
+		if exists && value != "" {
+			// Validate foreign key references
+			if err := e.validateForeignKeyValue(attrName, value); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-// isUniqueValueUsed checks if a value is already used for the primary key
-func (e *Entity) isUniqueValueUsed(value string) bool {
-	if e.primaryKey == nil {
-		return false
-	}
 
-	pkName := e.primaryKey.GetName()
-	for _, row := range e.rows {
-		if row.values[pkName] == value {
-			return true
-		}
-	}
-
-	return false
-}
 
 // validateForeignKeyValue verifies that a foreign key value exists in the related entity
 func (e *Entity) validateForeignKeyValue(attributeName string, value string) error {
@@ -371,17 +382,17 @@ func (e *Entity) addRelationship(
 	targetEntity EntityInterface,
 	sourceExternalID, targetExternalID string) (RelationshipInterface, error) {
 
-	// Find source attribute by external ID using the map lookup
-	sourceAttr, sourceExists := e.GetAttributeByExternalID(sourceExternalID)
+	// Find source attribute - try both UUID alias and dotted notation
+	sourceAttr, sourceExists := e.findAttributeByReference(sourceExternalID)
 	if !sourceExists {
-		return nil, fmt.Errorf("source attribute with externalID '%s' not found in entity '%s'",
+		return nil, fmt.Errorf("source attribute '%s' not found in entity '%s'",
 			sourceExternalID, e.GetName())
 	}
 
-	// Find target attribute by external ID using the map lookup
-	targetAttr, targetExists := targetEntity.GetAttributeByExternalID(targetExternalID)
+	// Find target attribute - try both UUID alias and dotted notation
+	targetAttr, targetExists := targetEntity.findAttributeByReference(targetExternalID)
 	if !targetExists {
-		return nil, fmt.Errorf("target attribute with externalID '%s' not found in entity '%s'",
+		return nil, fmt.Errorf("target attribute '%s' not found in entity '%s'",
 			targetExternalID, targetEntity.GetName())
 	}
 
@@ -399,13 +410,38 @@ func (e *Entity) addRelationship(
 		return nil, err
 	}
 
-	// Set source and target attributes as relationship participants
-	sourceAttr.setRelationship(targetEntity.GetID(), targetAttr.GetName())
-	targetAttr.setRelationship(e.GetID(), sourceAttr.GetName())
+	// Set only the source attribute as a foreign key relationship
+	// The target attribute remains as a regular attribute (likely a primary key)
+	// CRITICAL: Never mark unique attributes as relationship sources
+	if !sourceAttr.IsUnique() {
+		sourceAttr.setRelationship(targetEntity.GetID(), targetAttr.GetName())
+	}
+
+	// Don't set bidirectional relationship - target attribute is not a FK
 
 	return relationship, nil
 }
 
 func (e *Entity) getRows() []*Row {
 	return e.rows
+}
+
+// findAttributeByReference finds an attribute using either UUID alias or dotted notation
+func (e *Entity) findAttributeByReference(reference string) (AttributeInterface, bool) {
+	// First try: look up by attributeAlias (UUID format)
+	for _, attr := range e.attrList {
+		if attr.GetAttributeAlias() == reference {
+			return attr, true
+		}
+	}
+
+	// Second try: extract from dotted notation and look up by externalID
+	if strings.Contains(reference, ".") {
+		parts := strings.Split(reference, ".")
+		attrName := parts[len(parts)-1] // Get the part after the last dot
+		return e.GetAttributeByExternalID(attrName)
+	}
+
+	// Third try: direct lookup by externalID (for simple names)
+	return e.GetAttributeByExternalID(reference)
 }

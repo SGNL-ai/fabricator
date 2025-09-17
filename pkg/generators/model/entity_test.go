@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -510,6 +511,332 @@ func TestEntityRows(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
+	})
+}
+
+// Tests for row iteration and modification
+func TestEntityRowIteration(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should iterate over all rows", func(t *testing.T) {
+		// Create attributes
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		nameAttr := &Attribute{
+			name:        "name",
+			externalID:  "name_ext",
+			dataType:    "string",
+			isUnique:    false,
+			description: "Name attribute",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr, nameAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add some test rows
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1", "name": "John"}})
+		require.NoError(t, err)
+		err = entity.AddRow(&Row{values: map[string]string{"id": "2", "name": "Jane"}})
+		require.NoError(t, err)
+
+		// Test iteration
+		rowCount := 0
+		err = entity.ForEachRow(func(row *Row) error {
+			rowCount++
+			// Verify we can read row data
+			assert.NotEmpty(t, row.GetValue("id"))
+			assert.NotEmpty(t, row.GetValue("name"))
+			return nil
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, 2, rowCount, "Should iterate over all rows")
+	})
+
+	t.Run("should allow modification during iteration", func(t *testing.T) {
+		// Create attributes
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		statusAttr := &Attribute{
+			name:        "status",
+			externalID:  "status_ext",
+			dataType:    "string",
+			isUnique:    false,
+			description: "Status attribute",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr, statusAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add rows with only IDs
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1"}})
+		require.NoError(t, err)
+		err = entity.AddRow(&Row{values: map[string]string{"id": "2"}})
+		require.NoError(t, err)
+
+		// Use iterator to add status values
+		err = entity.ForEachRow(func(row *Row) error {
+			row.SetValue("status", "active")
+			return nil
+		})
+		assert.NoError(t, err)
+
+		// Verify values were set
+		csvData := entity.ToCSV()
+		for _, row := range csvData.Rows {
+			assert.Equal(t, "active", row[1], "Status should be set to 'active'")
+		}
+	})
+
+	t.Run("should handle iteration errors", func(t *testing.T) {
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add a test row
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1"}})
+		require.NoError(t, err)
+
+		// Test that iteration errors are properly propagated
+		testError := fmt.Errorf("test error")
+		err = entity.ForEachRow(func(row *Row) error {
+			return testError
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "test error")
+	})
+
+	t.Run("should reject duplicate unique values during iteration", func(t *testing.T) {
+		// Create attributes
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add two rows with different IDs
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1"}})
+		require.NoError(t, err)
+		err = entity.AddRow(&Row{values: map[string]string{"id": "2"}})
+		require.NoError(t, err)
+
+		// Try to set duplicate unique ID during iteration - should fail
+		rowIndex := 0
+		err = entity.ForEachRow(func(row *Row) error {
+			if rowIndex == 1 {
+				// Try to set second row's ID to same as first row
+				row.SetValue("id", "1") // This should create a duplicate
+			}
+			rowIndex++
+			return nil
+		})
+
+		// ForEachRow should reject the duplicate and return an error
+		assert.Error(t, err, "ForEachRow should reject duplicate unique values")
+		assert.Contains(t, err.Error(), "duplicate", "Error should mention duplicate")
+
+		// Note: When ForEachRow fails, entity state is undefined (partial processing)
+		// This is expected behavior - the operation is not atomic
+	})
+
+	t.Run("should handle empty entity iteration", func(t *testing.T) {
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Don't add any rows - entity is empty
+
+		// Iteration should handle empty entity gracefully
+		rowCount := 0
+		err = entity.ForEachRow(func(row *Row) error {
+			rowCount++
+			return nil
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, 0, rowCount, "Should handle empty entity without errors")
+	})
+
+	t.Run("should reject setting values for nonexistent attributes", func(t *testing.T) {
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add a test row
+		err = entity.AddRow(&Row{values: map[string]string{"id": "1"}})
+		require.NoError(t, err)
+
+		// Try to set value for nonexistent attribute during iteration
+		err = entity.ForEachRow(func(row *Row) error {
+			// Row.SetValue doesn't validate attribute existence
+			row.SetValue("nonexistent_field", "value")
+			return nil
+		})
+
+		// SetValue doesn't validate - it just sets any field
+		assert.NoError(t, err, "Row.SetValue allows setting any field name")
+
+		// If we need validation, it should be done at a higher level
+	})
+
+	t.Run("should validate duplicate unique values during row modification", func(t *testing.T) {
+		// Create attributes
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Primary key",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
+			[]AttributeInterface{idAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add two rows with different IDs
+		err = entity.AddRow(&Row{values: map[string]string{"id": "unique-1"}})
+		require.NoError(t, err)
+		err = entity.AddRow(&Row{values: map[string]string{"id": "unique-2"}})
+		require.NoError(t, err)
+
+		// Try to create duplicate unique ID using iterator - should fail
+		err = entity.ForEachRow(func(row *Row) error {
+			if row.GetValue("id") == "unique-2" {
+				// Try to change second row's ID to duplicate the first
+				row.SetValue("id", "unique-1")
+			}
+			return nil
+		})
+		assert.Error(t, err, "ForEachRow should reject duplicate unique values")
+		assert.Contains(t, err.Error(), "duplicate", "Error should mention duplicate")
+
+		// Note: Entity state is undefined after ForEachRow failure (partial processing)
+	})
+
+	t.Run("should validate foreign key values during row modification", func(t *testing.T) {
+		// Create parent entity
+		parentIdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Parent PK",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		parentEntity, err := newEntity("parent", "parent_ext", "Parent", "Parent entity",
+			[]AttributeInterface{parentIdAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add data to parent
+		err = parentEntity.AddRow(&Row{values: map[string]string{"id": "parent-1"}})
+		require.NoError(t, err)
+
+		// Create child entity with FK
+		childIdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id_ext",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Child PK",
+		}
+
+		parentFKAttr := &Attribute{
+			name:           "parent_id",
+			externalID:     "parent_id_ext",
+			dataType:       "string",
+			isUnique:       false,
+			isRelationship: true,
+			relatedEntity:  "parent",
+			relatedAttr:    "id",
+			description:    "Parent FK",
+		}
+
+		// Set up mock to return parent entity
+		mockGraph.EXPECT().GetEntity("parent").Return(parentEntity, true).AnyTimes()
+
+		childEntity, err := newEntity("child", "child_ext", "Child", "Child entity",
+			[]AttributeInterface{childIdAttr, parentFKAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add child row with only ID
+		err = childEntity.AddRow(&Row{values: map[string]string{"id": "child-1"}})
+		require.NoError(t, err)
+
+		// Try to set valid FK using iterator - should succeed
+		err = childEntity.ForEachRow(func(row *Row) error {
+			row.SetValue("parent_id", "parent-1")
+			return nil
+		})
+		assert.NoError(t, err, "Should accept valid foreign key")
+
+		// Try to set invalid FK using iterator - should fail
+		err = childEntity.ForEachRow(func(row *Row) error {
+			row.SetValue("parent_id", "nonexistent-parent")
+			return nil
+		})
+		assert.Error(t, err, "Should reject invalid foreign key")
+		assert.Contains(t, err.Error(), "does not exist", "Error should mention FK doesn't exist")
 	})
 }
 

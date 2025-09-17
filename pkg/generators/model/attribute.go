@@ -53,10 +53,6 @@ func (a *Attribute) IsUnique() bool {
 	return a.isUnique
 }
 
-// IsID returns whether attribute is an identifier
-func (a *Attribute) IsID() bool {
-	return a.isUnique
-}
 
 // IsRelationship returns whether attribute is part of a relationship
 func (a *Attribute) IsRelationship() bool {

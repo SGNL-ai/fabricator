@@ -475,3 +475,152 @@ func TestAccessorMethods(t *testing.T) {
 		assert.Empty(t, nonExistentRels)
 	})
 }
+
+// Test for attribute reference bug in relationship creation
+func TestGraphDottedAttributeReferenceBug(t *testing.T) {
+	// This test should fail initially, proving the bug exists
+	def := &models.SORDefinition{
+		DisplayName: "Test SOR",
+		Description: "Test Description",
+		Entities: map[string]models.Entity{
+			"user": {
+				DisplayName: "User",
+				ExternalId:  "User",
+				Attributes: []models.Attribute{
+					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+					{Name: "profileId", ExternalId: "profileId", Type: "String"}, // externalID is "profileId"
+				},
+			},
+			"profile": {
+				DisplayName: "Profile",
+				ExternalId:  "Profile",
+				Attributes: []models.Attribute{
+					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+				},
+			},
+		},
+		Relationships: map[string]models.Relationship{
+			"user_profile": {
+				DisplayName:   "User Profile",
+				Name:          "user_profile",
+				FromAttribute: "user.profileId", // Graph maps this to entity, then passes "user.profileId" to GetAttributeByExternalID
+				ToAttribute:   "profile.id",     // But GetAttributeByExternalID expects just "profileId", not "user.profileId"
+			},
+		},
+	}
+
+	// After fix: This should now succeed because dotted notation is properly handled
+	graph, err := NewGraph(def)
+	assert.NoError(t, err, "Should succeed after dotted notation bug fix")
+	assert.NotNil(t, graph)
+
+	// Verify the relationship was created successfully
+	relationships := graph.GetAllRelationships()
+	assert.Len(t, relationships, 1, "Should have created 1 relationship")
+}
+
+// Test UUID attribute reference format (like in real sample.yaml)
+func TestGraphUUIDAttributeReferences(t *testing.T) {
+	def := &models.SORDefinition{
+		DisplayName: "Test SOR",
+		Description: "Test Description",
+		Entities: map[string]models.Entity{
+			"user": {
+				DisplayName: "User",
+				ExternalId:  "User",
+				Attributes: []models.Attribute{
+					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "user-id-uuid"},
+					{Name: "profileId", ExternalId: "profileId", Type: "String", AttributeAlias: "user-profileid-uuid"},
+				},
+			},
+			"profile": {
+				DisplayName: "Profile",
+				ExternalId:  "Profile",
+				Attributes: []models.Attribute{
+					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "profile-id-uuid"},
+				},
+			},
+		},
+		Relationships: map[string]models.Relationship{
+			"user_profile": {
+				DisplayName:   "User Profile",
+				Name:          "user_profile",
+				FromAttribute: "user-profileid-uuid", // UUID format like real sample.yaml
+				ToAttribute:   "profile-id-uuid",     // UUID format like real sample.yaml
+			},
+		},
+	}
+
+	graph, err := NewGraph(def)
+	assert.NoError(t, err, "Should handle UUID attribute references")
+	assert.NotNil(t, graph)
+
+	// Verify the relationship was created successfully
+	relationships := graph.GetAllRelationships()
+	assert.Len(t, relationships, 1, "Should have created 1 relationship with UUID references")
+
+	// Verify relationship metadata is set correctly
+	rel := relationships[0]
+	sourceAttr := rel.GetSourceAttribute()
+	targetAttr := rel.GetTargetAttribute()
+
+	assert.Equal(t, "profileId", sourceAttr.GetName(), "Source attribute should be profileId")
+	assert.Equal(t, "id", targetAttr.GetName(), "Target attribute should be id")
+
+	// Check that source attribute has correct relationship metadata
+	assert.True(t, sourceAttr.IsRelationship(), "Source attribute should be marked as relationship")
+	assert.Equal(t, "profile", sourceAttr.GetRelatedEntityID(), "Should point to profile entity, not UUID")
+	assert.Equal(t, "id", sourceAttr.GetRelatedAttribute(), "Should point to id attribute")
+}
+
+// Test with UUID entity IDs (like real sample.yaml)
+func TestGraphUUIDEntityIDs(t *testing.T) {
+	def := &models.SORDefinition{
+		DisplayName: "Test SOR",
+		Description: "Test Description",
+		Entities: map[string]models.Entity{
+			"uuid-entity-1": { // UUID as entity ID
+				DisplayName: "Entity1",
+				ExternalId:  "Entity1",
+				Attributes: []models.Attribute{
+					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "id-alias"},
+					{Name: "refField", ExternalId: "refField", Type: "String", AttributeAlias: "ref-alias"},
+				},
+			},
+			"uuid-entity-2": { // UUID as entity ID
+				DisplayName: "Entity2",
+				ExternalId:  "Entity2",
+				Attributes: []models.Attribute{
+					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "target-id-alias"},
+				},
+			},
+		},
+		Relationships: map[string]models.Relationship{
+			"rel1": {
+				DisplayName:   "Test Relationship",
+				Name:          "test_rel",
+				FromAttribute: "ref-alias",     // UUID alias format
+				ToAttribute:   "target-id-alias", // UUID alias format
+			},
+		},
+	}
+
+	graph, err := NewGraph(def)
+	require.NoError(t, err)
+
+	// Check relationship metadata
+	relationships := graph.GetAllRelationships()
+	require.Len(t, relationships, 1)
+
+	rel := relationships[0]
+	sourceAttr := rel.GetSourceAttribute()
+
+	// This should show the bug - relatedEntityID might be wrong
+	assert.Equal(t, "uuid-entity-2", sourceAttr.GetRelatedEntityID(), "Should be target entity ID, not dotted reference")
+	assert.Equal(t, "id", sourceAttr.GetRelatedAttribute(), "Should be target attribute name")
+
+	// CRITICAL: Target ID attributes should NOT be marked as relationships
+	targetAttr := rel.GetTargetAttribute()
+	assert.False(t, targetAttr.IsRelationship(), "Target ID attribute should NOT be marked as relationship")
+	assert.True(t, targetAttr.IsUnique(), "Target should remain as primary key")
+}

@@ -16,18 +16,17 @@ func NewValidator() ValidatorInterface {
 	return &Validator{}
 }
 
-// ValidateRelationships verifies that relationships are consistent
+// ValidateRelationships verifies graph-level relationship consistency
+// This is for verification mode and structural validation
 func (v *Validator) ValidateRelationships(graph *model.Graph) []string {
 	var errors []string
 
-	// Handle nil graph case - this is what the tests expect when setupGraph returns nil
 	if graph == nil {
 		errors = append(errors, "graph is nil - cannot validate relationships")
-		errors = append(errors, "no entities found - relationship validation impossible")
 		return errors
 	}
 
-	// Validate each relationship in the graph
+	// Validate graph structure - ensure relationships are properly defined
 	for _, relationship := range graph.GetAllRelationships() {
 		// Check that source and target entities exist
 		if relationship.GetSourceEntity() == nil {
@@ -43,39 +42,62 @@ func (v *Validator) ValidateRelationships(graph *model.Graph) []string {
 		// Check that source and target attributes exist
 		if relationship.GetSourceAttribute() == nil {
 			errors = append(errors, fmt.Sprintf("relationship %s has nil source attribute", relationship.GetID()))
+			continue
 		}
 
 		if relationship.GetTargetAttribute() == nil {
 			errors = append(errors, fmt.Sprintf("relationship %s has nil target attribute", relationship.GetID()))
-		}
-
-		// Structural validation complete - data integrity is handled by the model during AddRow
-	}
-
-	return errors
-}
-
-// ValidateUniqueValues verifies that entities have proper unique attribute structure
-func (v *Validator) ValidateUniqueValues(graph *model.Graph) []string {
-	var errors []string
-
-	// Handle nil graph case - this is what the tests expect when setupGraph returns nil
-	if graph == nil {
-		errors = append(errors, "graph is nil - cannot validate unique values")
-		return errors
-	}
-
-	// Structural validation only - check that entities have proper unique attributes defined
-	for _, entity := range graph.GetAllEntities() {
-		// Verify entity has exactly one primary key
-		primaryKey := entity.GetPrimaryKey()
-		if primaryKey == nil {
-			// This would be caught by the model's own validation, but checking structure here
-			// Skip for now since this is structural validation of properly constructed graphs
 			continue
 		}
+
+		// For verification mode: validate cross-entity referential integrity
+		// Check that all foreign key values actually exist in target entity
+		sourceEntity := relationship.GetSourceEntity()
+		targetEntity := relationship.GetTargetEntity()
+		sourceAttr := relationship.GetSourceAttribute()
+		targetAttr := relationship.GetTargetAttribute()
+
+		// Get all target values for quick lookup
+		targetValues := make(map[string]bool)
+		targetCSV := targetEntity.ToCSV()
+		targetColIndex := -1
+		for i, header := range targetCSV.Headers {
+			if header == targetAttr.GetName() {
+				targetColIndex = i
+				break
+			}
+		}
+
+		if targetColIndex >= 0 {
+			for _, row := range targetCSV.Rows {
+				if targetColIndex < len(row) {
+					targetValues[row[targetColIndex]] = true
+				}
+			}
+		}
+
+		// Check source foreign key values
+		sourceCSV := sourceEntity.ToCSV()
+		sourceColIndex := -1
+		for i, header := range sourceCSV.Headers {
+			if header == sourceAttr.GetName() {
+				sourceColIndex = i
+				break
+			}
+		}
+
+		if sourceColIndex >= 0 {
+			for rowIdx, row := range sourceCSV.Rows {
+				if sourceColIndex < len(row) {
+					fkValue := row[sourceColIndex]
+					if fkValue != "" && !targetValues[fkValue] {
+						errors = append(errors, fmt.Sprintf("relationship %s: foreign key '%s' in %s (row %d) does not exist in %s.%s",
+							relationship.GetID(), fkValue, sourceEntity.GetExternalID(), rowIdx, targetEntity.GetExternalID(), targetAttr.GetName()))
+					}
+				}
+			}
+		}
 	}
 
-	// No structural issues found
 	return errors
 }

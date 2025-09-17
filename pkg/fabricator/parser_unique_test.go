@@ -21,13 +21,13 @@ func TestUniqueAttributeValidation(t *testing.T) {
 	// Test 1: Entity with a uniqueId attribute should pass validation
 	t.Run("Entity with uniqueId attribute", func(t *testing.T) {
 		definition := models.SORDefinition{
-			DisplayName:                "Test SOR",
-			Description:                "Test SOR for validation",
-			DefaultSyncFrequency:       "DAILY",
-			DefaultSyncMinInterval:     1,
-			DefaultApiCallFrequency:    "HOURLY",
-			DefaultApiCallMinInterval:  1,
-			AdapterConfig:              "test",
+			DisplayName:               "Test SOR",
+			Description:               "Test SOR for validation",
+			DefaultSyncFrequency:      "DAILY",
+			DefaultSyncMinInterval:    1,
+			DefaultApiCallFrequency:   "HOURLY",
+			DefaultApiCallMinInterval: 1,
+			AdapterConfig:             "test",
 			Entities: map[string]models.Entity{
 				"entity1": {
 					DisplayName: "Entity1",
@@ -37,6 +37,7 @@ func TestUniqueAttributeValidation(t *testing.T) {
 						{
 							Name:       "id",
 							ExternalId: "id",
+							Type:       "String",
 							UniqueId:   true,
 						},
 						{
@@ -71,13 +72,13 @@ func TestUniqueAttributeValidation(t *testing.T) {
 	// Test 2: Entity without a uniqueId attribute should fail validation
 	t.Run("Entity without uniqueId attribute", func(t *testing.T) {
 		definition := models.SORDefinition{
-			DisplayName:                "Test SOR",
-			Description:                "Test SOR for validation",
-			DefaultSyncFrequency:       "DAILY",
-			DefaultSyncMinInterval:     1,
-			DefaultApiCallFrequency:    "HOURLY",
-			DefaultApiCallMinInterval:  1,
-			AdapterConfig:              "test",
+			DisplayName:               "Test SOR",
+			Description:               "Test SOR for validation",
+			DefaultSyncFrequency:      "DAILY",
+			DefaultSyncMinInterval:    1,
+			DefaultApiCallFrequency:   "HOURLY",
+			DefaultApiCallMinInterval: 1,
+			AdapterConfig:             "test",
 			Entities: map[string]models.Entity{
 				"entity1": {
 					DisplayName: "Entity1",
@@ -87,6 +88,7 @@ func TestUniqueAttributeValidation(t *testing.T) {
 						{
 							Name:       "id",
 							ExternalId: "id",
+							Type:       "String",
 							UniqueId:   false,
 						},
 						{

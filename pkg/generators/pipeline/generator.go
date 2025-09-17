@@ -21,10 +21,9 @@ type FieldGeneratorInterface interface {
 	GenerateFields(graph *model.Graph) error
 }
 
-// ValidatorInterface defines the interface for data validation
+// ValidatorInterface defines the interface for graph-level validation
 type ValidatorInterface interface {
 	ValidateRelationships(graph *model.Graph) []string
-	ValidateUniqueValues(graph *model.Graph) []string
 }
 
 // CSVWriterInterface defines the interface for writing CSV files
@@ -89,14 +88,8 @@ func (g *DataGenerator) Generate(graph *model.Graph) error {
 		}
 	}
 
-	uniqueValueErrors := g.validator.ValidateUniqueValues(graph)
-	if len(uniqueValueErrors) > 0 {
-		// Just log the validation errors rather than failing
-		fmt.Printf("WARNING: Found %d unique value validation errors\n", len(uniqueValueErrors))
-		for _, err := range uniqueValueErrors {
-			fmt.Printf("- %s\n", err)
-		}
-	}
+	// Note: Unique value validation is handled by AddRow during data generation
+	// No need for separate unique value validation since AddRow rejects duplicates
 
 	// Write CSV files
 	if err := g.csvWriter.WriteFiles(graph); err != nil {

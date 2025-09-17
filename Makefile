@@ -35,15 +35,15 @@ test:
 # Run tests with coverage
 coverage:
 	$(GOTEST) -v -coverprofile=coverage.out.tmp $(SOURCE_DIRS)
-	# Filter out main.go from coverage calculation
-	grep -v "/main.go" coverage.out.tmp > coverage.out
+	# Filter out main.go and mock files from coverage calculation
+	grep -v "/main.go" coverage.out.tmp | grep -v "/mocks.go" > coverage.out
 	$(GOCMD) tool cover -func=coverage.out
 
 # Check if code coverage meets the threshold (90%)
 coverage-check:
 	$(GOTEST) -coverprofile=coverage.out.tmp $(SOURCE_DIRS)
-	# Filter out main.go from coverage calculation
-	grep -v "/main.go" coverage.out.tmp > coverage.out
+	# Filter out main.go and mock files from coverage calculation
+	grep -v "/main.go" coverage.out.tmp | grep -v "/mocks.go" > coverage.out
 	@coverage=`$(GOCMD) tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'`; \
 	echo "Total coverage: $$coverage%"; \
 	if [ $$(echo "$$coverage < 90.0" | bc -l) -eq 1 ]; then \

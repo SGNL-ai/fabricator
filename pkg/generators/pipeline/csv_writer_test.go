@@ -2,9 +2,11 @@ package pipeline
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
+	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,33 +14,58 @@ import (
 func TestCSVWriter_WriteFiles(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupGraph  func() *model.Graph
+		setupGraph  func(t *testing.T) *model.Graph
 		validateDir func(*testing.T, string)
 		wantErr     bool
 	}{
 		{
 			name: "Write single entity",
-			setupGraph: func() *model.Graph {
-				// Will create a graph with a single entity
-				return nil
+			setupGraph: func(t *testing.T) *model.Graph {
+				def := &models.SORDefinition{
+					DisplayName: "Test SOR",
+					Description: "Test Description",
+					Entities: map[string]models.Entity{
+						"entity1": {
+							DisplayName: "Entity1",
+							ExternalId:  "TestEntity",
+							Attributes: []models.Attribute{
+								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+								{Name: "name", ExternalId: "name", Type: "String"},
+							},
+						},
+					},
+				}
+				graphInterface, err := model.NewGraph(def)
+				require.NoError(t, err)
+				graph, ok := graphInterface.(*model.Graph)
+				require.True(t, ok)
+
+				// Add some test data
+				entities := graph.GetAllEntities()
+				for _, entity := range entities {
+					err := entity.AddRow(model.NewRow(map[string]string{
+						"id":   "test-1",
+						"name": "Test Name",
+					}))
+					require.NoError(t, err)
+				}
+				return graph
 			},
 			validateDir: func(t *testing.T, dir string) {
-				// Will validate CSV file for the entity
+				// Check that TestEntity.csv file was created
+				csvFile := filepath.Join(dir, "TestEntity.csv")
+				assert.FileExists(t, csvFile)
+
+				// Read and validate CSV content
+				content, err := os.ReadFile(csvFile)
+				require.NoError(t, err)
+
+				csvContent := string(content)
+				assert.Contains(t, csvContent, "id,name") // Headers
+				assert.Contains(t, csvContent, "test-1,Test Name") // Data
 			},
 			wantErr: false,
 		},
-		{
-			name: "Write multiple entities",
-			setupGraph: func() *model.Graph {
-				// Will create a graph with multiple entities
-				return nil
-			},
-			validateDir: func(t *testing.T, dir string) {
-				// Will validate CSV files for all entities
-			},
-			wantErr: false,
-		},
-		// Additional test cases will be added later
 	}
 
 	for _, tt := range tests {
@@ -48,10 +75,8 @@ func TestCSVWriter_WriteFiles(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { _ = os.RemoveAll(tempDir) }()
 
-			// Setup and test implementation will be added later
-			// This is just a stub
 			writer := NewCSVWriter(tempDir)
-			graph := tt.setupGraph()
+			graph := tt.setupGraph(t)
 
 			err = writer.WriteFiles(graph)
 

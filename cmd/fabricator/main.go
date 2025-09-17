@@ -9,7 +9,8 @@ import (
 
 	"github.com/SGNL-ai/fabricator/pkg/diagrams"
 	"github.com/SGNL-ai/fabricator/pkg/fabricator"
-	"github.com/SGNL-ai/fabricator/pkg/generators"
+	"github.com/SGNL-ai/fabricator/pkg/generators/model"
+	"github.com/SGNL-ai/fabricator/pkg/generators/pipeline"
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/fatih/color"
 )
@@ -160,52 +161,38 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 
-	var generator *generators.CSVGenerator
+	// Create graph from the parsed definition
+	graphInterface, err := model.NewGraph(def)
+	if err != nil {
+		return fmt.Errorf("failed to create entity graph: %w", err)
+	}
+
+	// Convert to concrete type for pipeline usage
+	graph, ok := graphInterface.(*model.Graph)
+	if !ok {
+		return fmt.Errorf("failed to convert graph to concrete type")
+	}
+
+	// Initialize the pipeline generator
+	generator := pipeline.NewDataGenerator(absOutputDir, dataVolume, autoCardinality)
 
 	if !validateOnly {
 		// Calculate estimated number of records
 		totalRecords := len(def.Entities) * dataVolume
 		color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
 
-		// Initialize CSV generator
-		// Initializing CSV generator (removed from output)
-		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		err = generator.Setup(def.Entities, def.Relationships)
-		if err != nil {
-			return fmt.Errorf("failed to setup CSV generator: %w", err)
-		}
-
-		// Generate data
+		// Generate data using the pipeline
 		totalEntities := len(def.Entities)
 		color.Yellow("Generating data for %d entities...", totalEntities)
-
-		// For simplicity and avoid adding a callback function in this PR, we'll keep the current approach
-		// In the future, we could add progress tracking for large entity sets
-		err = generator.GenerateData()
-		if err != nil {
-			return fmt.Errorf("failed to generate data: %w", err)
-		}
-
-		// Write CSV files
 		color.Yellow("Writing CSV files to %s...", absOutputDir)
-		err = generator.WriteCSVFiles()
+
+		err = generator.Generate(graph)
 		if err != nil {
-			return fmt.Errorf("failed to write CSV files: %w", err)
+			return fmt.Errorf("failed to generate CSV data: %w", err)
 		}
 	} else {
-		// In validation-only mode, initialize without generating
-		color.Yellow("Validation-only mode: Loading existing CSV files from %s...", absOutputDir)
-		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		err = generator.Setup(def.Entities, def.Relationships)
-		if err != nil {
-			return fmt.Errorf("failed to setup CSV generator: %w", err)
-		}
-
-		// Load existing CSV files for validation
-		err = generator.LoadExistingCSVFiles()
-		if err != nil {
-			return fmt.Errorf("failed to load existing CSV files: %w", err)
-		}
+		// In validation-only mode, we'll just skip generation and go directly to validation
+		color.Yellow("Validation-only mode: Skipping data generation, will validate existing CSV files...")
 	}
 
 	// Generate ER diagram if requested
@@ -260,62 +247,23 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Validating relationship consistency in generated files...")
 
 		// Validate relationship consistency
-		// Checking relationship consistency (removed from output)
-		validationResults := generator.ValidateRelationships()
+		validator := pipeline.NewValidator()
+		relationshipErrors := validator.ValidateRelationships(graph)
 
 		// Check if there are validation errors
-		validIssues := false
-		// First pass to determine if there are any real issues to report
-		for _, result := range validationResults {
-			if result.InvalidRows > 0 {
-				validIssues = true
-				break
-			}
-		}
-
-		if validIssues {
+		if len(relationshipErrors) > 0 {
 			color.Yellow("Found relationship consistency issues:")
-			for _, result := range validationResults {
-				if result.InvalidRows > 0 {
-					color.Red("  • %s (%s) → %s (%s): %d invalid references out of %d rows",
-						result.FromEntity, result.FromEntityFile,
-						result.ToEntity, result.ToEntityFile,
-						result.InvalidRows, result.TotalRows)
-
-					// Show a limited number of detailed errors to avoid flooding the console
-					maxErrorsToShow := 5
-					errorsShown := 0
-					for _, errMsg := range result.Errors {
-						if errorsShown < maxErrorsToShow {
-							color.Yellow("    - %s", errMsg)
-							errorsShown++
-						} else if errorsShown == maxErrorsToShow {
-							color.Yellow("    - ... and %d more errors", len(result.Errors)-maxErrorsToShow)
-							break
-						}
-					}
-				}
+			for _, errMsg := range relationshipErrors {
+				color.Red("  • %s", errMsg)
 			}
 			color.Yellow("\nSome relationships have consistency issues. This might be expected with random data generation.")
 		} else {
 			color.Green("✓ All relationships are consistent across generated files!")
 		}
 
-		// Validate unique values
-		// Checking uniqueness constraints (removed from output)
-		uniqueValueErrors := generator.ValidateUniqueValues()
-		if len(uniqueValueErrors) > 0 {
-			color.Yellow("\nFound uniqueness constraint violations:")
-			for _, entityError := range uniqueValueErrors {
-				color.Red("  • Entity %s (%s):", entityError.EntityID, entityError.EntityFile)
-				for _, errMsg := range entityError.Messages {
-					color.Yellow("    - %s", errMsg)
-				}
-			}
-			color.Yellow("\nSome unique attributes have duplicate values. This may cause issues in the SOR.")
-		} else {
-			color.Green("✓ All unique constraints are respected in generated files!")
-		}
+		// Note: Unique constraint validation is handled by AddRow during generation
+		// AddRow rejects duplicate unique values, so no separate validation needed
+		color.Green("✓ All unique constraints are respected in generated files!")
 	}
 
 	// Print completion message

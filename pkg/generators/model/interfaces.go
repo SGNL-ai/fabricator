@@ -8,6 +8,27 @@ type Row struct {
 	values map[string]string
 }
 
+// NewRow creates a new Row with the given values
+func NewRow(values map[string]string) *Row {
+	return &Row{values: values}
+}
+
+// SetValue updates a field value in the row
+func (r *Row) SetValue(fieldName, value string) {
+	if r.values == nil {
+		r.values = make(map[string]string)
+	}
+	r.values[fieldName] = value
+}
+
+// GetValue gets a field value from the row
+func (r *Row) GetValue(fieldName string) string {
+	if r.values == nil {
+		return ""
+	}
+	return r.values[fieldName]
+}
+
 // GraphInterface defines the operations that can be performed on a Graph
 type GraphInterface interface {
 	GetEntity(id string) (EntityInterface, bool)
@@ -36,6 +57,7 @@ type EntityInterface interface {
 	GetNonRelationshipAttributes() []AttributeInterface
 	GetRowCount() int
 	AddRow(row *Row) error
+	ForEachRow(fn func(row *Row) error) error
 	ToCSV() *models.CSVData
 
 	// Internal method for relationships
@@ -44,6 +66,9 @@ type EntityInterface interface {
 
 	// Helper for foreign key validation
 	validateForeignKeyValue(attributeName string, value string) error
+
+	// Helper for attribute lookup by reference (UUID alias or dotted notation)
+	findAttributeByReference(reference string) (AttributeInterface, bool)
 
 	// Returns rows of data
 	getRows() []*Row
@@ -70,7 +95,6 @@ type AttributeInterface interface {
 	GetAttributeAlias() string
 	GetDataType() string
 	IsUnique() bool
-	IsID() bool
 	IsRelationship() bool
 	GetParentEntity() EntityInterface
 	GetRelatedEntityID() string

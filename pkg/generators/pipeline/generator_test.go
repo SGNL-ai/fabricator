@@ -94,7 +94,6 @@ func TestDataGenerator_Generate(t *testing.T) {
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
 				validator.On("ValidateRelationships", mock.Anything).Return([]string{})
-				validator.On("ValidateUniqueValues", mock.Anything).Return([]string{})
 				csvWriter.On("WriteFiles", mock.Anything).Return(nil)
 			},
 			graph:           nil, // Will be initialized in test

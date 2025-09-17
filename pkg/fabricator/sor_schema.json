@@ -52,7 +52,7 @@
       "description": "Type identifier for the SOR"
     },
     "adapterConfig": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Configuration for the adapter"
     },
     "auth": {
