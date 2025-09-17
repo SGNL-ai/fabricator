@@ -269,7 +269,7 @@ func (g *CSVGenerator) LoadExistingCSVFiles() error {
 			if file.Name() == entityFilename {
 				// Read and parse the CSV file
 				filePath := filepath.Join(g.OutputDir, file.Name())
-				fileData, err := os.ReadFile(filePath)
+				fileData, err := os.ReadFile(filepath.Clean(filePath)) // #nosec G304 - filePath is constructed from user-controlled output directory, which is expected for a CLI tool
 				if err != nil {
 					return fmt.Errorf("failed to read CSV file %s: %w", filePath, err)
 				}
@@ -445,7 +445,7 @@ func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link mod
 // WriteCSVFiles writes all generated data to CSV files
 func (g *CSVGenerator) WriteCSVFiles() error {
 	// Create the output directory if it doesn't exist
-	err := os.MkdirAll(g.OutputDir, os.ModePerm)
+	err := os.MkdirAll(g.OutputDir, 0750)
 	if err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -457,7 +457,7 @@ func (g *CSVGenerator) WriteCSVFiles() error {
 
 		filePath := filepath.Join(g.OutputDir, filename)
 
-		file, err := os.Create(filePath)
+		file, err := os.Create(filepath.Clean(filePath)) // #nosec G304 - filePath is constructed from user-controlled output directory, which is expected for a CLI tool
 		if err != nil {
 			return fmt.Errorf("failed to create file %s: %w", filePath, err)
 		}

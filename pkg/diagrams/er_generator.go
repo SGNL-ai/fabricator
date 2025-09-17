@@ -78,7 +78,7 @@ func GenerateERDiagram(def *models.SORDefinition, outputPath string) error {
 // Generate creates the ER diagram as a DOT file
 func (g *ERDiagramGenerator) Generate(outputPath string) error {
 	// Create the output directory if needed
-	err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm)
+	err := os.MkdirAll(filepath.Dir(outputPath), 0750)
 	if err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -242,7 +242,7 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 		return fmt.Errorf("failed to read temporary DOT file: %w", err)
 	}
 
-	err = os.WriteFile(dotOutputPath, dotContent, 0644)
+	err = os.WriteFile(dotOutputPath, dotContent, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write DOT file: %w", err)
 	}
