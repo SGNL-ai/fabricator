@@ -94,9 +94,7 @@ func (g *Graph) GetAllEntities() map[string]EntityInterface {
 func (g *Graph) GetEntitiesList() []EntityInterface {
 	// Convert to interface slice
 	result := make([]EntityInterface, len(g.entitiesList))
-	for i, v := range g.entitiesList {
-		result[i] = v
-	}
+	copy(result, g.entitiesList)
 	return result
 }
 

@@ -138,7 +138,7 @@
             "description": "External identifier for the entity (used for CSV filename)"
           },
           "description": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "Description of the entity"
           },
           "pagesOrderedById": {
@@ -173,7 +173,7 @@
                   "description": "External identifier for the attribute"
                 },
                 "description": {
-                  "type": "string",
+                  "type": ["string", "null"],
                   "description": "Description of the attribute"
                 },
                 "type": {

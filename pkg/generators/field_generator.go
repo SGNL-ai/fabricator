@@ -289,31 +289,6 @@ func (g *CSVGenerator) generateGenericField(req FieldRequest) string {
 	}
 }
 
-// generateValue is used by some test cases and functions
-func (g *CSVGenerator) generateValue(field string, index int) string {
-	// Generate a more realistic value based on the field name
-	fieldLower := strings.ToLower(field)
-
-	// Try to infer the field type from its name
-	switch {
-	case strings.Contains(fieldLower, "color"):
-		return gofakeit.Color()
-	case strings.Contains(fieldLower, "currency"):
-		return gofakeit.CurrencyShort()
-	case strings.Contains(fieldLower, "job") || strings.Contains(fieldLower, "title"):
-		return gofakeit.JobTitle()
-	case strings.Contains(fieldLower, "company"):
-		return gofakeit.Company()
-	case strings.Contains(fieldLower, "product"):
-		return gofakeit.ProductName()
-	default:
-		// Add a bit of randomness
-		adjective := gofakeit.Adjective()
-		noun := gofakeit.Noun()
-		return adjective + "_" + noun + "_" + strconv.Itoa(index)
-	}
-}
-
 // ensureUniqueValue ensures a value is unique within its entity and attribute scope
 func (g *CSVGenerator) ensureUniqueValue(entityID, attrName, baseValue string) string {
 	attrKey := entityID + ":" + attrName

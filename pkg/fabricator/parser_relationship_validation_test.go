@@ -107,8 +107,8 @@ func TestRelationshipValidation(t *testing.T) {
 					ToAttribute:   "User.id",
 				},
 			},
-			shouldValidate: false,
-			errorMessages:  []string{"bidirectional dependency detected"},
+			shouldValidate: true,
+			errorMessages:  []string{}, // Bidirectional relationships are now allowed
 		},
 		{
 			name: "self-referential relationship with uniqueId attributes",
@@ -160,8 +160,8 @@ func TestRelationshipValidation(t *testing.T) {
 					ToAttribute:   "Product.name",        // Not a uniqueId
 				},
 			},
-			shouldValidate: false,
-			errorMessages:  []string{"neither attribute is marked as uniqueId"},
+			shouldValidate: true,
+			errorMessages:  []string{}, // Non-uniqueId relationships now generate warnings, not errors
 		},
 		{
 			name: "invalid path-based relationship",

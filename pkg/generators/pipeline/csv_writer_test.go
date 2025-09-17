@@ -46,7 +46,7 @@ func TestCSVWriter_WriteFiles(t *testing.T) {
 			// Create temporary directory for output
 			tempDir, err := os.MkdirTemp("", "csv_writer_test")
 			require.NoError(t, err)
-			defer os.RemoveAll(tempDir)
+			defer func() { _ = os.RemoveAll(tempDir) }()
 
 			// Setup and test implementation will be added later
 			// This is just a stub

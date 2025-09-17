@@ -9,6 +9,7 @@ import (
 	"github.com/SGNL-ai/fabricator/pkg/generators"
 	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/fatih/color"
+	"github.com/stretchr/testify/require"
 	"strings"
 )
 
@@ -221,10 +222,12 @@ func TestValidateRelationships(t *testing.T) {
 
 	// Initialize generator with a small data volume for speed
 	generator := generators.NewCSVGenerator(outputDir, 5, true)
-	generator.Setup(parser.Definition.Entities, parser.Definition.Relationships)
+	err = generator.Setup(parser.Definition.Entities, parser.Definition.Relationships)
+	require.NoError(t, err)
 
 	// Generate data
-	generator.GenerateData()
+	err = generator.GenerateData()
+	require.NoError(t, err)
 
 	// Write CSV files
 	if err := generator.WriteCSVFiles(); err != nil {

@@ -427,16 +427,6 @@ func (g *CSVGenerator) generateRowForEntity(entityID string, index int) []string
 	return row
 }
 
-// ensureRelationshipConsistency enforces consistency across related entities
-func (g *CSVGenerator) ensureRelationshipConsistency() {
-	// Iterate through relationships and ensure consistency
-	for fromEntityID, links := range g.relationshipMap {
-		for _, link := range links {
-			g.makeRelationshipsConsistent(fromEntityID, link)
-		}
-	}
-}
-
 // makeRelationshipsConsistent ensures that related entities have consistent values
 func (g *CSVGenerator) makeRelationshipsConsistent(fromEntityID string, link models.RelationshipLink) {
 	// Process relationship via the relationship handler

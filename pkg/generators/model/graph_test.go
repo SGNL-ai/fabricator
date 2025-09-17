@@ -312,11 +312,12 @@ func TestTopologicalSorting(t *testing.T) {
 		userRolePos := -1
 
 		for i, entityID := range order {
-			if entityID == "User" {
+			switch entityID {
+			case "User":
 				userPos = i
-			} else if entityID == "Role" {
+			case "Role":
 				rolePos = i
-			} else if entityID == "UserRole" {
+			case "UserRole":
 				userRolePos = i
 			}
 		}
