@@ -1,0 +1,21 @@
+displayName: Invalid SOR Enum Types
+description: SOR with invalid enum values
+entities:
+  entity1:
+    displayName: "Test Entity"
+    externalId: "Test/Entity"
+    attributes:
+      - name: "id"
+        externalId: "id"
+        type: "InvalidType"  # Should be one of: String, Integer, Boolean, Date, DateTime, Float, Double
+        uniqueId: true
+      - name: "status"
+        externalId: "status"
+        type: "String"
+        uniqueId: false
+relationships:
+  rel1:
+    displayName: "Test Relationship"
+    name: "test_rel"
+    fromAttribute: "InvalidAttribute"  # Non-existent attribute
+    toAttribute: "entity1.id"

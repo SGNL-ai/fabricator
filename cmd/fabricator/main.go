@@ -140,6 +140,11 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	parser := fabricator.NewParser(inputFile)
 	err := parser.Parse()
 	if err != nil {
+		// Extract details about relationship validation issues for better reporting
+		if strings.Contains(err.Error(), "relationship issues") {
+			// The full error message has detailed info, let's keep it
+			return fmt.Errorf("failed to parse YAML file due to relationship validation issues:\n%w", err)
+		}
 		return fmt.Errorf("failed to parse YAML file: %w", err)
 	}
 
@@ -163,13 +168,23 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
 
 		// Initialize CSV generator
-		color.Yellow("Initializing CSV generator...")
+		// Initializing CSV generator (removed from output)
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		generator.Setup(def.Entities, def.Relationships)
+		err = generator.Setup(def.Entities, def.Relationships)
+		if err != nil {
+			return fmt.Errorf("failed to setup CSV generator: %w", err)
+		}
 
 		// Generate data
-		color.Yellow("Generating data for %d entities...", len(def.Entities))
-		generator.GenerateData()
+		totalEntities := len(def.Entities)
+		color.Yellow("Generating data for %d entities...", totalEntities)
+
+		// For simplicity and avoid adding a callback function in this PR, we'll keep the current approach
+		// In the future, we could add progress tracking for large entity sets
+		err = generator.GenerateData()
+		if err != nil {
+			return fmt.Errorf("failed to generate data: %w", err)
+		}
 
 		// Write CSV files
 		color.Yellow("Writing CSV files to %s...", absOutputDir)
@@ -181,7 +196,10 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		// In validation-only mode, initialize without generating
 		color.Yellow("Validation-only mode: Loading existing CSV files from %s...", absOutputDir)
 		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		generator.Setup(def.Entities, def.Relationships)
+		err = generator.Setup(def.Entities, def.Relationships)
+		if err != nil {
+			return fmt.Errorf("failed to setup CSV generator: %w", err)
+		}
 
 		// Load existing CSV files for validation
 		err = generator.LoadExistingCSVFiles()
@@ -194,15 +212,15 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	if generateDiagram {
 		// Check if Graphviz is available (this is a double-check since flag might be manually set)
 		graphvizAvailable := diagrams.IsGraphvizAvailable()
-		outputFormat := "DOT"
+		// Output format (won't be displayed)
 		extension := ".dot"
 
 		if graphvizAvailable {
-			outputFormat = "SVG"
+			// Using SVG format
 			extension = ".svg"
 		}
 
-		color.Yellow("Generating Entity-Relationship diagram (%s format)...", outputFormat)
+		color.Yellow("Generating Entity-Relationship diagram...")
 
 		// Create diagram filename based on SOR name
 		diagramName := cleanNameForFilename(def.DisplayName)
@@ -242,10 +260,20 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Validating relationship consistency in generated files...")
 
 		// Validate relationship consistency
+		// Checking relationship consistency (removed from output)
 		validationResults := generator.ValidateRelationships()
 
 		// Check if there are validation errors
-		if len(validationResults) > 0 {
+		validIssues := false
+		// First pass to determine if there are any real issues to report
+		for _, result := range validationResults {
+			if result.InvalidRows > 0 {
+				validIssues = true
+				break
+			}
+		}
+
+		if validIssues {
 			color.Yellow("Found relationship consistency issues:")
 			for _, result := range validationResults {
 				if result.InvalidRows > 0 {
@@ -274,6 +302,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		}
 
 		// Validate unique values
+		// Checking uniqueness constraints (removed from output)
 		uniqueValueErrors := generator.ValidateUniqueValues()
 		if len(uniqueValueErrors) > 0 {
 			color.Yellow("\nFound uniqueness constraint violations:")

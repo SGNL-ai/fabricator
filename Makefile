@@ -16,7 +16,7 @@ GOFMT=$(GOCMD) fmt
 
 # Lint parameters
 GOLINT=golangci-lint
-GOLINT_VERSION=v2.1.5
+GOLINT_VERSION=v2.4.0
 
 # Source files
 SOURCE_DIRS=./cmd/... ./pkg/...

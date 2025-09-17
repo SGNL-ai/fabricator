@@ -42,9 +42,9 @@ type Attribute struct {
 	Description    string `yaml:"description"`
 	Type           string `yaml:"type"`
 	Indexed        bool   `yaml:"indexed"`
-	UniqueId       bool   `yaml:"uniqueId,omitempty"` // Defaults to false when not specified
-	AttributeAlias string `yaml:"attributeAlias"`
-	List           bool   `yaml:"list"`
+	UniqueId       bool   `yaml:"uniqueId,omitempty"`       // Defaults to false when not specified
+	AttributeAlias string `yaml:"attributeAlias,omitempty"` // Optional in some YAML formats
+	List           bool   `yaml:"list,omitempty"`           // Optional in some YAML formats
 }
 
 // RelationshipPath represents a path step in a relationship
@@ -60,6 +60,7 @@ type Relationship struct {
 	FromAttribute string             `yaml:"fromAttribute,omitempty"`
 	ToAttribute   string             `yaml:"toAttribute,omitempty"`
 	Path          []RelationshipPath `yaml:"path,omitempty"`
+	ChildEntity   string             `yaml:"childEntity,omitempty"`
 }
 
 // RelationshipLink represents a link between two entities for data generation purposes

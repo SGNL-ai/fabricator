@@ -29,10 +29,12 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: test-id
       - name: name
         externalId: name
+        type: String
         attributeAlias: test-name
 `
 	yamlPath := filepath.Join(tempDir, "test.yaml")
@@ -113,6 +115,7 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: test-id
 `
@@ -168,10 +171,12 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: test-id
       - name: name
         externalId: name
+        type: String
         attributeAlias: test-name
   entity2:
     displayName: RelatedEntity
@@ -180,10 +185,12 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: related-id
       - name: entity1Id
         externalId: entity1Id
+        type: String
         attributeAlias: entity1-id
 relationships:
   rel1:

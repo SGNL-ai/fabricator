@@ -1,0 +1,48 @@
+# Pre-commit hooks for code quality and consistency
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: Go Format
+        entry: gofmt
+        language: system
+        args: [-l, -w]
+        files: \.go$
+
+      - id: go-vet
+        name: Go Vet
+        entry: go
+        language: system
+        args: [vet, ./...]
+        files: \.go$
+        pass_filenames: false
+
+      - id: go-test
+        name: Go Test
+        entry: go
+        language: system
+        args: [test, -short, ./...]
+        files: \.go$
+        pass_filenames: false
+
+      - id: gosec
+        name: Go Security
+        entry: bash
+        language: system
+        args: ['-c', 'command -v gosec >/dev/null 2>&1 && gosec ./... || echo "gosec not installed, skipping"']
+        files: \.go$
+        pass_filenames: false

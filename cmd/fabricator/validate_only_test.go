@@ -8,6 +8,7 @@ import (
 	"github.com/SGNL-ai/fabricator/pkg/fabricator"
 	"github.com/SGNL-ai/fabricator/pkg/generators"
 	"github.com/fatih/color"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateOnlyMode(t *testing.T) {
@@ -53,10 +54,12 @@ func TestValidateOnlyMode(t *testing.T) {
 
 	// Initialize generator with a small data volume for speed
 	generator := generators.NewCSVGenerator(outputDir, 5, true)
-	generator.Setup(parser.Definition.Entities, parser.Definition.Relationships)
+	err = generator.Setup(parser.Definition.Entities, parser.Definition.Relationships)
+	require.NoError(t, err)
 
 	// Generate data and write CSV files
-	generator.GenerateData()
+	err = generator.GenerateData()
+	require.NoError(t, err)
 	if err := generator.WriteCSVFiles(); err != nil {
 		t.Fatalf("Failed to write CSV files: %v", err)
 	}
@@ -72,7 +75,8 @@ func TestValidateOnlyMode(t *testing.T) {
 
 	// Create a new generator for validation-only mode
 	validationGenerator := generators.NewCSVGenerator(outputDir, 5, true)
-	validationGenerator.Setup(validationParser.Definition.Entities, validationParser.Definition.Relationships)
+	err = validationGenerator.Setup(validationParser.Definition.Entities, validationParser.Definition.Relationships)
+	require.NoError(t, err)
 
 	// Load existing CSV files instead of generating new ones
 	err = validationGenerator.LoadExistingCSVFiles()
@@ -110,7 +114,8 @@ func TestValidateOnlyMode(t *testing.T) {
 
 		// Try validation again with invalid data
 		invalidGenerator := generators.NewCSVGenerator(outputDir, 5, true)
-		invalidGenerator.Setup(validationParser.Definition.Entities, validationParser.Definition.Relationships)
+		err = invalidGenerator.Setup(validationParser.Definition.Entities, validationParser.Definition.Relationships)
+		require.NoError(t, err)
 
 		// Load should still succeed as we're just parsing the CSV files
 		err = invalidGenerator.LoadExistingCSVFiles()

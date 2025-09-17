@@ -1,0 +1,11 @@
+# Missing required "description" field
+displayName: Invalid SOR Missing Fields
+entities:
+  entity1:
+    displayName: "Test Entity"
+    # Missing required "externalId" field
+    attributes:
+      - name: "id"
+        externalId: "id"
+        type: "String"
+        uniqueId: true

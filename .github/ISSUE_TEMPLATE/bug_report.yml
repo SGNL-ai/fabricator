@@ -1,0 +1,82 @@
+name: 🐛 Bug Report
+description: File a bug report to help us improve Fabricator
+title: "[Bug]: "
+labels: ["bug", "triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! 🐛
+
+  - type: input
+    id: version
+    attributes:
+      label: Fabricator Version
+      description: What version of Fabricator are you running?
+      placeholder: e.g., v1.2.3 (from ./fabricator --version)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      description: What version of Go are you using?
+      placeholder: e.g., go1.24.3 (from go version)
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected to happen
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Run command: ./fabricator -f my-template.yaml
+        2. See error: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: yaml-template
+    attributes:
+      label: YAML Template (if applicable)
+      description: If the issue is related to a specific YAML template, please share it
+      render: yaml
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Full Error Output
+      description: Complete error output or logs
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
