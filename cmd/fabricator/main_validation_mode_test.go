@@ -115,6 +115,7 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: test-id
 `
