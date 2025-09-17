@@ -60,6 +60,7 @@ type Relationship struct {
 	FromAttribute string             `yaml:"fromAttribute,omitempty"`
 	ToAttribute   string             `yaml:"toAttribute,omitempty"`
 	Path          []RelationshipPath `yaml:"path,omitempty"`
+	ChildEntity   string             `yaml:"childEntity,omitempty"`
 }
 
 // RelationshipLink represents a link between two entities for data generation purposes

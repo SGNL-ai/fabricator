@@ -283,6 +283,14 @@ func (p *Parser) validateRelationships() error {
 			continue
 		}
 
+		// Check for childEntity relationships (parent-child hierarchical relationships)
+		if rel.ChildEntity != "" {
+			// ChildEntity relationships are valid - they represent parent-child hierarchies
+			// The childEntity field can reference JSON paths like $.riskFactors or entity names
+			validRelationships++
+			continue
+		}
+
 		// For direct relationships, validate fromAttribute and toAttribute
 		if rel.FromAttribute == "" {
 			invalidRelationships = append(invalidRelationships,
