@@ -21,11 +21,18 @@ func TestUniqueAttributeValidation(t *testing.T) {
 	// Test 1: Entity with a uniqueId attribute should pass validation
 	t.Run("Entity with uniqueId attribute", func(t *testing.T) {
 		definition := models.SORDefinition{
-			DisplayName: "Test SOR",
+			DisplayName:                "Test SOR",
+			Description:                "Test SOR for validation",
+			DefaultSyncFrequency:       "DAILY",
+			DefaultSyncMinInterval:     1,
+			DefaultApiCallFrequency:    "HOURLY",
+			DefaultApiCallMinInterval:  1,
+			AdapterConfig:              "test",
 			Entities: map[string]models.Entity{
 				"entity1": {
 					DisplayName: "Entity1",
 					ExternalId:  "Test/Entity1",
+					Description: "Test entity",
 					Attributes: []models.Attribute{
 						{
 							Name:       "id",
@@ -35,6 +42,7 @@ func TestUniqueAttributeValidation(t *testing.T) {
 						{
 							Name:       "name",
 							ExternalId: "name",
+							Type:       "String",
 							UniqueId:   false,
 						},
 					},
@@ -63,11 +71,18 @@ func TestUniqueAttributeValidation(t *testing.T) {
 	// Test 2: Entity without a uniqueId attribute should fail validation
 	t.Run("Entity without uniqueId attribute", func(t *testing.T) {
 		definition := models.SORDefinition{
-			DisplayName: "Test SOR",
+			DisplayName:                "Test SOR",
+			Description:                "Test SOR for validation",
+			DefaultSyncFrequency:       "DAILY",
+			DefaultSyncMinInterval:     1,
+			DefaultApiCallFrequency:    "HOURLY",
+			DefaultApiCallMinInterval:  1,
+			AdapterConfig:              "test",
 			Entities: map[string]models.Entity{
 				"entity1": {
 					DisplayName: "Entity1",
 					ExternalId:  "Test/Entity1",
+					Description: "Test entity",
 					Attributes: []models.Attribute{
 						{
 							Name:       "id",
@@ -77,6 +92,7 @@ func TestUniqueAttributeValidation(t *testing.T) {
 						{
 							Name:       "name",
 							ExternalId: "name",
+							Type:       "String",
 							UniqueId:   false,
 						},
 					},
