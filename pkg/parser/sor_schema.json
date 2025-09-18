@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "SGNL System of Record Template",
+  "description": "JSON Schema for validating SGNL SOR template YAML files",
+  "type": "object",
+  "required": [
+    "displayName",
+    "description"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name for the SOR"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Description of the system of record"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Base64 encoded icon for the SOR"
+    },
+    "hostname": {
+      "type": "string",
+      "description": "Hostname or address of the system"
+    },
+    "defaultSyncFrequency": {
+      "type": "string",
+      "enum": ["SECONDLY", "MINUTELY", "HOURLY", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"],
+      "description": "Default synchronization frequency"
+    },
+    "defaultSyncMinInterval": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Minimum interval for synchronization"
+    },
+    "defaultApiCallFrequency": {
+      "type": "string",
+      "enum": ["SECONDLY", "MINUTELY", "HOURLY", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"],
+      "description": "Default API call frequency"
+    },
+    "defaultApiCallMinInterval": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Minimum interval for API calls"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type identifier for the SOR"
+    },
+    "adapterConfig": {
+      "type": ["string", "null"],
+      "description": "Configuration for the adapter"
+    },
+    "auth": {
+      "type": "array",
+      "description": "Authentication configurations",
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "properties": {
+              "basic": {
+                "type": "object",
+                "properties": {
+                  "username": {"type": "string"},
+                  "password": {"type": "string"}
+                },
+                "required": ["username"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["basic"],
+            "additionalProperties": false
+          },
+          {
+            "properties": {
+              "bearer": {
+                "type": "object",
+                "properties": {
+                  "token": {"type": "string"},
+                  "authToken": {"type": "string"}
+                },
+                "anyOf": [
+                  {"required": ["token"]},
+                  {"required": ["authToken"]}
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": ["bearer"],
+            "additionalProperties": false
+          },
+          {
+            "properties": {
+              "oAuth2ClientCredentials": {
+                "type": "object",
+                "properties": {
+                  "clientId": {"type": "string"},
+                  "clientSecret": {"type": "string"},
+                  "tokenUrl": {"type": "string"},
+                  "authStyle": {"type": "string"},
+                  "scope": {"type": "string"},
+                  "scopes": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  }
+                },
+                "required": ["clientId", "clientSecret", "tokenUrl"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["oAuth2ClientCredentials"],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "entities": {
+      "type": "object",
+      "description": "Entity definitions",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["displayName", "externalId", "attributes"],
+        "additionalProperties": true,
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable name for the entity"
+          },
+          "externalId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "External identifier for the entity (used for CSV filename)"
+          },
+          "description": {
+            "type": ["string", "null"],
+            "description": "Description of the entity"
+          },
+          "pagesOrderedById": {
+            "type": "boolean",
+            "description": "Whether pages are ordered by ID"
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page"
+          },
+          "entityAlias": {
+            "type": "string",
+            "description": "Alias for the entity"
+          },
+          "attributes": {
+            "type": "array",
+            "description": "Attributes of the entity",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["name", "externalId", "type"],
+              "additionalProperties": true,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Internal name of the attribute"
+                },
+                "externalId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "External identifier for the attribute"
+                },
+                "description": {
+                  "type": ["string", "null"],
+                  "description": "Description of the attribute"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["String", "Integer", "Boolean", "Date", "DateTime", "Float", "Double", "Bool", "Int64"],
+                  "description": "Data type of the attribute"
+                },
+                "indexed": {
+                  "type": "boolean",
+                  "description": "Whether the attribute is indexed"
+                },
+                "uniqueId": {
+                  "type": "boolean",
+                  "description": "Whether the attribute is a unique identifier"
+                },
+                "attributeAlias": {
+                  "type": "string",
+                  "description": "Alias for the attribute"
+                },
+                "list": {
+                  "type": "boolean",
+                  "description": "Whether the attribute is a list"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "relationships": {
+      "type": "object",
+      "description": "Relationship definitions",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Human-readable name for the relationship"
+          },
+          "name": {
+            "type": "string",
+            "description": "Internal name of the relationship"
+          },
+          "fromAttribute": {
+            "type": "string",
+            "description": "Source attribute for direct relationships"
+          },
+          "toAttribute": {
+            "type": "string",
+            "description": "Target attribute for direct relationships"
+          },
+          "path": {
+            "type": "array",
+            "description": "Path definition for path-based relationships",
+            "items": {
+              "type": "object",
+              "required": ["relationship"],
+              "additionalProperties": true,
+              "properties": {
+                "relationship": {
+                  "type": "string",
+                  "description": "Reference to another relationship"
+                },
+                "direction": {
+                  "type": "string",
+                  "description": "Direction of the path step"
+                }
+              }
+            }
+          },
+          "childEntity": {
+            "type": "string",
+            "description": "Child entity for parent-child relationships"
+          }
+        },
+        "anyOf": [
+          {
+            "required": ["fromAttribute", "toAttribute"]
+          },
+          {
+            "required": ["path"]
+          },
+          {
+            "required": ["childEntity"]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 )
 
 // TestIsGraphvizAvailable tests both success and failure paths of IsGraphvizAvailable
@@ -50,14 +50,14 @@ func TestGenerateDOTOnly(t *testing.T) {
 	testOutputPath := filepath.Join(tempDir, "test_diagram.dot")
 
 	// Create a minimal mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR DOT Only",
 		Description: "Test System of Record for DOT-only generation",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -96,9 +96,9 @@ func TestGenerateDOTOnly(t *testing.T) {
 // TestGenerateWithInvalidTempFile tests error handling when temporary file creation fails
 func TestGenerateWithInvalidTempFile(t *testing.T) {
 	// Create a minimal mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities:    map[string]models.Entity{},
+		Entities:    map[string]parser.Entity{},
 	}
 
 	// Create a generator
@@ -123,9 +123,9 @@ func TestGenerateWithInvalidTempFile(t *testing.T) {
 // TestExtractEntitiesWithNamespaces tests entity extraction with various namespace patterns
 func TestExtractEntitiesWithNamespaces(t *testing.T) {
 	// Create a SORDefinition with entities having different namespace patterns
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"entity1": {
 				DisplayName: "", // No display name, should use ExternalId
 				ExternalId:  "Namespace/Entity1",
@@ -184,13 +184,13 @@ func TestExtractEntitiesWithNamespaces(t *testing.T) {
 // TestExtractRelationshipsComprehensive tests all relationship extraction paths
 func TestExtractRelationshipsComprehensive(t *testing.T) {
 	// Create a SORDefinition with various relationship patterns
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -215,7 +215,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 			"role": {
 				DisplayName: "Role",
 				ExternalId:  "Test/Role",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -235,7 +235,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 			"permission": {
 				DisplayName: "Permission",
 				ExternalId:  "Test/Permission",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -246,7 +246,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"rel1": {
 				// Regular direct relationship with DisplayName
 				DisplayName:   "User to Role",
@@ -285,7 +285,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				// Simple path-based relationship
 				DisplayName: "Path Based Relationship",
 				Name:        "path_rel",
-				Path: []models.RelationshipPath{
+				Path: []parser.RelationshipPath{
 					{Relationship: "rel1", Direction: "outbound"},
 					{Relationship: "rel2", Direction: "outbound"},
 				},
@@ -294,7 +294,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				// Path with non-existent relationship (should be skipped)
 				DisplayName: "Invalid Path",
 				Name:        "invalid_path",
-				Path: []models.RelationshipPath{
+				Path: []parser.RelationshipPath{
 					{Relationship: "nonexistent", Direction: "outbound"},
 				},
 			},
@@ -302,7 +302,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				// Self-referential path (should be skipped)
 				DisplayName: "Self Path",
 				Name:        "self_path",
-				Path: []models.RelationshipPath{
+				Path: []parser.RelationshipPath{
 					{Relationship: "rel3", Direction: "outbound"},
 				},
 			},
@@ -378,11 +378,11 @@ func TestGenerateWithEmptyEntities(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }() // Clean up after the test
 
 	// Create a SORDefinition with empty entities
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName:   "Empty SOR",
 		Description:   "SOR with no entities",
-		Entities:      map[string]models.Entity{},
-		Relationships: map[string]models.Relationship{},
+		Entities:      map[string]parser.Entity{},
+		Relationships: map[string]parser.Relationship{},
 	}
 
 	// Create output path
@@ -416,13 +416,13 @@ func TestGenerateGraphvizExecError(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }() // Clean up after the test
 
 	// Create a simple SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 )
 
 func TestGenerateERDiagram(t *testing.T) {
@@ -25,14 +25,14 @@ func TestGenerateERDiagram(t *testing.T) {
 	testOutputPath := filepath.Join(tempDir, "test_diagram.dot")
 
 	// Create a very simple mock SORDefinition with minimal entities
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
 		Description: "Test System of Record for ER Diagram Generation",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -45,7 +45,7 @@ func TestGenerateERDiagram(t *testing.T) {
 			"role": {
 				DisplayName: "Role",
 				ExternalId:  "Test/Role",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -56,7 +56,7 @@ func TestGenerateERDiagram(t *testing.T) {
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"user_to_role": {
 				DisplayName:   "User to Role",
 				Name:          "user_to_role",
@@ -122,14 +122,14 @@ func TestERDiagramGenerator_Generate(t *testing.T) {
 	testOutputPath := filepath.Join(tempDir, "generated_diagram.dot")
 
 	// Create a simpler mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test Generator",
 		Description: "Test Generator for ER Diagram",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -140,7 +140,7 @@ func TestERDiagramGenerator_Generate(t *testing.T) {
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{},
+		Relationships: map[string]parser.Relationship{},
 	}
 
 	// Create the generator
@@ -195,7 +195,7 @@ func TestERDiagramGenerator_Generate(t *testing.T) {
 
 func TestInvalidPath(t *testing.T) {
 	// Create a mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test Invalid Path",
 	}
 
@@ -211,7 +211,7 @@ func TestInvalidPath(t *testing.T) {
 
 func TestDataExtraction(t *testing.T) {
 	// Create a mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName:   "Test Data Extraction",
 		Description:   "Test extracting entities and relationships",
 		Entities:      createMockEntities(),
@@ -278,13 +278,13 @@ func TestDataExtraction(t *testing.T) {
 
 // Helper functions to create test data
 
-func createMockEntities() map[string]models.Entity {
-	return map[string]models.Entity{
+func createMockEntities() map[string]parser.Entity {
+	return map[string]parser.Entity{
 		"user": {
 			DisplayName: "User",
 			ExternalId:  "Test/User",
 			Description: "User entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:           "id",
 					ExternalId:     "id",
@@ -316,7 +316,7 @@ func createMockEntities() map[string]models.Entity {
 			DisplayName: "Role",
 			ExternalId:  "Test/Role",
 			Description: "Role entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:           "id",
 					ExternalId:     "id",
@@ -343,7 +343,7 @@ func createMockEntities() map[string]models.Entity {
 			DisplayName: "Permission",
 			ExternalId:  "Test/Permission",
 			Description: "Permission entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:           "id",
 					ExternalId:     "id",
@@ -368,8 +368,8 @@ func createMockEntities() map[string]models.Entity {
 	}
 }
 
-func createMockRelationships() map[string]models.Relationship {
-	return map[string]models.Relationship{
+func createMockRelationships() map[string]parser.Relationship {
+	return map[string]parser.Relationship{
 		"user_to_role": {
 			DisplayName:   "User to Role",
 			Name:          "user_to_role",

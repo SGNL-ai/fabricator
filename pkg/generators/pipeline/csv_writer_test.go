@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,14 +22,14 @@ func TestCSVWriter_WriteFiles(t *testing.T) {
 		{
 			name: "Write single entity",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"entity1": {
 							DisplayName: "Entity1",
 							ExternalId:  "TestEntity",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "name", ExternalId: "name", Type: "String"},
 							},

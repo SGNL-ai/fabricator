@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,15 +21,15 @@ func TestValidator_ValidateRelationships(t *testing.T) {
 			name: "Valid relationships",
 			setupGraph: func() *model.Graph {
 				// Create a minimal valid SOR definition for testing
-				sorDef := &models.SORDefinition{
+				sorDef := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test SOR for validator",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"User": {
 							DisplayName: "User",
 							ExternalId:  "User",
 							Description: "Test user entity",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{
 									Name:        "id",
 									ExternalId:  "id",
@@ -45,7 +46,7 @@ func TestValidator_ValidateRelationships(t *testing.T) {
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{},
+					Relationships: map[string]parser.Relationship{},
 				}
 
 				graph, err := model.NewGraph(sorDef)
@@ -98,15 +99,15 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 			name: "Valid unique values",
 			setupGraph: func() *model.Graph {
 				// Create a minimal valid SOR definition for testing
-				sorDef := &models.SORDefinition{
+				sorDef := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test SOR for validator",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"User": {
 							DisplayName: "User",
 							ExternalId:  "User",
 							Description: "Test user entity",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{
 									Name:        "id",
 									ExternalId:  "id",
@@ -123,7 +124,7 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{},
+					Relationships: map[string]parser.Relationship{},
 				}
 
 				graph, err := model.NewGraph(sorDef)
@@ -139,15 +140,15 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 			name: "Duplicate unique values",
 			setupGraph: func() *model.Graph {
 				// Create a SOR with duplicate unique values
-				sorDef := &models.SORDefinition{
+				sorDef := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test SOR for validator",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"User": {
 							DisplayName: "User",
 							ExternalId:  "User",
 							Description: "Test user entity",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{
 									Name:        "id",
 									ExternalId:  "id",
@@ -210,14 +211,14 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 		{
 			name: "Invalid foreign key references",
 			setupGraph: func() *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "roleId", ExternalId: "roleId", Type: "String"},
 							},
@@ -225,12 +226,12 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 						"role": {
 							DisplayName: "Role",
 							ExternalId:  "Role",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{
+					Relationships: map[string]parser.Relationship{
 						"user_role": {
 							DisplayName:   "User Role",
 							Name:          "user_role",
@@ -305,14 +306,14 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 
 // Test that AddRow properly rejects duplicate unique values immediately
 func TestEntityAddRow_RejectsDuplicateUniqueValues(t *testing.T) {
-	def := &models.SORDefinition{
+	def := &parser.SORDefinition{
 		DisplayName: "Test SOR",
 		Description: "Test Description",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 					{Name: "name", ExternalId: "name", Type: "String"},
 				},

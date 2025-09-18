@@ -7,7 +7,7 @@ package model
 import (
 	reflect "reflect"
 
-	models "github.com/SGNL-ai/fabricator/pkg/models"
+	parser "github.com/SGNL-ai/fabricator/pkg/parser"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -136,7 +136,7 @@ func (mr *MockGraphInterfaceMockRecorder) GetTopologicalOrder() *gomock.Call {
 }
 
 // createEntitiesFromYAML mocks base method.
-func (m *MockGraphInterface) createEntitiesFromYAML(yamlEntities map[string]models.Entity) error {
+func (m *MockGraphInterface) createEntitiesFromYAML(yamlEntities map[string]parser.Entity) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "createEntitiesFromYAML", yamlEntities)
 	ret0, _ := ret[0].(error)
@@ -184,6 +184,20 @@ func (m *MockEntityInterface) AddRow(row *Row) error {
 func (mr *MockEntityInterfaceMockRecorder) AddRow(row interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRow", reflect.TypeOf((*MockEntityInterface)(nil).AddRow), row)
+}
+
+// ForEachRow mocks base method.
+func (m *MockEntityInterface) ForEachRow(fn func(*Row) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForEachRow", fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ForEachRow indicates an expected call of ForEachRow.
+func (mr *MockEntityInterfaceMockRecorder) ForEachRow(fn interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForEachRow", reflect.TypeOf((*MockEntityInterface)(nil).ForEachRow), fn)
 }
 
 // GetAttribute mocks base method.
@@ -357,10 +371,10 @@ func (mr *MockEntityInterfaceMockRecorder) GetRowCount() *gomock.Call {
 }
 
 // ToCSV mocks base method.
-func (m *MockEntityInterface) ToCSV() *models.CSVData {
+func (m *MockEntityInterface) ToCSV() *CSVData {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ToCSV")
-	ret0, _ := ret[0].(*models.CSVData)
+	ret0, _ := ret[0].(*CSVData)
 	return ret0
 }
 
@@ -368,6 +382,20 @@ func (m *MockEntityInterface) ToCSV() *models.CSVData {
 func (mr *MockEntityInterfaceMockRecorder) ToCSV() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToCSV", reflect.TypeOf((*MockEntityInterface)(nil).ToCSV))
+}
+
+// ValidateAllForeignKeys mocks base method.
+func (m *MockEntityInterface) ValidateAllForeignKeys() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateAllForeignKeys")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// ValidateAllForeignKeys indicates an expected call of ValidateAllForeignKeys.
+func (mr *MockEntityInterfaceMockRecorder) ValidateAllForeignKeys() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAllForeignKeys", reflect.TypeOf((*MockEntityInterface)(nil).ValidateAllForeignKeys))
 }
 
 // addRelationship mocks base method.
@@ -383,6 +411,21 @@ func (m *MockEntityInterface) addRelationship(relationshipID, relationshipName s
 func (mr *MockEntityInterfaceMockRecorder) addRelationship(relationshipID, relationshipName, targetEntity, sourceExternalID, targetExternalID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "addRelationship", reflect.TypeOf((*MockEntityInterface)(nil).addRelationship), relationshipID, relationshipName, targetEntity, sourceExternalID, targetExternalID)
+}
+
+// findAttributeByReference mocks base method.
+func (m *MockEntityInterface) findAttributeByReference(reference string) (AttributeInterface, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "findAttributeByReference", reference)
+	ret0, _ := ret[0].(AttributeInterface)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// findAttributeByReference indicates an expected call of findAttributeByReference.
+func (mr *MockEntityInterfaceMockRecorder) findAttributeByReference(reference interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "findAttributeByReference", reflect.TypeOf((*MockEntityInterface)(nil).findAttributeByReference), reference)
 }
 
 // getRows mocks base method.
@@ -599,6 +642,20 @@ func (m *MockAttributeInterface) EXPECT() *MockAttributeInterfaceMockRecorder {
 	return m.recorder
 }
 
+// GetAttributeAlias mocks base method.
+func (m *MockAttributeInterface) GetAttributeAlias() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAttributeAlias")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetAttributeAlias indicates an expected call of GetAttributeAlias.
+func (mr *MockAttributeInterfaceMockRecorder) GetAttributeAlias() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttributeAlias", reflect.TypeOf((*MockAttributeInterface)(nil).GetAttributeAlias))
+}
+
 // GetDataType mocks base method.
 func (m *MockAttributeInterface) GetDataType() string {
 	m.ctrl.T.Helper()
@@ -681,20 +738,6 @@ func (m *MockAttributeInterface) GetRelatedEntityID() string {
 func (mr *MockAttributeInterfaceMockRecorder) GetRelatedEntityID() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRelatedEntityID", reflect.TypeOf((*MockAttributeInterface)(nil).GetRelatedEntityID))
-}
-
-// IsID mocks base method.
-func (m *MockAttributeInterface) IsID() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsID")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsID indicates an expected call of IsID.
-func (mr *MockAttributeInterfaceMockRecorder) IsID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsID", reflect.TypeOf((*MockAttributeInterface)(nil).IsID))
 }
 
 // IsRelationship mocks base method.

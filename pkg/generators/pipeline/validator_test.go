@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,14 +14,14 @@ import (
 func TestValidationProcessor(t *testing.T) {
 	t.Run("should load valid CSV files and report no errors", func(t *testing.T) {
 		// Create test definition
-		def := &models.SORDefinition{
+		def := &parser.SORDefinition{
 			DisplayName: "Test SOR",
 			Description: "Test Description",
-			Entities: map[string]models.Entity{
+			Entities: map[string]parser.Entity{
 				"user": {
 					DisplayName: "User",
 					ExternalId:  "User",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 						{Name: "name", ExternalId: "name", Type: "String"},
 						{Name: "email", ExternalId: "email", Type: "String"},
@@ -30,7 +30,7 @@ func TestValidationProcessor(t *testing.T) {
 				"role": {
 					DisplayName: "Role",
 					ExternalId:  "Role",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 						{Name: "name", ExternalId: "name", Type: "String"},
 					},
@@ -41,7 +41,7 @@ func TestValidationProcessor(t *testing.T) {
 		// Create test directory with valid CSV files
 		tempDir, err := os.MkdirTemp("", "validation_test_*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Create valid User.csv
 		userCSV := `id,name,email
@@ -67,14 +67,14 @@ role-2,User`
 	})
 
 	t.Run("should detect duplicate unique values in CSV files", func(t *testing.T) {
-		def := &models.SORDefinition{
+		def := &parser.SORDefinition{
 			DisplayName: "Test SOR",
 			Description: "Test Description",
-			Entities: map[string]models.Entity{
+			Entities: map[string]parser.Entity{
 				"user": {
 					DisplayName: "User",
 					ExternalId:  "User",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 						{Name: "name", ExternalId: "name", Type: "String"},
 					},
@@ -84,12 +84,12 @@ role-2,User`
 
 		tempDir, err := os.MkdirTemp("", "validation_test_*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Create CSV with duplicate unique IDs
 		userCSV := `id,name
 user-1,John Doe
-user-1,Jane Smith`  // Duplicate ID
+user-1,Jane Smith` // Duplicate ID
 		err = os.WriteFile(filepath.Join(tempDir, "User.csv"), []byte(userCSV), 0644)
 		require.NoError(t, err)
 
@@ -103,14 +103,14 @@ user-1,Jane Smith`  // Duplicate ID
 	})
 
 	t.Run("should detect invalid foreign key references", func(t *testing.T) {
-		def := &models.SORDefinition{
+		def := &parser.SORDefinition{
 			DisplayName: "Test SOR",
 			Description: "Test Description",
-			Entities: map[string]models.Entity{
+			Entities: map[string]parser.Entity{
 				"user": {
 					DisplayName: "User",
 					ExternalId:  "User",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 						{Name: "roleId", ExternalId: "roleId", Type: "String"},
 					},
@@ -118,12 +118,12 @@ user-1,Jane Smith`  // Duplicate ID
 				"role": {
 					DisplayName: "Role",
 					ExternalId:  "Role",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 					},
 				},
 			},
-			Relationships: map[string]models.Relationship{
+			Relationships: map[string]parser.Relationship{
 				"user_role": {
 					DisplayName:   "User Role",
 					Name:          "user_role",
@@ -135,18 +135,18 @@ user-1,Jane Smith`  // Duplicate ID
 
 		tempDir, err := os.MkdirTemp("", "validation_test_*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Create CSV with invalid FK references
 		userCSV := `id,roleId
 user-1,role-999
-user-2,role-888`  // Invalid role IDs
+user-2,role-888` // Invalid role IDs
 		err = os.WriteFile(filepath.Join(tempDir, "User.csv"), []byte(userCSV), 0644)
 		require.NoError(t, err)
 
 		roleCSV := `id
 role-1
-role-2`  // Valid roles, but don't match the FK values
+role-2` // Valid roles, but don't match the FK values
 		err = os.WriteFile(filepath.Join(tempDir, "Role.csv"), []byte(roleCSV), 0644)
 		require.NoError(t, err)
 
@@ -165,14 +165,14 @@ role-2`  // Valid roles, but don't match the FK values
 	})
 
 	t.Run("should handle missing CSV files gracefully", func(t *testing.T) {
-		def := &models.SORDefinition{
+		def := &parser.SORDefinition{
 			DisplayName: "Test SOR",
 			Description: "Test Description",
-			Entities: map[string]models.Entity{
+			Entities: map[string]parser.Entity{
 				"user": {
 					DisplayName: "User",
 					ExternalId:  "User",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 					},
 				},
@@ -182,7 +182,7 @@ role-2`  // Valid roles, but don't match the FK values
 		// Empty directory - no CSV files
 		tempDir, err := os.MkdirTemp("", "validation_test_*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		processor := NewValidationProcessor()
 		errors, err := processor.ValidateExistingCSVFiles(def, tempDir)
@@ -194,14 +194,14 @@ role-2`  // Valid roles, but don't match the FK values
 	})
 
 	t.Run("should handle malformed CSV files", func(t *testing.T) {
-		def := &models.SORDefinition{
+		def := &parser.SORDefinition{
 			DisplayName: "Test SOR",
 			Description: "Test Description",
-			Entities: map[string]models.Entity{
+			Entities: map[string]parser.Entity{
 				"user": {
 					DisplayName: "User",
 					ExternalId:  "User",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 						{Name: "name", ExternalId: "name", Type: "String"},
 					},
@@ -211,12 +211,12 @@ role-2`  // Valid roles, but don't match the FK values
 
 		tempDir, err := os.MkdirTemp("", "validation_test_*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Create malformed CSV (wrong number of columns)
 		malformedCSV := `id,name
 user-1,John Doe
-user-2,Jane,Smith,Extra`  // Too many columns in row 2
+user-2,Jane,Smith,Extra` // Too many columns in row 2
 		err = os.WriteFile(filepath.Join(tempDir, "User.csv"), []byte(malformedCSV), 0644)
 		require.NoError(t, err)
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 )
 
 // CSVLoaderInterface defines the interface for loading CSV files
@@ -18,7 +18,7 @@ type CSVLoaderInterface interface {
 
 // ValidationProcessorInterface defines the interface for validation-only mode
 type ValidationProcessorInterface interface {
-	ValidateExistingCSVFiles(def *models.SORDefinition, directory string) ([]string, error)
+	ValidateExistingCSVFiles(def *parser.SORDefinition, directory string) ([]string, error)
 }
 
 // CSVLoader handles loading existing CSV files into the model
@@ -47,7 +47,7 @@ func NewValidationProcessor() ValidationProcessorInterface {
 
 // ValidateExistingCSVFiles validates existing CSV files without generating new data
 // Returns all validation issues found - does not stop on first error
-func (p *ValidationProcessor) ValidateExistingCSVFiles(def *models.SORDefinition, directory string) ([]string, error) {
+func (p *ValidationProcessor) ValidateExistingCSVFiles(def *parser.SORDefinition, directory string) ([]string, error) {
 	var allErrors []string
 
 	// Create graph from definition
@@ -63,9 +63,7 @@ func (p *ValidationProcessor) ValidateExistingCSVFiles(def *models.SORDefinition
 
 	// Load existing CSV files into the graph (collect all loading errors)
 	loadErrors := p.csvLoader.LoadCSVFiles(graph, directory)
-	for _, errMsg := range loadErrors {
-		allErrors = append(allErrors, errMsg)
-	}
+	allErrors = append(allErrors, loadErrors...)
 
 	// Continue validation even if some files failed to load
 	// Validate FK relationships using post-generation validation
@@ -122,7 +120,7 @@ func (l *CSVLoader) loadEntityCSV(entity model.EntityInterface, csvPath string) 
 	if err != nil {
 		return fmt.Errorf("failed to open CSV file %s: %w", csvPath, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()

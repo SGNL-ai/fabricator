@@ -98,9 +98,3 @@ func (g *DataGenerator) Generate(graph *model.Graph) error {
 
 	return nil
 }
-
-// SetOutputDirectory updates the output directory for the CSV writer
-func (g *DataGenerator) SetOutputDirectory(outputDir string) {
-	g.outputDir = outputDir
-	g.csvWriter = NewCSVWriter(outputDir)
-}

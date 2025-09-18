@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,15 +21,15 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 		{
 			name: "Generate IDs for single entity",
 			setupGraph: func() *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"entity1": {
 							DisplayName: "Entity1",
 							ExternalId:  "Entity1",
 							Description: "Test entity",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{
 									Name:       "id",
 									ExternalId: "id",
@@ -97,14 +98,14 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 		{
 			name: "Generate IDs with multiple entities",
 			setupGraph: func() *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "name", ExternalId: "name", Type: "String"},
 							},
@@ -112,7 +113,7 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 						"role": {
 							DisplayName: "Role",
 							ExternalId:  "Role",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "name", ExternalId: "name", Type: "String"},
 							},
@@ -149,14 +150,14 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 		{
 			name: "Error on zero data volume",
 			setupGraph: func() *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"entity1": {
 							DisplayName: "Entity1",
 							ExternalId:  "Entity1",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 							},
 						},

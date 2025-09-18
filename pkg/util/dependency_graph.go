@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/dominikbraun/graph"
 )
 
@@ -13,8 +13,8 @@ import (
 // based on the relationships in the SOR definition.
 // This shared utility is used by both the CSV generator and ER diagram generator.
 func BuildEntityDependencyGraph(
-	entities map[string]models.Entity,
-	relationships map[string]models.Relationship,
+	entities map[string]parser.Entity,
+	relationships map[string]parser.Relationship,
 	preventCycles bool,
 ) (graph.Graph[string, string], error) {
 
@@ -161,7 +161,7 @@ func BuildEntityDependencyGraph(
 // ParseEntityAttribute is a helper function to extract entity and attribute info from a reference
 // Public version of parseEntityAttribute that can be used across packages
 func ParseEntityAttribute(
-	entities map[string]models.Entity,
+	entities map[string]parser.Entity,
 	attributeRef string,
 	attributeAliasMap map[string]struct {
 		EntityID      string

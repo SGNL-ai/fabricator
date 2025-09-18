@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,14 +20,14 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 		{
 			name: "Generate fields for simple entity",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"entity1": {
 							DisplayName: "Entity1",
 							ExternalId:  "Entity1",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "name", ExternalId: "name", Type: "String"},
 								{Name: "email", ExternalId: "email", Type: "String"},
@@ -78,14 +79,14 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 		{
 			name: "Generate fields with different data types",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"entity1": {
 							DisplayName: "Entity1",
 							ExternalId:  "Entity1",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "age", ExternalId: "age", Type: "Integer"},
 								{Name: "isActive", ExternalId: "isActive", Type: "Boolean"},
@@ -142,14 +143,14 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 		{
 			name: "Error on entity with no rows",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"entity1": {
 							DisplayName: "Entity1",
 							ExternalId:  "Entity1",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "name", ExternalId: "name", Type: "String"},
 							},

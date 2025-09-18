@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/SGNL-ai/fabricator/pkg/util"
 	"github.com/dominikbraun/graph"
 )
@@ -27,7 +27,7 @@ type Graph struct {
 	relationshipsList   []RelationshipInterface            // Pre-computed list of all relationships
 	entityRelationships map[string][]RelationshipInterface // Maps entity ID to its relationships
 	attributeToEntity   map[string]EntityInterface         // Maps attribute externalID to its containing entity
-	yamlModel           *models.SORDefinition              // Reference to original YAML model
+	yamlModel           *parser.SORDefinition              // Reference to original YAML model
 }
 
 // NewGraph creates a new Graph from the YAML model
@@ -36,7 +36,7 @@ type Graph struct {
 // 2. Validation - Validate the YAML model is not nil and has required elements
 // 3. Setup - Create entities and relationships from YAML
 // 4. Business logic - Validate graph integrity and build indexes
-func NewGraph(yamlModel *models.SORDefinition) (GraphInterface, error) {
+func NewGraph(yamlModel *parser.SORDefinition) (GraphInterface, error) {
 	// 1. Object creation - Create a new Graph with initialized data structures
 	graph := &Graph{
 		entities:            make(map[string]EntityInterface),
@@ -136,7 +136,7 @@ func (g *Graph) GetTopologicalOrder() ([]string, error) {
 }
 
 // createEntitiesFromYAML creates Entity objects from YAML model definition
-func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]models.Entity) error {
+func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]parser.Entity) error {
 	// First, create all entities with their attributes
 	for entityID, yamlEntity := range yamlEntities {
 		// Convert YAML attributes to model attributes
@@ -190,7 +190,7 @@ func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]models.Entity) er
 }
 
 // createRelationshipsFromYAML creates Relationship objects from YAML model definition
-func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]models.Relationship) error {
+func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]parser.Relationship) error {
 	// Iterate over the relationships in the YAML
 	for relationshipID, yamlRel := range yamlRelationships {
 		// Skip relationships defined with path (complex relationships)

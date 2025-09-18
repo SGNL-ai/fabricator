@@ -3,26 +3,27 @@ package model
 import (
 	"testing"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 )
 
 // Test fixtures for Graph tests
 // A minimal SOR definition with 3 entities and 2 relationships for testing
-var testSORDefinition = &models.SORDefinition{
+var testSORDefinition = &parser.SORDefinition{
 	DisplayName:   "Test SOR",
 	Description:   "Test System of Record for unit tests",
 	Hostname:      "test.example.com",
 	Type:          "Test-1.0.0",
 	AdapterConfig: "",
 	// Entities with unique IDs as keys
-	Entities: map[string]models.Entity{
+	Entities: map[string]parser.Entity{
 		"User": {
 			DisplayName: "User",
 			ExternalId:  "User",
 			Description: "User entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:        "id",
 					ExternalId:  "id",
@@ -48,7 +49,7 @@ var testSORDefinition = &models.SORDefinition{
 			DisplayName: "Role",
 			ExternalId:  "Role",
 			Description: "Role entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:        "id",
 					ExternalId:  "role_id",
@@ -68,7 +69,7 @@ var testSORDefinition = &models.SORDefinition{
 			DisplayName: "UserRole",
 			ExternalId:  "UserRole",
 			Description: "User-Role mapping entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:        "id",
 					ExternalId:  "mapping_id",
@@ -92,7 +93,7 @@ var testSORDefinition = &models.SORDefinition{
 		},
 	},
 	// Relationships with unique IDs as keys
-	Relationships: map[string]models.Relationship{
+	Relationships: map[string]parser.Relationship{
 		"user_to_userrole": {
 			DisplayName:   "USER_TO_USERROLE",
 			Name:          "user_to_userrole",
@@ -137,11 +138,11 @@ func TestNewGraph(t *testing.T) {
 
 	t.Run("should validate entities exist in YAML", func(t *testing.T) {
 		// Create a YAML definition with no entities
-		emptySOR := &models.SORDefinition{
+		emptySOR := &parser.SORDefinition{
 			DisplayName:   "Empty SOR",
 			Description:   "SOR with no entities",
-			Entities:      make(map[string]models.Entity),
-			Relationships: make(map[string]models.Relationship),
+			Entities:      make(map[string]parser.Entity),
+			Relationships: make(map[string]parser.Relationship),
 		}
 
 		// Attempt to create a graph with empty entities
@@ -185,17 +186,17 @@ func TestEntityCreation(t *testing.T) {
 		invalidSOR := *testSORDefinition // Clone the test SOR definition
 
 		// Make a deep copy of the entities map
-		invalidEntities := make(map[string]models.Entity)
+		invalidEntities := make(map[string]parser.Entity)
 		for id, entity := range testSORDefinition.Entities {
 			invalidEntities[id] = entity
 		}
 
 		// Create an invalid entity with multiple unique attributes
-		invalidEntity := models.Entity{
+		invalidEntity := parser.Entity{
 			DisplayName: "Invalid",
 			ExternalId:  "test/Invalid",
 			Description: "Entity with multiple unique attributes",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:       "id1",
 					ExternalId: "id1_ext",
@@ -264,13 +265,13 @@ func TestRelationshipCreation(t *testing.T) {
 		invalidSOR := *testSORDefinition // Clone the test SOR definition
 
 		// Make a deep copy of the relationships map
-		invalidRelationships := make(map[string]models.Relationship)
+		invalidRelationships := make(map[string]parser.Relationship)
 		for id, rel := range testSORDefinition.Relationships {
 			invalidRelationships[id] = rel
 		}
 
 		// Add an invalid relationship with non-existent attribute
-		invalidRelationships["invalid_relationship"] = models.Relationship{
+		invalidRelationships["invalid_relationship"] = parser.Relationship{
 			DisplayName:   "INVALID_REL",
 			Name:          "invalid_rel",
 			FromAttribute: "nonexistent_attr", // This attribute doesn't exist
@@ -334,19 +335,19 @@ func TestTopologicalSorting(t *testing.T) {
 
 	t.Run("should detect circular dependencies", func(t *testing.T) {
 		// Create a SOR definition with a circular dependency between three entities
-		circularSOR := &models.SORDefinition{
+		circularSOR := &parser.SORDefinition{
 			DisplayName:   "Circular SOR",
 			Description:   "Test System of Record with circular dependencies",
 			Hostname:      "circular.example.com",
 			Type:          "Circular-1.0.0",
 			AdapterConfig: "",
 			// Entities with circular relationships
-			Entities: map[string]models.Entity{
+			Entities: map[string]parser.Entity{
 				"EntityA": {
 					DisplayName: "EntityA",
 					ExternalId:  "EntityA",
 					Description: "Entity A for circular dependency test",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{
 							Name:        "id",
 							ExternalId:  "id",
@@ -367,7 +368,7 @@ func TestTopologicalSorting(t *testing.T) {
 					DisplayName: "EntityB",
 					ExternalId:  "EntityB",
 					Description: "Entity B for circular dependency test",
-					Attributes: []models.Attribute{
+					Attributes: []parser.Attribute{
 						{
 							Name:        "id",
 							ExternalId:  "id",
@@ -386,7 +387,7 @@ func TestTopologicalSorting(t *testing.T) {
 				},
 			},
 			// Three relationships that create a cycle: A -> B -> A
-			Relationships: map[string]models.Relationship{
+			Relationships: map[string]parser.Relationship{
 				"a_to_b": {
 					DisplayName:   "a_to_c",
 					Name:          "a_to_c",
@@ -479,14 +480,14 @@ func TestAccessorMethods(t *testing.T) {
 // Test for attribute reference bug in relationship creation
 func TestGraphDottedAttributeReferenceBug(t *testing.T) {
 	// This test should fail initially, proving the bug exists
-	def := &models.SORDefinition{
+	def := &parser.SORDefinition{
 		DisplayName: "Test SOR",
 		Description: "Test Description",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 					{Name: "profileId", ExternalId: "profileId", Type: "String"}, // externalID is "profileId"
 				},
@@ -494,12 +495,12 @@ func TestGraphDottedAttributeReferenceBug(t *testing.T) {
 			"profile": {
 				DisplayName: "Profile",
 				ExternalId:  "Profile",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"user_profile": {
 				DisplayName:   "User Profile",
 				Name:          "user_profile",
@@ -521,14 +522,14 @@ func TestGraphDottedAttributeReferenceBug(t *testing.T) {
 
 // Test UUID attribute reference format (like in real sample.yaml)
 func TestGraphUUIDAttributeReferences(t *testing.T) {
-	def := &models.SORDefinition{
+	def := &parser.SORDefinition{
 		DisplayName: "Test SOR",
 		Description: "Test Description",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "user-id-uuid"},
 					{Name: "profileId", ExternalId: "profileId", Type: "String", AttributeAlias: "user-profileid-uuid"},
 				},
@@ -536,12 +537,12 @@ func TestGraphUUIDAttributeReferences(t *testing.T) {
 			"profile": {
 				DisplayName: "Profile",
 				ExternalId:  "Profile",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "profile-id-uuid"},
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"user_profile": {
 				DisplayName:   "User Profile",
 				Name:          "user_profile",
@@ -575,14 +576,14 @@ func TestGraphUUIDAttributeReferences(t *testing.T) {
 
 // Test with UUID entity IDs (like real sample.yaml)
 func TestGraphUUIDEntityIDs(t *testing.T) {
-	def := &models.SORDefinition{
+	def := &parser.SORDefinition{
 		DisplayName: "Test SOR",
 		Description: "Test Description",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"uuid-entity-1": { // UUID as entity ID
 				DisplayName: "Entity1",
 				ExternalId:  "Entity1",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "id-alias"},
 					{Name: "refField", ExternalId: "refField", Type: "String", AttributeAlias: "ref-alias"},
 				},
@@ -590,12 +591,12 @@ func TestGraphUUIDEntityIDs(t *testing.T) {
 			"uuid-entity-2": { // UUID as entity ID
 				DisplayName: "Entity2",
 				ExternalId:  "Entity2",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "target-id-alias"},
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"rel1": {
 				DisplayName:   "Test Relationship",
 				Name:          "test_rel",
@@ -623,4 +624,27 @@ func TestGraphUUIDEntityIDs(t *testing.T) {
 	targetAttr := rel.GetTargetAttribute()
 	assert.False(t, targetAttr.IsRelationship(), "Target ID attribute should NOT be marked as relationship")
 	assert.True(t, targetAttr.IsUnique(), "Target should remain as primary key")
+}
+
+// Test GetEntitiesList method
+func TestGetEntitiesList(t *testing.T) {
+	graph, err := NewGraph(testSORDefinition)
+	require.NoError(t, err)
+
+	entitiesList := graph.GetEntitiesList()
+	assert.Len(t, entitiesList, 3, "Should return all entities as a list")
+}
+
+// Test NewRow function
+func TestNewRow(t *testing.T) {
+	values := map[string]string{
+		"id":   "test-id",
+		"name": "test-name",
+	}
+
+	row := NewRow(values)
+	assert.NotNil(t, row, "Should create a new row")
+	assert.Equal(t, "test-id", row.GetValue("id"))
+	assert.Equal(t, "test-name", row.GetValue("name"))
+	assert.Equal(t, "", row.GetValue("nonexistent"))
 }

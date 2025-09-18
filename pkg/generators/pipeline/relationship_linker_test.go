@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,14 +22,14 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 		{
 			name: "Link one-to-one relationship",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "profileId", ExternalId: "profileId", Type: "String"},
 							},
@@ -36,13 +37,13 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"profile": {
 							DisplayName: "Profile",
 							ExternalId:  "Profile",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "userId", ExternalId: "userId", Type: "String"},
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{
+					Relationships: map[string]parser.Relationship{
 						"user_profile": {
 							DisplayName:   "User Profile",
 							Name:          "user_profile",
@@ -110,14 +111,14 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 		{
 			name: "Link with auto cardinality detection",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "profileId", ExternalId: "profileId", Type: "String", UniqueId: false}, // FK attribute, not unique
 							},
@@ -125,12 +126,12 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"profile": {
 							DisplayName: "Profile",
 							ExternalId:  "Profile",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{
+					Relationships: map[string]parser.Relationship{
 						"user_profile": {
 							DisplayName:   "User Profile",
 							Name:          "user_profile",
@@ -195,14 +196,14 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 		{
 			name: "Handle valid relationship linking",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "roleId", ExternalId: "roleId", Type: "String"},
 							},
@@ -210,12 +211,12 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"role": {
 							DisplayName: "Role",
 							ExternalId:  "Role",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{
+					Relationships: map[string]parser.Relationship{
 						"user_role": {
 							DisplayName:   "User Role",
 							Name:          "user_role",
@@ -285,14 +286,14 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 		{
 			name: "Handle entity with no target data for relationships",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								{Name: "roleId", ExternalId: "roleId", Type: "String"},
 							},
@@ -300,12 +301,12 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"role": {
 							DisplayName: "Role",
 							ExternalId:  "Role",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{
+					Relationships: map[string]parser.Relationship{
 						"user_role": {
 							DisplayName:   "User Role",
 							Name:          "user_role",
@@ -351,14 +352,14 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 		{
 			name: "Handle missing relationship attributes",
 			setupGraph: func(t *testing.T) *model.Graph {
-				def := &models.SORDefinition{
+				def := &parser.SORDefinition{
 					DisplayName: "Test SOR",
 					Description: "Test Description",
-					Entities: map[string]models.Entity{
+					Entities: map[string]parser.Entity{
 						"user": {
 							DisplayName: "User",
 							ExternalId:  "User",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 								// Missing roleId attribute that relationship expects
 							},
@@ -366,12 +367,12 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"role": {
 							DisplayName: "Role",
 							ExternalId:  "Role",
-							Attributes: []models.Attribute{
+							Attributes: []parser.Attribute{
 								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
 							},
 						},
 					},
-					Relationships: map[string]models.Relationship{
+					Relationships: map[string]parser.Relationship{
 						"user_role": {
 							DisplayName:   "User Role",
 							Name:          "user_role",

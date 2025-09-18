@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/SGNL-ai/fabricator/pkg/util"
 	"github.com/dominikbraun/graph"
 	"github.com/dominikbraun/graph/draw"
@@ -37,13 +37,13 @@ type Relationship struct {
 
 // ERDiagramGenerator handles the generation of ER diagrams
 type ERDiagramGenerator struct {
-	Definition    *models.SORDefinition
+	Definition    *parser.SORDefinition
 	Entities      map[string]Entity
 	Relationships []Relationship
 }
 
 // NewERDiagramGenerator creates a new ERDiagramGenerator instance
-func NewERDiagramGenerator(definition *models.SORDefinition) *ERDiagramGenerator {
+func NewERDiagramGenerator(definition *parser.SORDefinition) *ERDiagramGenerator {
 	return &ERDiagramGenerator{
 		Definition:    definition,
 		Entities:      make(map[string]Entity),
@@ -70,7 +70,7 @@ var createTemp = os.CreateTemp
 // GenerateERDiagram creates an ER diagram from the SOR definition
 // If Graphviz is available, it generates an SVG file directly
 // Otherwise, it generates just a DOT file
-func GenerateERDiagram(def *models.SORDefinition, outputPath string) error {
+func GenerateERDiagram(def *parser.SORDefinition, outputPath string) error {
 	generator := NewERDiagramGenerator(def)
 	return generator.Generate(outputPath)
 }

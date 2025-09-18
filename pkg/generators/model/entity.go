@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/SGNL-ai/fabricator/pkg/models"
 )
 
 // TODO make interface
@@ -254,7 +252,7 @@ func (e *Entity) ForEachRow(fn func(row *Row) error) error {
 }
 
 // ToCSV returns CSV representation of the entity
-func (e *Entity) ToCSV() *models.CSVData {
+func (e *Entity) ToCSV() *CSVData {
 	// Create headers from attribute external IDs
 	headers := make([]string, 0, len(e.attrList))
 	for _, attr := range e.attrList {
@@ -272,7 +270,7 @@ func (e *Entity) ToCSV() *models.CSVData {
 	}
 
 	// Create CSV data
-	return &models.CSVData{
+	return &CSVData{
 		ExternalId:  e.externalID,
 		Headers:     headers,
 		Rows:        csvRows,

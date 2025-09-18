@@ -134,6 +134,122 @@ func TestCommandLineFlagParsing(t *testing.T) {
 	})
 }
 
+// Test validation-only mode CLI behavior
+func TestValidationOnlyMode(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "fabricator-validation-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	// Create a minimal YAML file
+	yamlContent := `displayName: Test SOR
+description: Test system of record
+entities:
+  entity1:
+    displayName: TestEntity
+    externalId: Test/Entity
+    description: A test entity
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+      - name: name
+        externalId: name
+        type: String`
+
+	yamlPath := filepath.Join(tempDir, "test.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		t.Fatalf("Failed to write YAML file: %v", err)
+	}
+
+	// Create output directory and CSV file
+	outputPath := filepath.Join(tempDir, "output")
+	if err := os.MkdirAll(outputPath, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	csvContent := `id,name
+entity-1,Test Name
+entity-2,Another Name`
+	csvPath := filepath.Join(outputPath, "Entity.csv")
+	if err := os.WriteFile(csvPath, []byte(csvContent), 0644); err != nil {
+		t.Fatalf("Failed to write CSV file: %v", err)
+	}
+
+	// Save current flag values
+	oldValidateOnly := validateOnly
+	defer func() { validateOnly = oldValidateOnly }()
+	validateOnly = true
+
+	// Run the application in validation-only mode
+	err = run(yamlPath, outputPath, 10, false)
+
+	// Should succeed - new validation-only mode doesn't fail fatally
+	if err != nil {
+		t.Fatalf("run() in validation-only mode failed: %v", err)
+	}
+
+	// CSV file should remain unchanged
+	modifiedCSVContent, err := os.ReadFile(csvPath)
+	if err != nil {
+		t.Fatalf("Failed to read CSV file after validation: %v", err)
+	}
+
+	// Check that the CSV file was not modified
+	if string(modifiedCSVContent) != csvContent {
+		t.Error("CSV file was modified in validation-only mode")
+	}
+}
+
+func TestValidateOnlyWithMissingCSV(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "fabricator-missing-csv-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	yamlContent := `displayName: Test SOR
+description: Test system of record
+entities:
+  entity1:
+    displayName: TestEntity
+    externalId: Test/Entity
+    description: A test entity
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true`
+
+	yamlPath := filepath.Join(tempDir, "test.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		t.Fatalf("Failed to write YAML file: %v", err)
+	}
+
+	// Create empty output directory (no CSV files)
+	outputPath := filepath.Join(tempDir, "empty_output")
+	if err := os.MkdirAll(outputPath, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	oldValidateOnly := validateOnly
+	defer func() { validateOnly = oldValidateOnly }()
+	validateOnly = true
+
+	// Run the application in validation-only mode
+	err = run(yamlPath, outputPath, 10, false)
+
+	// New behavior: should succeed but report validation issues
+	// (collect errors instead of failing fatally)
+	if err != nil {
+		t.Errorf("run() should not fail fatally for missing CSV files, got: %v", err)
+	}
+	// The missing files should be reported as validation issues in the output
+}
+
 // TestPrintHeaderFunctionExists just checks that the function exists and runs
 func TestPrintHeaderFunctionExists(t *testing.T) {
 	// Just call the function to make sure it doesn't panic

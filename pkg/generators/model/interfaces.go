@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 )
 
 type Row struct {
@@ -39,7 +39,7 @@ type GraphInterface interface {
 	GetRelationshipsForEntity(entityID string) []RelationshipInterface
 	GetTopologicalOrder() ([]string, error)
 
-	createEntitiesFromYAML(yamlEntities map[string]models.Entity) error
+	createEntitiesFromYAML(yamlEntities map[string]parser.Entity) error
 }
 
 // EntityInterface defines the operations that can be performed on an Entity
@@ -58,7 +58,7 @@ type EntityInterface interface {
 	GetRowCount() int
 	AddRow(row *Row) error
 	ForEachRow(fn func(row *Row) error) error
-	ToCSV() *models.CSVData
+	ToCSV() *CSVData
 
 	// Internal method for relationships
 	addRelationship(relationshipID, relationshipName string,
