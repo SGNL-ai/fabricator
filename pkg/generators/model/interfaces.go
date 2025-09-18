@@ -64,6 +64,9 @@ type EntityInterface interface {
 	addRelationship(relationshipID, relationshipName string,
 		targetEntity EntityInterface, sourceExternalID, targetExternalID string) (RelationshipInterface, error)
 
+	// Post-generation validation
+	ValidateAllForeignKeys() []string
+
 	// Helper for foreign key validation
 	validateForeignKeyValue(attributeName string, value string) error
 

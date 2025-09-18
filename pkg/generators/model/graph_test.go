@@ -599,7 +599,7 @@ func TestGraphUUIDEntityIDs(t *testing.T) {
 			"rel1": {
 				DisplayName:   "Test Relationship",
 				Name:          "test_rel",
-				FromAttribute: "ref-alias",     // UUID alias format
+				FromAttribute: "ref-alias",       // UUID alias format
 				ToAttribute:   "target-id-alias", // UUID alias format
 			},
 		},

@@ -61,7 +61,7 @@ func TestCSVWriter_WriteFiles(t *testing.T) {
 				require.NoError(t, err)
 
 				csvContent := string(content)
-				assert.Contains(t, csvContent, "id,name") // Headers
+				assert.Contains(t, csvContent, "id,name")          // Headers
 				assert.Contains(t, csvContent, "test-1,Test Name") // Data
 			},
 			wantErr: false,

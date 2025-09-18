@@ -190,12 +190,11 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 				}
 
 				// Try to add second row with duplicate ID (should fail at AddRow level)
-				err = userEntity.AddRow(model.NewRow(map[string]string{
+				_ = userEntity.AddRow(model.NewRow(map[string]string{
 					"id":    "user-1", // Duplicate ID!
 					"email": "different@example.com",
 				}))
 				// AddRow should reject this due to duplicate unique ID
-				// If it doesn't reject it, the validator should catch it
 
 				// Add third row with different ID and same email (should be OK since email isn't unique)
 				_ = userEntity.AddRow(model.NewRow(map[string]string{

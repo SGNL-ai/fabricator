@@ -53,7 +53,6 @@ func (a *Attribute) IsUnique() bool {
 	return a.isUnique
 }
 
-
 // IsRelationship returns whether attribute is part of a relationship
 func (a *Attribute) IsRelationship() bool {
 	return a.isRelationship

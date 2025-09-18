@@ -29,7 +29,7 @@ func TestNewAttribute(t *testing.T) {
 		assert.Equal(t, externalID, attr.GetExternalID())
 		assert.Equal(t, dataType, attr.GetDataType())
 		assert.Equal(t, isUnique, attr.IsUnique())
-		assert.Equal(t, isUnique, attr.IsID()) // IsID uses IsUnique internally
+		// IsID method removed - was redundant with IsUnique
 		assert.Equal(t, mockEntity, attr.GetParentEntity())
 	})
 

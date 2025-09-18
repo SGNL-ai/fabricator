@@ -253,7 +253,6 @@ func (e *Entity) ForEachRow(fn func(row *Row) error) error {
 	return nil
 }
 
-
 // ToCSV returns CSV representation of the entity
 func (e *Entity) ToCSV() *models.CSVData {
 	// Create headers from attribute external IDs
@@ -307,24 +306,30 @@ func (e *Entity) validateRow(row *Row) error {
 		}
 	}
 
-	// Validate foreign key references (only if values are provided)
+	return nil
+}
+
+// ValidateAllForeignKeys validates all FK relationships for this entity (post-generation validation)
+func (e *Entity) ValidateAllForeignKeys() []string {
+	var errors []string
+
+	// Check all relationship attributes, including unique ones
 	for _, attr := range e.GetRelationshipAttributes() {
 		attrName := attr.GetName()
-		value, exists := row.values[attrName]
 
-		// Foreign key values are optional - only validate if provided
-		if exists && value != "" {
-			// Validate foreign key references
-			if err := e.validateForeignKeyValue(attrName, value); err != nil {
-				return err
+		// Check each row's FK value
+		for i, row := range e.rows {
+			value, exists := row.values[attrName]
+			if exists && value != "" {
+				if err := e.validateForeignKeyValue(attrName, value); err != nil {
+					errors = append(errors, fmt.Sprintf("row %d: %v", i, err))
+				}
 			}
 		}
 	}
 
-	return nil
+	return errors
 }
-
-
 
 // validateForeignKeyValue verifies that a foreign key value exists in the related entity
 func (e *Entity) validateForeignKeyValue(attributeName string, value string) error {
@@ -412,10 +417,7 @@ func (e *Entity) addRelationship(
 
 	// Set only the source attribute as a foreign key relationship
 	// The target attribute remains as a regular attribute (likely a primary key)
-	// CRITICAL: Never mark unique attributes as relationship sources
-	if !sourceAttr.IsUnique() {
-		sourceAttr.setRelationship(targetEntity.GetID(), targetAttr.GetName())
-	}
+	sourceAttr.setRelationship(targetEntity.GetID(), targetAttr.GetName())
 
 	// Don't set bidirectional relationship - target attribute is not a FK
 

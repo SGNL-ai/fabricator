@@ -503,14 +503,19 @@ func TestEntityRows(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		// Add row with invalid foreign key reference - should fail
+		// Add row with invalid foreign key reference - should succeed (FK validation deferred)
 		err = childEntity.AddRow(&Row{
 			values: map[string]string{
 				"id":        "child2",
 				"parent_id": "nonexistent",
 			},
 		})
-		assert.Error(t, err)
+		assert.NoError(t, err, "AddRow should succeed with deferred FK validation")
+
+		// Post-generation validation should catch the invalid FK
+		errors := childEntity.ValidateAllForeignKeys()
+		assert.Len(t, errors, 1, "Post-generation validation should catch invalid FK")
+		assert.Contains(t, errors[0], "nonexistent", "Error should mention invalid FK value")
 	})
 }
 
@@ -830,13 +835,226 @@ func TestEntityRowIteration(t *testing.T) {
 		})
 		assert.NoError(t, err, "Should accept valid foreign key")
 
-		// Try to set invalid FK using iterator - should fail
+		// Try to set invalid FK using iterator - should succeed (FK validation deferred)
 		err = childEntity.ForEachRow(func(row *Row) error {
 			row.SetValue("parent_id", "nonexistent-parent")
 			return nil
 		})
-		assert.Error(t, err, "Should reject invalid foreign key")
-		assert.Contains(t, err.Error(), "does not exist", "Error should mention FK doesn't exist")
+		assert.NoError(t, err, "Should succeed with deferred FK validation")
+
+		// Post-generation validation should catch the invalid FK
+		errors := childEntity.ValidateAllForeignKeys()
+		assert.Len(t, errors, 1, "Post-generation validation should catch invalid FK")
+		assert.Contains(t, errors[0], "nonexistent-parent", "Error should mention invalid FK value")
+	})
+}
+
+// Tests for post-generation FK validation
+func TestEntityValidateAllForeignKeys(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should return no errors for valid foreign keys", func(t *testing.T) {
+		// Create parent entity
+		parentIdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Parent PK",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		parentEntity, err := newEntity("parent", "parent_ext", "Parent", "Parent entity",
+			[]AttributeInterface{parentIdAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add data to parent
+		err = parentEntity.AddRow(&Row{values: map[string]string{"id": "parent-1"}})
+		require.NoError(t, err)
+
+		// Create child entity with FK
+		childIdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Child PK",
+		}
+
+		parentFKAttr := &Attribute{
+			name:           "parent_id",
+			externalID:     "parent_id",
+			dataType:       "string",
+			isUnique:       false,
+			isRelationship: true,
+			relatedEntity:  "parent",
+			relatedAttr:    "id",
+			description:    "Parent FK",
+		}
+
+		mockGraph.EXPECT().GetEntity("parent").Return(parentEntity, true).AnyTimes()
+
+		childEntity, err := newEntity("child", "child_ext", "Child", "Child entity",
+			[]AttributeInterface{childIdAttr, parentFKAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add child with valid FK
+		err = childEntity.AddRow(&Row{values: map[string]string{
+			"id":        "child-1",
+			"parent_id": "parent-1", // Valid FK
+		}})
+		require.NoError(t, err)
+
+		// Validate all FKs - should return no errors
+		errors := childEntity.ValidateAllForeignKeys()
+		assert.Empty(t, errors, "Should have no FK validation errors for valid data")
+	})
+
+	t.Run("should return errors for invalid foreign keys", func(t *testing.T) {
+		// Create parent entity
+		parentIdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Parent PK",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		parentEntity, err := newEntity("parent", "parent_ext", "Parent", "Parent entity",
+			[]AttributeInterface{parentIdAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add data to parent
+		err = parentEntity.AddRow(&Row{values: map[string]string{"id": "parent-1"}})
+		require.NoError(t, err)
+
+		// Create child entity with FK
+		childIdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Child PK",
+		}
+
+		parentFKAttr := &Attribute{
+			name:           "parent_id",
+			externalID:     "parent_id",
+			dataType:       "string",
+			isUnique:       false,
+			isRelationship: true,
+			relatedEntity:  "parent",
+			relatedAttr:    "id",
+			description:    "Parent FK",
+		}
+
+		mockGraph.EXPECT().GetEntity("parent").Return(parentEntity, true).AnyTimes()
+
+		childEntity, err := newEntity("child", "child_ext", "Child", "Child entity",
+			[]AttributeInterface{childIdAttr, parentFKAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add child with invalid FK
+		err = childEntity.AddRow(&Row{values: map[string]string{
+			"id":        "child-1",
+			"parent_id": "invalid-parent", // Invalid FK
+		}})
+		require.NoError(t, err) // Should succeed since FK validation is deferred
+
+		// Validate all FKs - should return errors
+		errors := childEntity.ValidateAllForeignKeys()
+		assert.Len(t, errors, 1, "Should have 1 FK validation error")
+		assert.Contains(t, errors[0], "invalid-parent", "Error should mention invalid FK value")
+		assert.Contains(t, errors[0], "does not exist", "Error should mention FK doesn't exist")
+	})
+
+	t.Run("should validate unique FK attributes in post-generation phase", func(t *testing.T) {
+		// Create entities with 1:1 unique FK relationship
+		entity1IdAttr := &Attribute{
+			name:        "id",
+			externalID:  "id",
+			dataType:    "string",
+			isUnique:    true,
+			description: "Entity1 PK",
+		}
+
+		entity2RefAttr := &Attribute{
+			name:           "entity2_ref",
+			externalID:     "entity2_ref",
+			dataType:       "string",
+			isUnique:       false, // Regular FK - can't have 2 unique attributes per entity
+			isRelationship: true,
+			relatedEntity:  "entity2",
+			relatedAttr:    "id",
+			description:    "Entity2 reference",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity2, err := newEntity("entity2", "entity2_ext", "Entity2", "Entity2",
+			[]AttributeInterface{&Attribute{name: "id", externalID: "id", dataType: "string", isUnique: true}}, mockGraph)
+		require.NoError(t, err)
+
+		// Add data to entity2
+		err = entity2.AddRow(&Row{values: map[string]string{"id": "entity2-1"}})
+		require.NoError(t, err)
+
+		mockGraph.EXPECT().GetEntity("entity2").Return(entity2, true).AnyTimes()
+
+		entity1, err := newEntity("entity1", "entity1_ext", "Entity1", "Entity1",
+			[]AttributeInterface{entity1IdAttr, entity2RefAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add entity1 with valid unique FK
+		err = entity1.AddRow(&Row{values: map[string]string{
+			"id":          "entity1-1",
+			"entity2_ref": "entity2-1", // Valid unique FK
+		}})
+		require.NoError(t, err) // Should succeed with deferred validation
+
+		// Validate all FKs - should pass
+		errors := entity1.ValidateAllForeignKeys()
+		assert.Empty(t, errors, "Should have no errors for valid unique FK")
+
+		// Add another entity1 with invalid unique FK
+		err = entity1.AddRow(&Row{values: map[string]string{
+			"id":          "entity1-2",
+			"entity2_ref": "invalid-entity2", // Invalid unique FK
+		}})
+		require.NoError(t, err) // Should succeed during generation
+
+		// Validate all FKs - should now have error
+		errors = entity1.ValidateAllForeignKeys()
+		assert.Len(t, errors, 1, "Should have 1 error for invalid unique FK")
+	})
+
+	t.Run("should handle entity with no FK attributes", func(t *testing.T) {
+		// Entity with no relationships
+		idAttr := &Attribute{
+			name:        "id",
+			externalID:  "id",
+			dataType:    "string",
+			isUnique:    true,
+			description: "PK",
+		}
+
+		mockGraph := NewMockGraphInterface(ctrl)
+
+		entity, err := newEntity("simple", "simple_ext", "Simple", "Simple entity",
+			[]AttributeInterface{idAttr}, mockGraph)
+		require.NoError(t, err)
+
+		// Add data
+		err = entity.AddRow(&Row{values: map[string]string{"id": "simple-1"}})
+		require.NoError(t, err)
+
+		// Validate all FKs - should return empty for entity with no relationships
+		errors := entity.ValidateAllForeignKeys()
+		assert.Empty(t, errors, "Should have no errors for entity without FK attributes")
 	})
 }
 
@@ -978,14 +1196,13 @@ func TestAddRelationship(t *testing.T) {
 		assert.True(t, relationship.IsOneToOne())
 
 		// Verify attributes were marked as relationship attributes
-		assert.True(t, sourceIdAttr.IsRelationship())
-		assert.True(t, targetIdAttr.IsRelationship())
+		// With deferred FK validation, unique attributes can now be relationship sources (1:1 relationships)
+		assert.True(t, sourceIdAttr.IsRelationship(), "Source attribute should be marked as relationship")
+		assert.False(t, targetIdAttr.IsRelationship(), "Target attribute should not be marked as relationship (unidirectional)")
 
-		// Verify related entity and attribute references were set
+		// Verify related entity and attribute references were set on source
 		assert.Equal(t, targetID, sourceIdAttr.GetRelatedEntityID())
 		assert.Equal(t, targetIdAttr.GetName(), sourceIdAttr.GetRelatedAttribute())
-		assert.Equal(t, sourceID, targetIdAttr.GetRelatedEntityID())
-		assert.Equal(t, sourceIdAttr.GetName(), targetIdAttr.GetRelatedAttribute())
 	})
 
 	t.Run("should handle one-to-many relationship", func(t *testing.T) {

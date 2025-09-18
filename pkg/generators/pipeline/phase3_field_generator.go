@@ -103,6 +103,6 @@ func (g *FieldGenerator) generateFieldValue(attr model.AttributeInterface) strin
 // contains checks if a string contains a substring (case-insensitive helper)
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) &&
-		   (s == substr ||
-		    (len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr)))
+		(s == substr ||
+			(len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr)))
 }
