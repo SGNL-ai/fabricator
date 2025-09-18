@@ -52,7 +52,7 @@ func NewDataGenerator(outputDir string, dataVolume int, autoCardinality bool) *D
 		idGenerator:        NewIDGenerator(),
 		relationshipLinker: NewRelationshipLinker(),
 		fieldGenerator:     NewFieldGenerator(),
-		validator:          NewValidator(),
+		validator:          NewValidation(),
 		csvWriter:          NewCSVWriter(outputDir),
 
 		dataVolume:      dataVolume,

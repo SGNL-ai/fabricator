@@ -247,7 +247,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		color.Yellow("Validating relationship consistency in generated files...")
 
 		// Validate relationship consistency
-		validator := pipeline.NewValidator()
+		validator := pipeline.NewValidation()
 		relationshipErrors := validator.ValidateRelationships(graph)
 
 		// Check if there are validation errors
