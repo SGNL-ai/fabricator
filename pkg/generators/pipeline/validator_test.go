@@ -228,4 +228,68 @@ user-2,Jane,Smith,Extra` // Too many columns in row 2
 		assert.NotEmpty(t, errors, "Should collect malformed CSV errors")
 		assert.Contains(t, errors[0], "wrong number of fields", "Error should mention field count mismatch")
 	})
+
+	t.Run("should handle namespaced entity external IDs", func(t *testing.T) {
+		// Test the "/" branch in getCSVFilename function
+		def := &parser.SORDefinition{
+			DisplayName: "Namespaced SOR",
+			Description: "Test Description",
+			Entities: map[string]parser.Entity{
+				"namespaced_user": {
+					DisplayName: "Namespaced User",
+					ExternalId:  "MyApp/User", // This contains "/" which should trigger the namespace handling
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+						{Name: "name", ExternalId: "name", Type: "String"},
+					},
+				},
+			},
+		}
+
+		tempDir, err := os.MkdirTemp("", "namespaced_validation_test_*")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		// Create CSV file with the expected filename (should be "User.csv", not "MyApp/User.csv")
+		namespacedCSV := `id,name
+user-1,John Doe
+user-2,Jane Smith`
+		err = os.WriteFile(filepath.Join(tempDir, "User.csv"), []byte(namespacedCSV), 0644)
+		require.NoError(t, err)
+
+		processor := NewValidationProcessor()
+		errors, err := processor.ValidateExistingCSVFiles(def, tempDir)
+
+		assert.NoError(t, err)
+		assert.Empty(t, errors, "Should successfully validate namespaced entity CSV")
+	})
+
+	t.Run("should report missing CSV file for namespaced entity", func(t *testing.T) {
+		def := &parser.SORDefinition{
+			DisplayName: "Missing Namespaced SOR",
+			Description: "Test Description",
+			Entities: map[string]parser.Entity{
+				"namespaced_entity": {
+					DisplayName: "Namespaced Entity",
+					ExternalId:  "App/Entity", // Namespaced format
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+					},
+				},
+			},
+		}
+
+		tempDir, err := os.MkdirTemp("", "missing_namespaced_validation_test_*")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tempDir) }()
+		// Don't create any CSV files
+
+		processor := NewValidationProcessor()
+		errors, err := processor.ValidateExistingCSVFiles(def, tempDir)
+
+		assert.NoError(t, err, "Should not fail fatally")
+		assert.NotEmpty(t, errors, "Should report missing CSV file")
+		assert.Contains(t, errors[0], "CSV file not found", "Should mention missing file")
+		assert.Contains(t, errors[0], "Entity.csv", "Should use the correct filename (Entity.csv, not App/Entity.csv)")
+	})
 }

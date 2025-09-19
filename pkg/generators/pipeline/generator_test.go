@@ -76,6 +76,59 @@ func (m *MockCSVWriter) WriteFiles(graph *model.Graph) error {
 	return args.Error(0)
 }
 
+func TestNewDataGenerator(t *testing.T) {
+	tests := []struct {
+		name            string
+		outputDir       string
+		dataVolume      int
+		autoCardinality bool
+	}{
+		{
+			name:            "should create generator with valid parameters",
+			outputDir:       "/tmp/output",
+			dataVolume:      100,
+			autoCardinality: true,
+		},
+		{
+			name:            "should create generator with default parameters",
+			outputDir:       "output",
+			dataVolume:      10,
+			autoCardinality: false,
+		},
+		{
+			name:            "should handle empty output directory",
+			outputDir:       "",
+			dataVolume:      50,
+			autoCardinality: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator := NewDataGenerator(tt.outputDir, tt.dataVolume, tt.autoCardinality)
+
+			require.NotNil(t, generator)
+			assert.Equal(t, tt.outputDir, generator.outputDir)
+			assert.Equal(t, tt.dataVolume, generator.dataVolume)
+			assert.Equal(t, tt.autoCardinality, generator.autoCardinality)
+
+			// Verify all components are initialized
+			assert.NotNil(t, generator.idGenerator)
+			assert.NotNil(t, generator.relationshipLinker)
+			assert.NotNil(t, generator.fieldGenerator)
+			assert.NotNil(t, generator.validator)
+			assert.NotNil(t, generator.csvWriter)
+
+			// Verify the components are of the correct types
+			assert.IsType(t, &IDGenerator{}, generator.idGenerator)
+			assert.IsType(t, &RelationshipLinker{}, generator.relationshipLinker)
+			assert.IsType(t, &FieldGenerator{}, generator.fieldGenerator)
+			assert.IsType(t, &Validator{}, generator.validator)
+			assert.IsType(t, &CSVWriter{}, generator.csvWriter)
+		})
+	}
+}
+
 func TestDataGenerator_Generate(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -128,6 +181,59 @@ func TestDataGenerator_Generate(t *testing.T) {
 			autoCardinality: false,
 			wantErr:         true,
 			expectedError:   "relationship linking failed: relationship error",
+		},
+		{
+			name: "Field generation fails",
+			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
+				// ID generation succeeds
+				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				// Relationship linking succeeds
+				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
+				// Field generation fails
+				fieldGen.On("GenerateFields", mock.Anything).Return(errors.New("field generation error"))
+				// Other mocks shouldn't be called after field generation fails
+			},
+			graph:           nil,
+			dataVolume:      10,
+			autoCardinality: false,
+			wantErr:         true,
+			expectedError:   "field generation failed: field generation error",
+		},
+		{
+			name: "CSV writing fails",
+			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
+				// All steps succeed until CSV writing
+				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
+				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
+				validator.On("ValidateRelationships", mock.Anything).Return([]string{})
+				// CSV writing fails
+				csvWriter.On("WriteFiles", mock.Anything).Return(errors.New("CSV writing error"))
+			},
+			graph:           nil,
+			dataVolume:      10,
+			autoCardinality: false,
+			wantErr:         true,
+			expectedError:   "CSV file writing failed: CSV writing error",
+		},
+		{
+			name: "Validation errors are logged but don't fail generation",
+			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
+				// All phases succeed
+				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
+				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
+				// Validator returns some errors
+				validator.On("ValidateRelationships", mock.Anything).Return([]string{
+					"Validation error 1",
+					"Validation error 2",
+				})
+				csvWriter.On("WriteFiles", mock.Anything).Return(nil)
+			},
+			graph:           nil,
+			dataVolume:      10,
+			autoCardinality: false,
+			wantErr:         false, // Validation errors don't cause failure
 		},
 	}
 

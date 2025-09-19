@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
@@ -184,6 +185,311 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 					tt.validate(t, graph)
 				}
 			}
+		})
+	}
+}
+
+func TestFieldGenerator_generateFieldValue(t *testing.T) {
+	generator := &FieldGenerator{}
+
+	tests := []struct {
+		name             string
+		attrName         string
+		dataType         string
+		expectedContains string // What the result should contain or match
+		validateFunc     func(t *testing.T, result string)
+	}{
+		{
+			name:         "email field by name",
+			attrName:     "email",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.Contains(t, result, "@", "Email should contain @")
+			},
+		},
+		{
+			name:         "user_email field by name",
+			attrName:     "user_email",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.Contains(t, result, "@", "Email field should contain @")
+			},
+		},
+		{
+			name:         "name field by name",
+			attrName:     "name",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Name should not be empty")
+				assert.True(t, len(result) > 1, "Name should have reasonable length")
+			},
+		},
+		{
+			name:         "full_name field by name",
+			attrName:     "full_name",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Name should not be empty")
+			},
+		},
+		{
+			name:         "phone field by name",
+			attrName:     "phone",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Phone should not be empty")
+				// Phone numbers typically contain digits or common characters
+				assert.True(t, len(result) >= 10, "Phone should have reasonable length")
+			},
+		},
+		{
+			name:         "phone_number field by name",
+			attrName:     "phone_number",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Phone should not be empty")
+			},
+		},
+		{
+			name:         "address field by name",
+			attrName:     "address",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Address should not be empty")
+			},
+		},
+		{
+			name:         "home_address field by name",
+			attrName:     "home_address",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Address should not be empty")
+			},
+		},
+		{
+			name:         "status field by name",
+			attrName:     "status",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				validStatuses := []string{"active", "inactive", "pending"}
+				assert.Contains(t, validStatuses, result, "Status should be one of the predefined values")
+			},
+		},
+		{
+			name:         "user_status field by name",
+			attrName:     "user_status",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				validStatuses := []string{"active", "inactive", "pending"}
+				assert.Contains(t, validStatuses, result, "Status should be one of the predefined values")
+			},
+		},
+		{
+			name:         "date field by name",
+			attrName:     "date",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Date should not be empty")
+				// Should be in RFC3339 format
+				assert.Contains(t, result, "T", "Date should contain time separator")
+			},
+		},
+		{
+			name:         "created_date field by name",
+			attrName:     "created_date",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Date should not be empty")
+			},
+		},
+		{
+			name:         "time field by name",
+			attrName:     "time",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Time should not be empty")
+			},
+		},
+		{
+			name:         "created_time field by name",
+			attrName:     "created_time",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Time should not be empty")
+			},
+		},
+		{
+			name:         "Integer data type",
+			attrName:     "count",
+			dataType:     "Integer",
+			validateFunc: func(t *testing.T, result string) {
+				// Should be a valid integer
+				num := 0
+				_, err := fmt.Sscanf(result, "%d", &num)
+				assert.NoError(t, err, "Should be a valid integer")
+				assert.True(t, num >= 1 && num <= 1000, "Integer should be in expected range")
+			},
+		},
+		{
+			name:         "Int64 data type",
+			attrName:     "big_number",
+			dataType:     "Int64",
+			validateFunc: func(t *testing.T, result string) {
+				num := 0
+				_, err := fmt.Sscanf(result, "%d", &num)
+				assert.NoError(t, err, "Should be a valid integer")
+			},
+		},
+		{
+			name:         "Boolean data type",
+			attrName:     "flag",
+			dataType:     "Boolean",
+			validateFunc: func(t *testing.T, result string) {
+				assert.True(t, result == "true" || result == "false", "Should be valid boolean string")
+			},
+		},
+		{
+			name:         "Bool data type",
+			attrName:     "enabled",
+			dataType:     "Bool",
+			validateFunc: func(t *testing.T, result string) {
+				assert.True(t, result == "true" || result == "false", "Should be valid boolean string")
+			},
+		},
+		{
+			name:         "Date data type",
+			attrName:     "birth_date",
+			dataType:     "Date",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Date should not be empty")
+				// Should be in YYYY-MM-DD format
+				assert.Regexp(t, `\d{4}-\d{2}-\d{2}`, result, "Date should be in YYYY-MM-DD format")
+			},
+		},
+		{
+			name:         "DateTime data type",
+			attrName:     "timestamp",
+			dataType:     "DateTime",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "DateTime should not be empty")
+				assert.Contains(t, result, "T", "DateTime should contain time separator")
+			},
+		},
+		{
+			name:         "Float data type",
+			attrName:     "rate",
+			dataType:     "Float",
+			validateFunc: func(t *testing.T, result string) {
+				var f float64
+				_, err := fmt.Sscanf(result, "%f", &f)
+				assert.NoError(t, err, "Should be a valid float")
+				assert.True(t, f >= 1.0 && f <= 100.0, "Float should be in expected range")
+			},
+		},
+		{
+			name:         "Double data type",
+			attrName:     "precision",
+			dataType:     "Double",
+			validateFunc: func(t *testing.T, result string) {
+				var f float64
+				_, err := fmt.Sscanf(result, "%f", &f)
+				assert.NoError(t, err, "Should be a valid double")
+			},
+		},
+		{
+			name:         "Unknown data type defaults to word",
+			attrName:     "random_field",
+			dataType:     "UnknownType",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Should generate some word")
+				assert.True(t, len(result) > 0, "Should have some content")
+			},
+		},
+		{
+			name:         "String data type defaults to word",
+			attrName:     "description",
+			dataType:     "String",
+			validateFunc: func(t *testing.T, result string) {
+				assert.NotEmpty(t, result, "Should generate some word")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a test attribute by creating a full entity and extracting an attribute
+			// This is the proper way since newAttribute is not exported
+			def := &parser.SORDefinition{
+				DisplayName: "Test SOR",
+				Description: "Test Description",
+				Entities: map[string]parser.Entity{
+					"test_entity": {
+						DisplayName: "TestEntity",
+						ExternalId:  "TestEntity",
+						Attributes: []parser.Attribute{
+							{
+								Name:       "id",
+								ExternalId: "id",
+								Type:       "String",
+								UniqueId:   true, // Every entity needs a unique ID
+							},
+							{
+								Name:       tt.attrName,
+								ExternalId: tt.attrName,
+								Type:       tt.dataType,
+							},
+						},
+					},
+				},
+			}
+
+			graphInterface, err := model.NewGraph(def)
+			require.NoError(t, err)
+			graph, ok := graphInterface.(*model.Graph)
+			require.True(t, ok)
+
+			// Get the entity and its attribute
+			entities := graph.GetAllEntities()
+			require.Len(t, entities, 1)
+
+			var entity model.EntityInterface
+			for _, e := range entities {
+				entity = e
+				break
+			}
+
+			attrs := entity.GetAttributes()
+			require.Len(t, attrs, 2) // id + the test attribute
+			testAttr := attrs[1]     // Get the test attribute, not the ID
+
+			result := generator.generateFieldValue(testAttr)
+			tt.validateFunc(t, result)
+		})
+	}
+}
+
+func TestFieldGenerator_contains(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		substr   string
+		expected bool
+	}{
+		{"exact match", "email", "email", true},
+		{"prefix match", "email_address", "email", true},
+		{"suffix match", "user_email", "email", true},
+		{"no match", "username", "email", false},
+		{"empty string", "", "email", false},
+		{"empty substring", "email", "", true},
+		{"substring longer than string", "em", "email", false},
+		{"case sensitive - no match", "Email", "email", false},
+		{"middle match should not match", "myemailfield", "email", false}, // This function only checks prefix/suffix
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := contains(tt.s, tt.substr)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

@@ -1,0 +1,517 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>parser: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/SGNL-ai/fabricator/pkg/parser/parser.go (84.4%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package parser
+
+import (
+        _ "embed"
+        "encoding/json"
+        "fmt"
+        "os"
+        "strings"
+
+        "github.com/santhosh-tekuri/jsonschema/v6"
+        "gopkg.in/yaml.v3"
+)
+
+//go:embed sor_schema.json
+var sorSchemaJSON string
+
+// Parser handles the parsing of YAML definition files
+type Parser struct {
+        Definition *SORDefinition
+        FilePath   string
+        schema     *jsonschema.Schema
+}
+
+// NewParser creates a new Parser instance
+func NewParser(filePath string) *Parser <span class="cov8" title="1">{
+        parser := &amp;Parser{
+                FilePath: filePath,
+        }
+
+        // Compile the JSON schema for validation
+        if err := parser.initSchema(); err != nil </span><span class="cov0" title="0">{
+                // Log the error but don't fail parser creation
+                // The Parse() method will catch schema validation issues
+                fmt.Printf("Warning: Failed to initialize JSON schema: %v\n", err)
+        }</span>
+
+        <span class="cov8" title="1">return parser</span>
+}
+
+// initSchema compiles the JSON schema for SOR template validation
+func (p *Parser) initSchema() error <span class="cov8" title="1">{
+        // Parse the embedded JSON schema
+        var schemaData interface{}
+        err := json.Unmarshal([]byte(sorSchemaJSON), &amp;schemaData)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to parse embedded schema JSON: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">compiler := jsonschema.NewCompiler()
+
+        // Add the parsed schema data
+        if err := compiler.AddResource("sor_schema.json", schemaData); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to add schema resource: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">schema, err := compiler.Compile("sor_schema.json")
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to compile schema: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">p.schema = schema
+        return nil</span>
+}
+
+// Parse loads and parses the YAML file
+func (p *Parser) Parse() error <span class="cov8" title="1">{
+        // Read the YAML file
+        data, err := os.ReadFile(p.FilePath)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to read file: %w", err)
+        }</span>
+
+        // First, perform JSON Schema validation on the raw YAML
+        <span class="cov8" title="1">err = p.validateSchema(data)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("schema validation failed: %w", err)
+        }</span>
+
+        // Parse the YAML content
+        <span class="cov8" title="1">p.Definition = &amp;SORDefinition{}
+        err = yaml.Unmarshal(data, p.Definition)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to parse YAML: %w", err)
+        }</span>
+
+        // Validate the parsed data (business logic validation)
+        <span class="cov8" title="1">err = p.validate()
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("validation failed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// validateSchema validates the YAML data against the JSON schema
+func (p *Parser) validateSchema(data []byte) error <span class="cov8" title="1">{
+        if p.schema == nil </span><span class="cov8" title="1">{
+                // Try to initialize schema if it wasn't done during construction
+                if err := p.initSchema(); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("schema not available for validation: %w", err)
+                }</span>
+        }
+
+        // Convert YAML to a generic interface for JSON schema validation
+        <span class="cov8" title="1">var yamlData interface{}
+        err := yaml.Unmarshal(data, &amp;yamlData)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to parse YAML for schema validation: %w", err)
+        }</span>
+
+        // Convert to JSON-compatible format (yaml.v3 produces map[string]interface{} which is compatible)
+        // But we need to handle the case where YAML might produce different types
+        <span class="cov8" title="1">jsonData, err := json.Marshal(yamlData)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to convert YAML to JSON for schema validation: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">var jsonInterface interface{}
+        err = json.Unmarshal(jsonData, &amp;jsonInterface)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to unmarshal JSON for schema validation: %w", err)
+        }</span>
+
+        // Validate against schema
+        <span class="cov8" title="1">err = p.schema.Validate(jsonInterface)
+        if err != nil </span><span class="cov8" title="1">{
+                // Format validation errors nicely
+                if validationErr, ok := err.(*jsonschema.ValidationError); ok </span><span class="cov8" title="1">{
+                        return fmt.Errorf("schema validation error at %s: %s", validationErr.InstanceLocation, validationErr.Error())
+                }</span>
+                <span class="cov0" title="0">return fmt.Errorf("schema validation error: %w", err)</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// validate checks if the parsed YAML has valid structure
+func (p *Parser) validate() error <span class="cov8" title="1">{
+        if p.Definition == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("empty definition")
+        }</span>
+
+        <span class="cov8" title="1">if len(p.Definition.Entities) == 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("no entities defined")
+        }</span>
+
+        // Check that each entity has at least one attribute and a valid external ID
+        <span class="cov8" title="1">for id, entity := range p.Definition.Entities </span><span class="cov8" title="1">{
+                if entity.ExternalId == "" </span><span class="cov8" title="1">{
+                        return fmt.Errorf("entity %s missing externalId", id)
+                }</span>
+
+                <span class="cov8" title="1">if len(entity.Attributes) == 0 </span><span class="cov8" title="1">{
+                        return fmt.Errorf("entity %s has no attributes", id)
+                }</span>
+
+                // Check for uniqueId attribute and ensure only one attribute is marked as uniqueId
+                <span class="cov8" title="1">hasUniqueId := false
+                uniqueIdAttrs := []string{}
+                for _, attr := range entity.Attributes </span><span class="cov8" title="1">{
+                        if attr.UniqueId </span><span class="cov8" title="1">{
+                                hasUniqueId = true
+                                uniqueIdAttrs = append(uniqueIdAttrs, attr.Name)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">if !hasUniqueId </span><span class="cov8" title="1">{
+                        return fmt.Errorf("entity %s (%s) has no attribute marked as uniqueId",
+                                id, entity.DisplayName)
+                }</span>
+
+                // Check that at least one attribute is marked as uniqueId (already checked above)
+                // But this code is added for clarity and future-proofing
+                <span class="cov8" title="1">if len(uniqueIdAttrs) == 0 </span><span class="cov0" title="0">{
+                        return fmt.Errorf("entity %s (%s) has no attribute marked as uniqueId",
+                                id, entity.DisplayName)
+                }</span>
+        }
+
+        // Validate relationships
+        <span class="cov8" title="1">err := p.validateRelationships()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// validateRelationships performs comprehensive validation of relationship definitions
+func (p *Parser) validateRelationships() error <span class="cov8" title="1">{
+        if len(p.Definition.Relationships) == 0 </span><span class="cov8" title="1">{
+                // No relationships to validate
+                return nil
+        }</span>
+
+        // Create maps to find entities and attributes by different identifiers
+        // Map of attribute alias to (entityID, attrName, externalId) - for alias-based relationships
+        <span class="cov8" title="1">attributeAliasMap := make(map[string]struct {
+                EntityID      string
+                AttributeName string
+                ExternalID    string
+                UniqueID      bool
+        })
+
+        // Map to lookup entities/attributes by "Entity.Attribute" pattern
+        entityAttributeMap := make(map[string]struct {
+                EntityID      string
+                AttributeName string
+                ExternalID    string
+                UniqueID      bool
+        })
+
+        // Build the attribute maps
+        for entityID, entity := range p.Definition.Entities </span><span class="cov8" title="1">{
+                for _, attr := range entity.Attributes </span><span class="cov8" title="1">{
+                        // Handle attributeAlias case (when it exists)
+                        if attr.AttributeAlias != "" </span><span class="cov8" title="1">{
+                                attributeAliasMap[attr.AttributeAlias] = struct {
+                                        EntityID      string
+                                        AttributeName string
+                                        ExternalID    string
+                                        UniqueID      bool
+                                }{
+                                        EntityID:      entityID,
+                                        AttributeName: attr.Name,
+                                        ExternalID:    attr.ExternalId,
+                                        UniqueID:      attr.UniqueId,
+                                }
+                        }</span>
+
+                        // Also build Entity.Attribute map for YAMLs without attributeAlias
+                        <span class="cov8" title="1">entityKey := entity.ExternalId + "." + attr.ExternalId
+                        entityAttributeMap[entityKey] = struct {
+                                EntityID      string
+                                AttributeName string
+                                ExternalID    string
+                                UniqueID      bool
+                        }{
+                                EntityID:      entityID,
+                                AttributeName: attr.Name,
+                                ExternalID:    attr.ExternalId,
+                                UniqueID:      attr.UniqueId,
+                        }</span>
+                }
+        }
+
+        // Keep track of valid and invalid relationships
+        <span class="cov8" title="1">invalidRelationships := make([]string, 0)
+        validRelationships := 0
+        pathBasedRelationships := 0
+
+        // Track bidirectional relationships to detect potential cycles
+        // Map from "entityID1:entityID2" to relationship ID
+        // Used to check for reverse relationships that could create cycles
+        bidirectionalRelationships := make(map[string]string)
+
+        // Validate each relationship
+        for relID, rel := range p.Definition.Relationships </span><span class="cov8" title="1">{
+                // First, validate path-based relationships
+                if len(rel.Path) &gt; 0 </span><span class="cov8" title="1">{
+                        pathBasedRelationships++
+                        // For path-based relationships, ensure all the referenced relationships exist
+                        for i, pathStep := range rel.Path </span><span class="cov8" title="1">{
+                                referencedRel, exists := p.Definition.Relationships[pathStep.Relationship]
+                                if !exists </span><span class="cov8" title="1">{
+                                        invalidRelationships = append(invalidRelationships,
+                                                fmt.Sprintf("relationship %s: path step %d references non-existent relationship %s",
+                                                        relID, i+1, pathStep.Relationship))
+                                        continue</span>
+                                }
+
+                                // Also verify the referenced relationship is a direct relationship, not another path
+                                <span class="cov8" title="1">if len(referencedRel.Path) &gt; 0 </span><span class="cov8" title="1">{
+                                        invalidRelationships = append(invalidRelationships,
+                                                fmt.Sprintf("relationship %s: path step %d references path-based relationship %s (nested paths not supported)",
+                                                        relID, i+1, pathStep.Relationship))
+                                }</span>
+
+                                // Path direction is defined by external system and is not validated
+                                // We just need to ensure the referenced relationship exists
+                        }
+                        <span class="cov8" title="1">continue</span>
+                }
+
+                // Check for childEntity relationships (parent-child hierarchical relationships)
+                <span class="cov8" title="1">if rel.ChildEntity != "" </span><span class="cov0" title="0">{
+                        // ChildEntity relationships are valid - they represent parent-child hierarchies
+                        // The childEntity field can reference JSON paths like $.riskFactors or entity names
+                        validRelationships++
+                        continue</span>
+                }
+
+                // For direct relationships, validate fromAttribute and toAttribute
+                <span class="cov8" title="1">if rel.FromAttribute == "" </span><span class="cov0" title="0">{
+                        invalidRelationships = append(invalidRelationships,
+                                fmt.Sprintf("relationship %s: missing fromAttribute", relID))
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if rel.ToAttribute == "" </span><span class="cov0" title="0">{
+                        invalidRelationships = append(invalidRelationships,
+                                fmt.Sprintf("relationship %s: missing toAttribute", relID))
+                        continue</span>
+                }
+
+                // Check if attributes match real entities - try both mapping approaches
+                <span class="cov8" title="1">var fromInfo, toInfo struct {
+                        EntityID      string
+                        AttributeName string
+                        ExternalID    string
+                        UniqueID      bool
+                }
+                var fromFound, toFound bool
+
+                // First check attribute alias mapping
+                if info, found := attributeAliasMap[rel.FromAttribute]; found </span><span class="cov8" title="1">{
+                        fromInfo = info
+                        fromFound = true
+                }</span>
+
+                <span class="cov8" title="1">if info, found := attributeAliasMap[rel.ToAttribute]; found </span><span class="cov8" title="1">{
+                        toInfo = info
+                        toFound = true
+                }</span>
+
+                // If not found, try Entity.Attribute mapping
+                <span class="cov8" title="1">if !fromFound &amp;&amp; strings.Contains(rel.FromAttribute, ".") </span><span class="cov8" title="1">{
+                        if info, found := entityAttributeMap[rel.FromAttribute]; found </span><span class="cov0" title="0">{
+                                fromInfo = info
+                                fromFound = true
+                        }</span>
+                }
+
+                <span class="cov8" title="1">if !toFound &amp;&amp; strings.Contains(rel.ToAttribute, ".") </span><span class="cov0" title="0">{
+                        if info, found := entityAttributeMap[rel.ToAttribute]; found </span><span class="cov0" title="0">{
+                                toInfo = info
+                                toFound = true
+                        }</span>
+                }
+
+                // Report validation problems
+                <span class="cov8" title="1">if !fromFound </span><span class="cov8" title="1">{
+                        invalidRelationships = append(invalidRelationships,
+                                fmt.Sprintf("relationship %s: fromAttribute '%s' does not match any entity attribute",
+                                        relID, rel.FromAttribute))
+                }</span>
+
+                <span class="cov8" title="1">if !toFound </span><span class="cov0" title="0">{
+                        invalidRelationships = append(invalidRelationships,
+                                fmt.Sprintf("relationship %s: toAttribute '%s' does not match any entity attribute",
+                                        relID, rel.ToAttribute))
+                }</span>
+
+                // Skip further validation if either attribute wasn't found
+                <span class="cov8" title="1">if !fromFound || !toFound </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+
+                // Advanced relationship validation when both attributes are found
+                <span class="cov8" title="1">validRelationships++
+
+                // Check for self-referential relationships within the same entity
+                if fromInfo.EntityID == toInfo.EntityID </span><span class="cov8" title="1">{
+                        // Self-referential relationships can be valid but should be flagged for review
+                        // For example, a user having a manager that is also a user
+                        // We'll only warn if both attributes are marked as uniqueId
+                        if fromInfo.UniqueID &amp;&amp; toInfo.UniqueID </span><span class="cov8" title="1">{
+                                invalidRelationships = append(invalidRelationships,
+                                        fmt.Sprintf("relationship %s: potential self-referential issue between uniqueId attributes '%s' and '%s' in entity '%s'",
+                                                relID, fromInfo.AttributeName, toInfo.AttributeName, fromInfo.EntityID))
+                        }</span>
+                } else<span class="cov8" title="1"> {
+                        // Check for bidirectional relationships between entities that could create cycles
+                        // Create bidirectional keys for both directions
+                        bidirKey1 := fromInfo.EntityID + ":" + toInfo.EntityID
+                        bidirKey2 := toInfo.EntityID + ":" + fromInfo.EntityID
+
+                        // Check if a relationship in the opposite direction exists
+                        if existingRelID, exists := bidirectionalRelationships[bidirKey2]; exists </span><span class="cov8" title="1">{
+                                // Bidirectional relationship detected - this is normal in many systems
+                                // Just log it as info, don't treat as validation error
+                                // The dependency graph creation will handle any actual cycles
+                                fmt.Printf("INFO: Bidirectional relationship detected: %s ↔ %s\n", relID, existingRelID)
+                        }</span>
+
+                        // Record this relationship direction
+                        <span class="cov8" title="1">bidirectionalRelationships[bidirKey1] = relID
+
+                        // Validate relationship attribute types (uniqueId status)
+                        // Warn if neither attribute is a uniqueId (may cause data generation issues)
+                        if !fromInfo.UniqueID &amp;&amp; !toInfo.UniqueID </span><span class="cov8" title="1">{
+                                fmt.Printf("WARNING: Relationship %s has no uniqueId attributes - may cause data generation issues\n", relID)
+                        }</span>
+                }
+        }
+
+        // Report validation results
+        <span class="cov8" title="1">if len(invalidRelationships) &gt; 0 </span><span class="cov8" title="1">{
+                // Build detailed error message
+                errorMsg := fmt.Sprintf("Found %d relationship issues (out of %d total relationships):\n",
+                        len(invalidRelationships), len(p.Definition.Relationships))
+
+                for _, msg := range invalidRelationships </span><span class="cov8" title="1">{
+                        errorMsg += "• " + msg + "\n"
+                }</span>
+
+                <span class="cov8" title="1">errorMsg += fmt.Sprintf("\nValid relationships: %d direct, %d path-based",
+                        validRelationships, pathBasedRelationships)
+
+                return fmt.Errorf("%s", errorMsg)</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

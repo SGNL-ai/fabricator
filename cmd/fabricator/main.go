@@ -269,44 +269,73 @@ func printUsage() {
 	fmt.Println("  -d, --diagram\n\t" + diagDesc)
 }
 
-// printGenerationSummary displays the generation completion summary
-func printGenerationSummary(outputDir string, result *orchestrator.GenerationResult, diagramGenerated bool) {
-	successColor := color.New(color.FgGreen, color.Bold)
-	_, _ = successColor.Println("\n✓ CSV Generation Complete!")
-	color.Green("  Output directory: %s", outputDir)
-	color.Green("  CSV files generated: %d", result.CSVFilesGenerated)
-	color.Green("  Entities processed: %d", result.EntitiesProcessed)
-	color.Green("  Records per entity: %d", result.RecordsPerEntity)
-	color.Green("  Total records generated: %d", result.TotalRecords)
+// SummaryInfo holds common information needed for printing operation summaries
+type SummaryInfo struct {
+	Title            string
+	DirectoryLabel   string
+	Directory        string
+	DiagramGenerated bool
+	DiagramPath      string
+	FinalMessage     string
+}
 
-	if diagramGenerated && result.DiagramGenerated {
-		color.Green("  Entity-Relationship diagram (SVG): %s", result.DiagramPath)
-	} else if diagramGenerated {
-		color.Green("  Entity-Relationship diagram (DOT): %s", result.DiagramPath)
+// printOperationSummary displays a unified operation completion summary
+func printOperationSummary(info SummaryInfo, diagramEnabled bool, printMetrics func()) {
+	successColor := color.New(color.FgGreen, color.Bold)
+	_, _ = successColor.Printf("\n✓ %s!\n", info.Title)
+	color.Green("  %s: %s", info.DirectoryLabel, info.Directory)
+
+	// Print operation-specific metrics
+	printMetrics()
+
+	// Print diagram information if enabled
+	if diagramEnabled && info.DiagramGenerated {
+		color.Green("  Entity-Relationship diagram (SVG): %s", info.DiagramPath)
+	} else if diagramEnabled {
+		color.Green("  Entity-Relationship diagram (DOT): %s", info.DiagramPath)
 	}
 
-	color.Yellow("\nUse these CSV files to populate your system-of-record.")
+	color.Yellow("\n%s", info.FinalMessage)
+}
+
+// printGenerationSummary displays the generation completion summary
+func printGenerationSummary(outputDir string, result *orchestrator.GenerationResult, diagramGenerated bool) {
+	info := SummaryInfo{
+		Title:            "CSV Generation Complete",
+		DirectoryLabel:   "Output directory",
+		Directory:        outputDir,
+		DiagramGenerated: result.DiagramGenerated,
+		DiagramPath:      result.DiagramPath,
+		FinalMessage:     "Use these CSV files to populate your system-of-record.",
+	}
+
+	printOperationSummary(info, diagramGenerated, func() {
+		color.Green("  CSV files generated: %d", result.CSVFilesGenerated)
+		color.Green("  Entities processed: %d", result.EntitiesProcessed)
+		color.Green("  Records per entity: %d", result.RecordsPerEntity)
+		color.Green("  Total records generated: %d", result.TotalRecords)
+	})
 }
 
 // printValidationSummary displays the validation completion summary
 func printValidationSummary(outputDir string, result *orchestrator.ValidationResult, diagramGenerated bool) {
-	successColor := color.New(color.FgGreen, color.Bold)
-	_, _ = successColor.Println("\n✓ Validation Complete!")
-	color.Green("  Input directory: %s", outputDir)
-	color.Green("  CSV files validated: %d", result.FilesValidated)
-	color.Green("  Records validated: %d", result.RecordsValidated)
-
-	if len(result.ValidationErrors) > 0 {
-		color.Green("  Validation issues found: %d", len(result.ValidationErrors))
+	info := SummaryInfo{
+		Title:            "Validation Complete",
+		DirectoryLabel:   "Input directory",
+		Directory:        outputDir,
+		DiagramGenerated: result.DiagramGenerated,
+		DiagramPath:      result.DiagramPath,
+		FinalMessage:     "Validation of existing CSV files complete.",
 	}
 
-	if diagramGenerated && result.DiagramGenerated {
-		color.Green("  Entity-Relationship diagram (SVG): %s", result.DiagramPath)
-	} else if diagramGenerated {
-		color.Green("  Entity-Relationship diagram (DOT): %s", result.DiagramPath)
-	}
+	printOperationSummary(info, diagramGenerated, func() {
+		color.Green("  CSV files validated: %d", result.FilesValidated)
+		color.Green("  Records validated: %d", result.RecordsValidated)
 
-	color.Yellow("\nValidation of existing CSV files complete.")
+		if len(result.ValidationErrors) > 0 {
+			color.Green("  Validation issues found: %d", len(result.ValidationErrors))
+		}
+	})
 }
 
 // printHeader displays the app header

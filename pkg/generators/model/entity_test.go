@@ -1357,3 +1357,189 @@ func TestAddRelationship(t *testing.T) {
 		assert.Contains(t, err.Error(), "target attribute")
 	})
 }
+
+func TestEntity_GetAttributeByExternalID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockGraph := NewMockGraphInterface(ctrl)
+
+	// Create test attributes with different external IDs
+	attr1 := NewMockAttributeInterface(ctrl)
+	attr1.EXPECT().GetExternalID().Return("simple_id").AnyTimes()
+	attr1.EXPECT().GetName().Return("simple").AnyTimes()
+	attr1.EXPECT().IsUnique().Return(false).AnyTimes()
+	attr1.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	attr1.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
+
+	attr2 := NewMockAttributeInterface(ctrl)
+	attr2.EXPECT().GetExternalID().Return("dotted_id").AnyTimes()
+	attr2.EXPECT().GetName().Return("dotted").AnyTimes()
+	attr2.EXPECT().IsUnique().Return(true).AnyTimes()
+	attr2.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	attr2.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
+
+	entity, err := newEntity("test_entity", "TestEntity", "Test", "Description", []AttributeInterface{attr1, attr2}, mockGraph)
+	require.NoError(t, err)
+
+	t.Run("should find attribute by simple external ID", func(t *testing.T) {
+		attr, found := entity.GetAttributeByExternalID("simple_id")
+		assert.True(t, found)
+		assert.Equal(t, attr1, attr)
+	})
+
+	t.Run("should find attribute by dotted external ID", func(t *testing.T) {
+		attr, found := entity.GetAttributeByExternalID("dotted_id")
+		assert.True(t, found)
+		assert.Equal(t, attr2, attr)
+	})
+
+	t.Run("should handle prefixed external ID by stripping entity prefix", func(t *testing.T) {
+		// This tests the prefix stripping logic: "TestEntity.simple_id" -> "simple_id"
+		attr, found := entity.GetAttributeByExternalID("TestEntity.simple_id")
+		assert.True(t, found)
+		assert.Equal(t, attr1, attr)
+	})
+
+	t.Run("should return false for nonexistent external ID", func(t *testing.T) {
+		attr, found := entity.GetAttributeByExternalID("nonexistent")
+		assert.False(t, found)
+		assert.Nil(t, attr)
+	})
+
+	t.Run("should handle external ID without prefix but containing dots", func(t *testing.T) {
+		// This tests the case where externalID contains dots but doesn't match entity prefix
+		attr, found := entity.GetAttributeByExternalID("other.dotted_id")
+		assert.False(t, found)
+		assert.Nil(t, attr)
+	})
+
+	t.Run("should handle empty external ID", func(t *testing.T) {
+		attr, found := entity.GetAttributeByExternalID("")
+		assert.False(t, found)
+		assert.Nil(t, attr)
+	})
+}
+
+func TestEntity_ValidateRowNegativeCases(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockGraph := NewMockGraphInterface(ctrl)
+
+	// Create a mock unique attribute
+	uniqueAttr := NewMockAttributeInterface(ctrl)
+	uniqueAttr.EXPECT().GetName().Return("id").AnyTimes()
+	uniqueAttr.EXPECT().GetExternalID().Return("id").AnyTimes()
+	uniqueAttr.EXPECT().IsUnique().Return(true).AnyTimes()
+	uniqueAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	uniqueAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
+
+	// Create a mock non-unique attribute
+	nonUniqueAttr := NewMockAttributeInterface(ctrl)
+	nonUniqueAttr.EXPECT().GetName().Return("name").AnyTimes()
+	nonUniqueAttr.EXPECT().GetExternalID().Return("name").AnyTimes()
+	nonUniqueAttr.EXPECT().IsUnique().Return(false).AnyTimes()
+	nonUniqueAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	nonUniqueAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
+
+	entity, err := newEntity("test", "Test", "Test Entity", "Description", []AttributeInterface{uniqueAttr, nonUniqueAttr}, mockGraph)
+	require.NoError(t, err)
+
+	// Add a row to test duplicate detection
+	row1 := NewRow(map[string]string{"id": "duplicate", "name": "first"})
+	err = entity.AddRow(row1)
+	require.NoError(t, err)
+
+	t.Run("should reject duplicate unique values", func(t *testing.T) {
+		row2 := NewRow(map[string]string{"id": "duplicate", "name": "second"})
+		err := entity.AddRow(row2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "duplicate")
+		assert.Contains(t, err.Error(), "id")
+	})
+
+	t.Run("should accept duplicate non-unique values", func(t *testing.T) {
+		row3 := NewRow(map[string]string{"id": "unique", "name": "first"}) // name is duplicate but non-unique
+		err := entity.AddRow(row3)
+		assert.NoError(t, err)
+	})
+
+	t.Run("should handle row with missing values for some fields", func(t *testing.T) {
+		row4 := NewRow(map[string]string{"id": "missing_name"}) // missing 'name' field
+		err := entity.AddRow(row4)
+		assert.NoError(t, err) // Should not fail, missing values are allowed
+	})
+}
+
+func TestEntity_ValidateForeignKeyValue_ErrorCases(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockGraph := NewMockGraphInterface(ctrl)
+
+	// Create entity without any attributes for simplicity
+	entity, err := newEntity("test", "Test", "Test Entity", "Description", []AttributeInterface{}, mockGraph)
+	require.NoError(t, err)
+
+	t.Run("should return error for nonexistent attribute", func(t *testing.T) {
+		err := entity.validateForeignKeyValue("nonexistent_attr", "some_value")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
+}
+
+func TestEntity_AddRelationship_ErrorCases(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockGraph := NewMockGraphInterface(ctrl)
+
+	// Create source attribute
+	sourceAttr := NewMockAttributeInterface(ctrl)
+	sourceAttr.EXPECT().GetName().Return("source_attr").AnyTimes()
+	sourceAttr.EXPECT().GetExternalID().Return("source_id").AnyTimes()
+	sourceAttr.EXPECT().IsUnique().Return(true).AnyTimes() // Make it unique to serve as primary key
+	sourceAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	sourceAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
+
+	sourceEntity, err := newEntity("source", "Source", "Source Entity", "Description", []AttributeInterface{sourceAttr}, mockGraph)
+	require.NoError(t, err)
+
+	// Create target entity with an attribute (but not the one expected in the relationship)
+	targetAttr := NewMockAttributeInterface(ctrl)
+	targetAttr.EXPECT().GetName().Return("target_id").AnyTimes()
+	targetAttr.EXPECT().GetExternalID().Return("target_id").AnyTimes()
+	targetAttr.EXPECT().IsUnique().Return(true).AnyTimes() // Make it unique to serve as primary key
+	targetAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	targetAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
+
+	targetEntity, err := newEntity("target", "Target", "Target Entity", "Description", []AttributeInterface{targetAttr}, mockGraph)
+	require.NoError(t, err)
+
+	t.Run("should return error when source attribute not found", func(t *testing.T) {
+		rel, err := sourceEntity.addRelationship(
+			"test_rel_id",
+			"test_rel",
+			targetEntity,
+			"nonexistent_source", // This attribute doesn't exist
+			"any_target",
+		)
+		assert.Error(t, err)
+		assert.Nil(t, rel)
+		assert.Contains(t, err.Error(), "source attribute")
+	})
+
+	t.Run("should return error when target attribute not found", func(t *testing.T) {
+		rel, err := sourceEntity.addRelationship(
+			"test_rel_id",
+			"test_rel",
+			targetEntity,
+			"source_id",          // This exists
+			"nonexistent_target", // This doesn't exist in target entity
+		)
+		assert.Error(t, err)
+		assert.Nil(t, rel)
+		assert.Contains(t, err.Error(), "target attribute")
+	})
+}
