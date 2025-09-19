@@ -109,8 +109,8 @@
                     "items": {"type": "string"}
                   }
                 },
-                "required": ["clientId", "clientSecret", "tokenUrl"],
-                "additionalProperties": false
+                "required": ["clientId", "tokenUrl"],
+                "additionalProperties": true
               }
             },
             "required": ["oAuth2ClientCredentials"],

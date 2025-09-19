@@ -101,23 +101,25 @@ func TestGenerationOrchestrator(t *testing.T) {
 					ExternalId:  "User",
 					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
-						{Name: "roleId", ExternalId: "roleId", Type: "String"},
+						{Name: "name", ExternalId: "name", Type: "String"},
+						{Name: "profile_id", ExternalId: "profile_id", Type: "String"}, // FK field
 					},
 				},
-				"role": {
-					DisplayName: "Role",
-					ExternalId:  "Role",
+				"profile": {
+					DisplayName: "Profile",
+					ExternalId:  "Profile",
 					Attributes: []parser.Attribute{
 						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+						{Name: "bio", ExternalId: "bio", Type: "String"},
 					},
 				},
 			},
 			Relationships: map[string]parser.Relationship{
-				"user_role": {
-					DisplayName:   "User Role",
-					Name:          "user_role",
-					FromAttribute: "user.roleId",
-					ToAttribute:   "role.id",
+				"user_profile": {
+					DisplayName:   "User Profile",
+					Name:          "user_profile",
+					FromAttribute: "user.profile_id",
+					ToAttribute:   "profile.id",
 				},
 			},
 		}
@@ -136,8 +138,64 @@ func TestGenerationOrchestrator(t *testing.T) {
 		assert.NoError(t, err, "Generation should succeed")
 		assert.NotNil(t, result.ValidationSummary, "Should include validation summary when requested")
 
-		// May have some relationship inconsistencies due to random data generation
-		// but should not have fatal validation errors
+		// CRITICAL TEST: Foreign key relationships should work in orchestrator too
+		if result.ValidationSummary != nil {
+			assert.Empty(t, result.ValidationSummary.Errors,
+				"Should have no FK validation errors - found: %v", result.ValidationSummary.Errors)
+		}
+	})
+
+	t.Run("should work with attributeAlias relationships", func(t *testing.T) {
+		def := &parser.SORDefinition{
+			DisplayName: "AttributeAlias Test SOR",
+			Description: "Test attributeAlias relationship format",
+			Entities: map[string]parser.Entity{
+				"user-entity": {
+					DisplayName: "User",
+					ExternalId:  "User",
+					Attributes: []parser.Attribute{
+						{Name: "userId", ExternalId: "uuid", Type: "String", UniqueId: true, AttributeAlias: "user-primary-key-alias"},
+						{Name: "name", ExternalId: "name", Type: "String", AttributeAlias: "user-name-alias"},
+					},
+				},
+				"profile-entity": {
+					DisplayName: "Profile",
+					ExternalId:  "Profile",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "String", UniqueId: true, AttributeAlias: "profile-primary-key-alias"},
+						{Name: "userId", ExternalId: "uuid", Type: "String", AttributeAlias: "profile-user-id-alias"},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"user-to-profile": {
+					DisplayName:   "USER_TO_PROFILE",
+					Name:          "user_to_profile",
+					FromAttribute: "user-primary-key-alias",
+					ToAttribute:   "profile-user-id-alias",
+				},
+			},
+		}
+
+		tempDir, err := os.MkdirTemp("", "attr_alias_test_*")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		options := GenerationOptions{
+			DataVolume:      2,
+			ValidateResults: true,
+		}
+
+		result, err := RunGeneration(def, tempDir, options)
+
+		assert.NoError(t, err, "Generation should succeed with attributeAlias")
+		assert.NotNil(t, result.ValidationSummary, "Should include validation summary")
+
+		// CRITICAL TEST: AttributeAlias relationships should work
+		if result.ValidationSummary != nil {
+			assert.Empty(t, result.ValidationSummary.Errors,
+				"AttributeAlias FK relationships should be valid - found: %v", result.ValidationSummary.Errors)
+		}
 	})
 
 	t.Run("should skip validation when not requested", func(t *testing.T) {

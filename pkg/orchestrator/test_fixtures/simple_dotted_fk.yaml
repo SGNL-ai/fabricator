@@ -1,0 +1,31 @@
+displayName: Simple FK Test
+description: Test simple dotted notation foreign key relationships
+entities:
+  User:
+    displayName: User
+    externalId: User
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+      - name: name
+        externalId: name
+        type: String
+  Profile:
+    displayName: Profile
+    externalId: Profile
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+      - name: user_id
+        externalId: user_id
+        type: String
+relationships:
+  UserProfile:
+    displayName: Profile to User
+    name: profile_to_user
+    fromAttribute: Profile.user_id
+    toAttribute: User.id

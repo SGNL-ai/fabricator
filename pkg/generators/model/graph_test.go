@@ -1281,3 +1281,114 @@ func TestSpecificUncoveredErrorPaths(t *testing.T) {
 		}
 	})
 }
+
+// TestAttributeAliasRelationshipMarking tests that attributeAlias relationships mark the correct attributes
+func TestAttributeAliasRelationshipMarking(t *testing.T) {
+	// Test based on exported okta structure (correct FK -> PK direction)
+	def := &parser.SORDefinition{
+		DisplayName: "AttributeAlias Relationship Test",
+		Description: "Test which attributes get marked as relationships with attributeAlias (FK -> PK)",
+		Entities: map[string]parser.Entity{
+			"group-member-entity": {
+				DisplayName: "GroupMember",
+				ExternalId:  "GroupMember",
+				Attributes: []parser.Attribute{
+					{
+						Name:           "id",
+						ExternalId:     "id",
+						Type:           "String",
+						UniqueId:       true,
+						AttributeAlias: "group-member-pk-alias",
+					},
+					{
+						Name:           "groupId",
+						ExternalId:     "groupId",
+						Type:           "String",
+						UniqueId:       false, // FOREIGN KEY
+						AttributeAlias: "group-member-group-fk-alias",
+					},
+				},
+			},
+			"group-entity": {
+				DisplayName: "Group",
+				ExternalId:  "Group",
+				Attributes: []parser.Attribute{
+					{
+						Name:           "id",
+						ExternalId:     "id",
+						Type:           "String",
+						UniqueId:       true, // PRIMARY KEY
+						AttributeAlias: "group-pk-alias",
+					},
+					{
+						Name:           "name",
+						ExternalId:     "name",
+						Type:           "String",
+						AttributeAlias: "group-name-alias",
+					},
+				},
+			},
+		},
+		Relationships: map[string]parser.Relationship{
+			"group-membership": {
+				DisplayName:   "Group Membership",
+				Name:          "GroupMembership",
+				FromAttribute: "group-member-group-fk-alias", // GroupMember.groupId (FK)
+				ToAttribute:   "group-pk-alias",              // Group.id (PK)
+			},
+		},
+	}
+
+	graph, err := NewGraph(def)
+	require.NoError(t, err)
+
+	entities := graph.GetAllEntities()
+	groupMemberEntity := entities["group-member-entity"]
+	groupEntity := entities["group-entity"]
+
+	// Check GroupMember entity attributes
+	groupMemberRelAttrs := groupMemberEntity.GetRelationshipAttributes()
+	groupMemberNonRelAttrs := groupMemberEntity.GetNonRelationshipAttributes()
+
+	t.Logf("GroupMember entity:")
+	t.Logf("  Relationship attributes: %d", len(groupMemberRelAttrs))
+	for i, attr := range groupMemberRelAttrs {
+		t.Logf("    %d: %s (isRelationship: %v)", i, attr.GetName(), attr.IsRelationship())
+	}
+	t.Logf("  Non-relationship attributes: %d", len(groupMemberNonRelAttrs))
+	for i, attr := range groupMemberNonRelAttrs {
+		t.Logf("    %d: %s (isRelationship: %v)", i, attr.GetName(), attr.IsRelationship())
+	}
+
+	// Check Group entity attributes
+	groupRelAttrs := groupEntity.GetRelationshipAttributes()
+	groupNonRelAttrs := groupEntity.GetNonRelationshipAttributes()
+
+	t.Logf("Group entity:")
+	t.Logf("  Relationship attributes: %d", len(groupRelAttrs))
+	for i, attr := range groupRelAttrs {
+		t.Logf("    %d: %s (isRelationship: %v)", i, attr.GetName(), attr.IsRelationship())
+	}
+	t.Logf("  Non-relationship attributes: %d", len(groupNonRelAttrs))
+	for i, attr := range groupNonRelAttrs {
+		t.Logf("    %d: %s (isRelationship: %v)", i, attr.GetName(), attr.IsRelationship())
+	}
+
+	// CRITICAL TESTS: Verify correct attributes are marked as relationships (FK -> PK direction)
+
+	// GroupMember entity should have 1 relationship attribute (the FK)
+	assert.Len(t, groupMemberRelAttrs, 1, "GroupMember entity should have 1 relationship attribute (FK side)")
+	if len(groupMemberRelAttrs) > 0 {
+		assert.Equal(t, "groupId", groupMemberRelAttrs[0].GetName(), "The FK groupId field should be marked as relationship")
+		assert.True(t, groupMemberRelAttrs[0].IsRelationship(), "FK groupId should be marked isRelationship=true")
+	}
+
+	assert.Len(t, groupMemberNonRelAttrs, 1, "GroupMember should have 1 non-relationship attribute (id)")
+	if len(groupMemberNonRelAttrs) > 0 {
+		assert.Equal(t, "id", groupMemberNonRelAttrs[0].GetName(), "Only the PK 'id' should be non-relationship")
+	}
+
+	// Group entity should have NO relationship attributes (it's the target/PK side)
+	assert.Len(t, groupRelAttrs, 0, "Group entity should have NO relationship attributes (PK side)")
+	assert.Len(t, groupNonRelAttrs, 2, "Group entity should have 2 non-relationship attributes (id, name)")
+}
