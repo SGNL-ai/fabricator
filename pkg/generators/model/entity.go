@@ -21,6 +21,7 @@ type Entity struct {
 	rows              []*Row
 	primaryKey        AttributeInterface
 	graph             GraphInterface // Reference to parent graph for lookups
+	usedPKValues      map[string]bool // Track used primary key values for O(1) duplicate detection
 }
 
 // newEntity creates a new entity with basic properties and attributes
@@ -37,6 +38,7 @@ func newEntity(id, externalID, name string, description string, attributes []Att
 		attrList:          make([]AttributeInterface, 0, len(attributes)),
 		rows:              make([]*Row, 0),
 		graph:             graph,
+		usedPKValues:      make(map[string]bool),
 	}
 
 	// Add attributes to entity
@@ -223,6 +225,14 @@ func (e *Entity) AddRow(row *Row) error {
 	// Add row to entity
 	e.rows = append(e.rows, row)
 
+	// Track the primary key value in our hash map for future duplicate detection
+	if e.primaryKey != nil {
+		pkName := e.primaryKey.GetName()
+		if pkValue, exists := row.values[pkName]; exists && pkValue != "" {
+			e.usedPKValues[pkValue] = true
+		}
+	}
+
 	return nil
 }
 
@@ -237,6 +247,14 @@ func (e *Entity) ForEachRow(fn func(row *Row) error) error {
 		// Pop the first row
 		row := e.rows[0]
 		e.rows = e.rows[1:]
+
+		// Remove PK value from hash map since row is being removed
+		if e.primaryKey != nil {
+			pkName := e.primaryKey.GetName()
+			if pkValue, exists := row.values[pkName]; exists && pkValue != "" {
+				delete(e.usedPKValues, pkValue)
+			}
+		}
 
 		// Call the function to potentially modify the row
 		if err := fn(row); err != nil {
@@ -296,15 +314,26 @@ func (e *Entity) validateRow(row *Row) error {
 			return fmt.Errorf("missing required primary key value for attribute '%s'", pkName)
 		}
 
-		// Check uniqueness constraint (simple check since ForEachRow pops the row)
-		for _, existingRow := range e.rows {
-			if existingRow.values[pkName] == pkValue {
-				return fmt.Errorf("duplicate value '%s' for unique attribute '%s'", pkValue, pkName)
-			}
+		// Check uniqueness constraint using O(1) hash map lookup
+		if e.usedPKValues[pkValue] {
+			return fmt.Errorf("duplicate value '%s' for unique attribute '%s'", pkValue, pkName)
 		}
 	}
 
 	return nil
+}
+
+// GetRowByIndex returns a row by index for direct access (O(1) operation)
+func (e *Entity) GetRowByIndex(index int) *Row {
+	if index < 0 || index >= len(e.rows) {
+		return nil
+	}
+	return e.rows[index]
+}
+
+// CheckKeyExists checks if a key value exists in the used primary key values (O(1) lookup)
+func (e *Entity) CheckKeyExists(keyValue string) bool {
+	return e.usedPKValues[keyValue]
 }
 
 // ValidateAllForeignKeys validates all FK relationships for this entity (post-generation validation)
@@ -359,19 +388,28 @@ func (e *Entity) validateForeignKeyValue(attributeName string, value string) err
 			relatedAttributeName, relatedEntityID)
 	}
 
-	// Validate that the foreign key value exists in the related entity's rows
-	// For a valid foreign key reference, the value should exist in the related entity's attribute
-	valueFound := false
-	for _, row := range relatedEntity.getRows() {
-		if attrValue, exists := row.values[relatedAttributeName]; exists && attrValue == value {
-			valueFound = true
-			break
+	// Validate that the foreign key value exists in the related entity using O(1) lookup
+	// For primary key attributes, use the efficient CheckKeyExists method
+	relatedAttr, _ := relatedEntity.GetAttribute(relatedAttributeName)
+	if relatedAttr != nil && relatedAttr.IsUnique() {
+		// For primary keys, use O(1) hash map lookup
+		if !relatedEntity.CheckKeyExists(value) {
+			return fmt.Errorf("foreign key value '%s' does not exist in related entity '%s.%s'",
+				value, relatedEntityID, relatedAttributeName)
 		}
-	}
-
-	if !valueFound {
-		return fmt.Errorf("foreign key value '%s' does not exist in related entity '%s.%s'",
-			value, relatedEntityID, relatedAttributeName)
+	} else {
+		// For non-unique attributes, fall back to linear search (rare case)
+		valueFound := false
+		for _, row := range relatedEntity.getRows() {
+			if attrValue, exists := row.values[relatedAttributeName]; exists && attrValue == value {
+				valueFound = true
+				break
+			}
+		}
+		if !valueFound {
+			return fmt.Errorf("foreign key value '%s' does not exist in related entity '%s.%s'",
+				value, relatedEntityID, relatedAttributeName)
+		}
 	}
 
 	return nil

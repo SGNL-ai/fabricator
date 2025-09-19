@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/diagrams"
@@ -43,6 +45,10 @@ var (
 
 	// Validation-only mode (skip CSV generation)
 	validateOnly bool
+
+	// Profiling options
+	cpuProfile string
+	memProfile string
 )
 
 func init() {
@@ -84,6 +90,10 @@ func init() {
 	flag.BoolVar(&generateDiagram, "diagram", generateDiagram, diagramDesc)
 	flag.BoolVar(&generateDiagram, "d", generateDiagram, diagramDesc)
 
+	// Add profiling flags
+	flag.StringVar(&cpuProfile, "cpuprofile", "", "Write CPU profile to file")
+	flag.StringVar(&memProfile, "memprofile", "", "Write memory profile to file")
+
 	// Override default usage output
 	flag.Usage = func() {
 		fmt.Printf("Usage of %s:\n", os.Args[0])
@@ -118,6 +128,20 @@ func main() {
 
 // run performs the main application logic
 func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) error {
+	// Start profiling if requested
+	if cpuProfile != "" {
+		f, err := os.Create(cpuProfile)
+		if err != nil {
+			return fmt.Errorf("could not create CPU profile: %w", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return fmt.Errorf("could not start CPU profile: %w", err)
+		}
+		defer pprof.StopCPUProfile()
+		color.Yellow("CPU profiling enabled: %s", cpuProfile)
+	}
+
 	// Print start message
 	printHeader()
 	color.Cyan("Input file: %s", inputFile)
@@ -129,6 +153,12 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	color.Cyan("Validation-only mode: %t", validateOnly)
 	color.Cyan("Validate relationships: %t", validateRelationships)
 	color.Cyan("Generate ER diagram: %t", generateDiagram)
+	if cpuProfile != "" {
+		color.Cyan("CPU profiling: %s", cpuProfile)
+	}
+	if memProfile != "" {
+		color.Cyan("Memory profiling: %s", memProfile)
+	}
 	color.Cyan("==================")
 
 	// Create a parser and parse the YAML file
@@ -173,6 +203,20 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		if err == nil && diagramResult.Generated {
 			color.Green("✓ Generated ER diagram at %s", diagramResult.Path)
 		}
+	}
+
+	// Write memory profile if requested
+	if memProfile != "" {
+		f, err := os.Create(memProfile)
+		if err != nil {
+			return fmt.Errorf("could not create memory profile: %w", err)
+		}
+		defer f.Close()
+		runtime.GC() // Get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			return fmt.Errorf("could not write memory profile: %w", err)
+		}
+		color.Yellow("Memory profile written: %s", memProfile)
 	}
 
 	return nil
@@ -258,6 +302,8 @@ func printUsage() {
 	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
 	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
 	fmt.Println("  --validate-only\n\tValidate existing CSV files without generating new data")
+	fmt.Println("  --cpuprofile string\n\tWrite CPU profile to file")
+	fmt.Println("  --memprofile string\n\tWrite memory profile to file")
 
 	// Build diagram flag description with dynamic default based on Graphviz availability
 	diagDesc := "Generate Entity-Relationship diagram"

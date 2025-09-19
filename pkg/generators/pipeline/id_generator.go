@@ -35,6 +35,9 @@ func (g *IDGenerator) GenerateIDs(graph *model.Graph, dataVolume int) error {
 			continue // Skip entities without primary keys
 		}
 
+		// Show progress for current entity (no newline, will be overwritten)
+		fmt.Printf("\r→ Generating %s...", entity.GetName())
+
 		// Generate the specified number of rows with unique IDs
 		for i := 0; i < dataVolume; i++ {
 			// Create row with just the primary key

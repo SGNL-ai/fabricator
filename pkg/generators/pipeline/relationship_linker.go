@@ -33,6 +33,7 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 			continue // Skip invalid relationships
 		}
 
+
 		// Establish FK relationship between entities
 		err := l.linkEntityRelationship(sourceEntity, targetEntity, sourceAttr, targetAttr, relationship, autoCardinality)
 		if err != nil {
@@ -45,31 +46,10 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 
 // linkEntityRelationship establishes foreign key relationships between two entities
 func (l *RelationshipLinker) linkEntityRelationship(source, target model.EntityInterface, sourceAttr, targetAttr model.AttributeInterface, relationship model.RelationshipInterface, autoCardinality bool) error {
-	// Get target entity's values for linking
-	targetCSV := target.ToCSV()
-	targetValues := make([]string, 0)
-
-	// Find target attribute column
-	targetColIndex := -1
-	for i, header := range targetCSV.Headers {
-		if header == targetAttr.GetName() {
-			targetColIndex = i
-			break
-		}
-	}
-
-	// Collect available target values
-	if targetColIndex >= 0 {
-		for _, row := range targetCSV.Rows {
-			if targetColIndex < len(row) && row[targetColIndex] != "" {
-				targetValues = append(targetValues, row[targetColIndex])
-			}
-		}
-	}
-
-	// If no target values available, skip linking (leave FK fields empty)
-	if len(targetValues) == 0 {
-		return nil
+	// Check if target entity has any rows
+	targetRowCount := target.GetRowCount()
+	if targetRowCount == 0 {
+		return nil // No target data to link to
 	}
 
 	// Determine FK distribution strategy based on cardinality
@@ -80,26 +60,30 @@ func (l *RelationshipLinker) linkEntityRelationship(source, target model.EntityI
 		if relationship.IsOneToOne() {
 			// 1:1 - each source row gets unique target value
 			getTargetValue = func(rowIndex int) string {
-				if rowIndex < len(targetValues) {
-					return targetValues[rowIndex]
+				targetRow := target.GetRowByIndex(rowIndex % targetRowCount)
+				if targetRow != nil {
+					return targetRow.GetValue(targetAttr.GetName())
 				}
-				return targetValues[rowIndex%len(targetValues)] // fallback to round-robin
-			}
-		} else if relationship.IsOneToMany() {
-			// 1:N - multiple source rows can reference same target
-			getTargetValue = func(rowIndex int) string {
-				return targetValues[rowIndex%len(targetValues)] // round-robin
+				return ""
 			}
 		} else {
 			// Default: round-robin distribution
 			getTargetValue = func(rowIndex int) string {
-				return targetValues[rowIndex%len(targetValues)]
+				targetRow := target.GetRowByIndex(rowIndex % targetRowCount)
+				if targetRow != nil {
+					return targetRow.GetValue(targetAttr.GetName())
+				}
+				return ""
 			}
 		}
 	} else {
 		// Simple round-robin distribution when autoCardinality is disabled
 		getTargetValue = func(rowIndex int) string {
-			return targetValues[rowIndex%len(targetValues)]
+			targetRow := target.GetRowByIndex(rowIndex % targetRowCount)
+			if targetRow != nil {
+				return targetRow.GetValue(targetAttr.GetName())
+			}
+			return ""
 		}
 	}
 

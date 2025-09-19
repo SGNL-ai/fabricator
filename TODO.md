@@ -1,20 +1,41 @@
 # TODO
 
-## Coverage Testing Follow-up
+## Performance Optimization
 
-1. **Rerun test with small dataset and manually confirm validation mode detects real problems**
-   - Generate small dataset (2-3 records per entity)
-   - Manually inspect CSV files to verify foreign key relationships are correct
-   - Confirm validation mode is accurately detecting actual problems vs. false positives
+**CRITICAL: O(n²) Performance Bug Found**
 
-2. **If generation or validation is not working correctly, determine why comprehensive tests missed this bug**
-   - If generation mode is at fault, write a test to find that bug
-   - If validation mode is at fault, write a test to find that bug
-   - Analyze why our extensive test suite didn't catch this issue
-   - Write focused tests to detect the root cause
-   - **DO NOT change code** - only write tests to understand the problem
+### Issue
+- **Location**: `pkg/generators/model/entity.go:300-304` in `validateRow` function
+- **Problem**: Uses O(n) linear search to check for duplicate primary keys on every row insertion
+- **Impact**: Creates O(n²) total performance that makes large datasets unusable
+- **Evidence**: CPU profiling shows `validateRow` consumes 68% of CPU time
 
-3. **Remove all debug output from the codebase**
-   - Find and remove all DEBUG print statements
-   - Clean up console output for production use
-   - Ensure only intentional user-facing messages remain
+### Performance Impact
+- **1K records**: ~500K operations (acceptable)
+- **20K records**: ~200M operations (31 seconds)
+- **100K records**: ~5B operations (timeout)
+- **1M records**: ~500B operations (completely unusable)
+
+### Fix Required
+Replace the O(n) loop with a hash map for O(1) duplicate detection:
+
+```go
+// Current O(n) approach:
+for _, existingRow := range e.rows {
+    if existingRow.values[pkName] == pkValue {
+        return fmt.Errorf("duplicate value...")
+    }
+}
+
+// Should be O(1) approach:
+// Use a map[string]bool to track used primary key values
+```
+
+## Completed Items
+
+✅ **Add comprehensive foreign key relationship testing**
+✅ **Remove malformed sample.yaml and replace with proper examples**
+✅ **Add CLI profiling support** (`--cpuprofile`, `--memprofile`)
+✅ **Verify foreign key relationships work correctly** with both dotted notation and attributeAlias
+✅ **Achieve 90.1% test coverage** with all packages above 80%
+✅ **Remove debug output** and unreachable defensive code

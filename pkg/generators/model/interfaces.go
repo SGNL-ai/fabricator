@@ -75,6 +75,10 @@ type EntityInterface interface {
 
 	// Returns rows of data
 	getRows() []*Row
+
+	// Performance optimizations
+	GetRowByIndex(index int) *Row         // Direct row access by index (O(1))
+	CheckKeyExists(keyValue string) bool  // O(1) primary key existence check
 }
 
 // RelationshipInterface defines operations for relationships
