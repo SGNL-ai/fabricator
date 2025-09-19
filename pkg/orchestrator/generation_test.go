@@ -168,11 +168,11 @@ func TestGenerationOrchestrator(t *testing.T) {
 				},
 			},
 			Relationships: map[string]parser.Relationship{
-				"user-to-profile": {
-					DisplayName:   "USER_TO_PROFILE",
-					Name:          "user_to_profile",
-					FromAttribute: "user-primary-key-alias",
-					ToAttribute:   "profile-user-id-alias",
+				"profile-to-user": {
+					DisplayName:   "PROFILE_TO_USER",
+					Name:          "profile_to_user",
+					FromAttribute: "profile-user-id-alias",
+					ToAttribute:   "user-primary-key-alias",
 				},
 			},
 		}

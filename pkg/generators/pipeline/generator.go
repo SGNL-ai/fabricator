@@ -78,18 +78,9 @@ func (g *DataGenerator) Generate(graph *model.Graph) error {
 		return fmt.Errorf("field generation failed: %w", err)
 	}
 
-	// Optional validation step
-	relationshipErrors := g.validator.ValidateRelationships(graph)
-	if len(relationshipErrors) > 0 {
-		// Just log the validation errors rather than failing
-		fmt.Printf("WARNING: Found %d relationship validation errors\n", len(relationshipErrors))
-		for _, err := range relationshipErrors {
-			fmt.Printf("- %s\n", err)
-		}
-	}
-
-	// Note: Unique value validation is handled by AddRow during data generation
-	// No need for separate unique value validation since AddRow rejects duplicates
+	// Note: Validation is skipped in generation mode for performance
+	// Use --validate-only mode to validate existing CSV files
+	// Unique value validation is handled by AddRow during data generation
 
 	// Write CSV files
 	if err := g.csvWriter.WriteFiles(graph); err != nil {

@@ -33,6 +33,8 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 			continue // Skip invalid relationships
 		}
 
+		// Show progress for current relationship (will be cleared)
+		fmt.Printf("\r%-80s\r→ Linking %s relationships...", "", sourceEntity.GetName())
 
 		// Establish FK relationship between entities
 		err := l.linkEntityRelationship(sourceEntity, targetEntity, sourceAttr, targetAttr, relationship, autoCardinality)
@@ -40,6 +42,9 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 			return fmt.Errorf("failed to link relationship %s: %w", relationship.GetID(), err)
 		}
 	}
+
+	// Clear relationship linking progress line
+	fmt.Printf("\r%-80s\r", "")
 
 	return nil
 }

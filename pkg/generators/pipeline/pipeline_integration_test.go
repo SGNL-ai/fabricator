@@ -174,11 +174,11 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 				},
 			},
 			Relationships: map[string]parser.Relationship{
-				"user-to-profile": {
-					DisplayName:   "User Profile",
-					Name:          "user_profile",
-					FromAttribute: "user-pk-alias",
-					ToAttribute:   "profile-user-alias",
+				"profile-to-user": {
+					DisplayName:   "Profile to User",
+					Name:          "profile_to_user",
+					FromAttribute: "profile-user-alias",
+					ToAttribute:   "user-pk-alias",
 				},
 			},
 		}

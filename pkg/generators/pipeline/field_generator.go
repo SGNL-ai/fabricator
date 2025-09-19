@@ -27,6 +27,9 @@ func (g *FieldGenerator) GenerateFields(graph *model.Graph) error {
 
 	// Process each entity
 	for _, entity := range graph.GetAllEntities() {
+		// Show progress for current entity (will be cleared)
+		fmt.Printf("\r%-80s\r→ Generating fields for %s...", "", entity.GetName())
+
 		// Get non-ID, non-relationship attributes that need values
 		fieldsToGenerate := entity.GetNonRelationshipAttributes()
 
@@ -57,6 +60,9 @@ func (g *FieldGenerator) GenerateFields(graph *model.Graph) error {
 			return fmt.Errorf("failed to generate fields for entity %s: %w", entity.GetExternalID(), err)
 		}
 	}
+
+	// Clear field generation progress line
+	fmt.Printf("\r%-80s\r", "")
 
 	return nil
 }

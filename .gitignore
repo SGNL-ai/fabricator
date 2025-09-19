@@ -45,3 +45,4 @@ go.work
 # Sensitive files
 # Add patterns here, not specific filenames
 samples/
+*.csv

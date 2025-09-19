@@ -237,7 +237,7 @@ func runGenerationMode(def *parser.SORDefinition, outputDir string, dataVolume i
 		DataVolume:      dataVolume,
 		AutoCardinality: autoCardinality,
 		GenerateDiagram: generateDiagram,
-		ValidateResults: validateRelationships,
+		ValidateResults: false, // Skip validation in generation mode for performance
 	}
 
 	result, err := orchestrator.RunGeneration(def, outputDir, options)
@@ -245,8 +245,8 @@ func runGenerationMode(def *parser.SORDefinition, outputDir string, dataVolume i
 		return fmt.Errorf("failed to generate CSV data: %w", err)
 	}
 
-	// Handle validation results
-	if validateRelationships && result.ValidationSummary != nil {
+	// Handle validation results (only if validation actually ran)
+	if result.ValidationSummary != nil {
 		if len(result.ValidationSummary.Errors) > 0 {
 			color.Yellow("Found relationship consistency issues:")
 			for _, errMsg := range result.ValidationSummary.Errors {

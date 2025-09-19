@@ -62,7 +62,7 @@ func (w *CSVWriter) WriteFiles(graph *model.Graph) error {
 		}
 
 		// Clear progress line and show completion message
-		fmt.Printf("\r%50s\r", "") // Clear line with spaces, then return to start
+		fmt.Printf("\r%-80s\r", "") // Clear line with 80 spaces, then return to start
 		color.Green("✓ Generated %s with %d rows", filename, len(csvData.Rows))
 	}
 
