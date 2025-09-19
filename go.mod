@@ -6,7 +6,6 @@ require (
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/fatih/color v1.18.0
-	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/stretchr/testify v1.10.0
