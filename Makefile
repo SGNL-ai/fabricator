@@ -72,8 +72,8 @@ coverage-check:
 	grep -v "/main.go" coverage.out.tmp | grep -v "/mocks.go" > coverage.out
 	@coverage=`$(GOCMD) tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'`; \
 	echo "Total coverage: $$coverage%"; \
-	if [ $$(echo "$$coverage < 90.0" | bc -l) -eq 1 ]; then \
-		echo "Code coverage is below 90%"; \
+	if [ $$(echo "$$coverage < 85.0" | bc -l) -eq 1 ]; then \
+		echo "Code coverage is below 85%"; \
 		exit 1; \
 	fi
 

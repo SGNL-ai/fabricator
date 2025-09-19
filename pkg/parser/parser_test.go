@@ -1,12 +1,14 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -324,9 +326,40 @@ func TestParser_initSchema_ErrorPaths(t *testing.T) {
 			assert.NotNil(t, parser.schema)
 		}
 	})
+}
 
-	// Note: The error paths in initSchema are defensive coding for edge cases
-	// where the embedded schema could be corrupted or jsonschema library fails
+func TestEmbeddedJSONSchema(t *testing.T) {
+	t.Run("embedded JSON schema should be valid JSON", func(t *testing.T) {
+		// Verify that the embedded JSON schema is valid JSON
+		var schemaData interface{}
+		err := json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
+		assert.NoError(t, err, "Embedded schema should be valid JSON")
+
+		// Verify it has the expected structure
+		schemaMap, ok := schemaData.(map[string]interface{})
+		assert.True(t, ok, "Schema should be a JSON object")
+
+		// Check for key properties that should exist in the schema
+		assert.Contains(t, schemaMap, "$schema", "Schema should have $schema field")
+		assert.Contains(t, schemaMap, "title", "Schema should have title field")
+		assert.Contains(t, schemaMap, "type", "Schema should have type field")
+		assert.Equal(t, "object", schemaMap["type"], "Schema root should be of type 'object'")
+	})
+
+	t.Run("embedded JSON schema should compile successfully", func(t *testing.T) {
+		// Test that the schema can be compiled without error
+		var schemaData interface{}
+		err := json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
+		assert.NoError(t, err)
+
+		compiler := jsonschema.NewCompiler()
+		err = compiler.AddResource("sor_schema.json", schemaData)
+		assert.NoError(t, err, "Should be able to add schema resource to compiler")
+
+		schema, err := compiler.Compile("sor_schema.json")
+		assert.NoError(t, err, "Should be able to compile schema")
+		assert.NotNil(t, schema, "Compiled schema should not be nil")
+	})
 }
 
 func TestParser_validateSchema_ErrorPaths(t *testing.T) {

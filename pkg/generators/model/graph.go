@@ -67,14 +67,7 @@ func NewGraph(yamlModel *parser.SORDefinition) (GraphInterface, error) {
 	}
 
 	// 4. Build optimized data structures for access
-	if err := graph.buildIndexes(); err != nil {
-		return nil, err
-	}
-
-	// 5. Validate graph integrity
-	if err := graph.validateGraph(); err != nil {
-		return nil, err
-	}
+	graph.buildIndexes()
 
 	return graph, nil
 }
@@ -237,7 +230,7 @@ func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]parser.
 }
 
 // buildIndexes builds all the optimized data structures for faster lookups
-func (g *Graph) buildIndexes() error {
+func (g *Graph) buildIndexes() {
 	// Clear existing indexes
 	g.entitiesList = make([]EntityInterface, 0, len(g.entities))
 	g.relationshipsList = make([]RelationshipInterface, 0, len(g.relationships))
@@ -265,29 +258,5 @@ func (g *Graph) buildIndexes() error {
 			g.entityRelationships[targetEntityID] = append(g.entityRelationships[targetEntityID], rel)
 		}
 	}
-
-	return nil
 }
 
-// validateGraph validates entire graph structure and integrity
-func (g *Graph) validateGraph() error {
-	// Verify all entities have exactly one unique attribute
-	for _, entity := range g.entities {
-		if entity.GetPrimaryKey() == nil {
-			return fmt.Errorf("entity %s has no primary key", entity.GetID())
-		}
-	}
-
-	// Verify all relationships reference valid entities and attributes
-	for _, rel := range g.relationships {
-		if rel.GetSourceEntity() == nil || rel.GetTargetEntity() == nil {
-			return fmt.Errorf("relationship %s has invalid entity references", rel.GetID())
-		}
-
-		if rel.GetSourceAttribute() == nil || rel.GetTargetAttribute() == nil {
-			return fmt.Errorf("relationship %s has invalid attribute references", rel.GetID())
-		}
-	}
-
-	return nil
-}

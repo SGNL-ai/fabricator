@@ -344,6 +344,108 @@ func TestRunWithNonexistentYAML(t *testing.T) {
 	}
 }
 
+func TestPrintOperationSummaryBranches(t *testing.T) {
+	// Test various branches of printOperationSummary function
+
+	// Disable color for cleaner test output
+	oldNoColor := color.NoColor
+	defer func() { color.NoColor = oldNoColor }()
+	color.NoColor = true
+
+	t.Run("with diagram enabled and generated", func(t *testing.T) {
+		info := SummaryInfo{
+			Title:            "Test Complete",
+			DirectoryLabel:   "Output directory",
+			Directory:        "/tmp/test",
+			DiagramGenerated: true,
+			DiagramPath:      "/tmp/test/diagram.svg",
+			FinalMessage:     "Test complete",
+		}
+		// Call the function - if it panics, the test will fail
+		printOperationSummary(info, true, func() {
+			// Empty metrics function
+		})
+	})
+
+	t.Run("with diagram enabled but not generated", func(t *testing.T) {
+		info := SummaryInfo{
+			Title:            "Test Complete",
+			DirectoryLabel:   "Output directory",
+			Directory:        "/tmp/test",
+			DiagramGenerated: false,
+			DiagramPath:      "/tmp/test/diagram.dot",
+			FinalMessage:     "Test complete",
+		}
+		// This should cover line 294 - the else if diagramEnabled branch
+		printOperationSummary(info, true, func() {
+			// Empty metrics function
+		})
+	})
+
+	t.Run("with diagram disabled", func(t *testing.T) {
+		info := SummaryInfo{
+			Title:            "Test Complete",
+			DirectoryLabel:   "Output directory",
+			Directory:        "/tmp/test",
+			DiagramGenerated: false,
+			DiagramPath:      "",
+			FinalMessage:     "Test complete",
+		}
+		printOperationSummary(info, false, func() {
+			// Empty metrics function
+		})
+	})
+}
+
+func TestRunWithRelationshipValidationErrors(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "fabricator-test-invalid-output-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	// Create a YAML file with validation errors to trigger error handling
+	yamlContent := `displayName: Test SOR
+description: Test system of record
+entities:
+  entity1:
+    displayName: TestEntity
+    externalId: Test/Entity
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+relationships:
+  invalid_rel:
+    fromAttribute: "non-existent"
+    toAttribute: "also-non-existent"`
+
+	yamlPath := filepath.Join(tempDir, "test.yaml")
+	err = os.WriteFile(yamlPath, []byte(yamlContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write test YAML file: %v", err)
+	}
+
+	// Use a valid output path
+	outputPath := filepath.Join(tempDir, "output")
+
+	// Run with YAML that has relationship validation errors
+	// This should trigger the error handling at line 140-143
+	err = run(yamlPath, outputPath, 2, false)
+
+	// This should return an error due to relationship validation
+	if err == nil {
+		t.Error("run() with invalid relationships should have returned an error")
+	}
+
+	// Error should contain "relationship validation issues"
+	if !strings.Contains(err.Error(), "relationship validation issues") {
+		t.Errorf("Expected error about relationship validation issues, got: %v", err)
+	}
+}
+
 func TestBasicFunctionalityWithMinimalYAML(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "fabricator-test-*")

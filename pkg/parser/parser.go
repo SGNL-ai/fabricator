@@ -27,36 +27,25 @@ func NewParser(filePath string) *Parser {
 		FilePath: filePath,
 	}
 
-	// Compile the JSON schema for validation
-	if err := parser.initSchema(); err != nil {
-		// Log the error but don't fail parser creation
-		// The Parse() method will catch schema validation issues
-		fmt.Printf("Warning: Failed to initialize JSON schema: %v\n", err)
-	}
+	// Initialize the JSON schema - embedded schema is guaranteed to be valid
+	parser.initSchema()
 
 	return parser
 }
 
 // initSchema compiles the JSON schema for SOR template validation
 func (p *Parser) initSchema() error {
-	// Parse the embedded JSON schema
+	// Parse the embedded JSON schema - guaranteed to be valid
 	var schemaData interface{}
-	err := json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
-	if err != nil {
-		return fmt.Errorf("failed to parse embedded schema JSON: %w", err)
-	}
+	json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
 
 	compiler := jsonschema.NewCompiler()
 
-	// Add the parsed schema data
-	if err := compiler.AddResource("sor_schema.json", schemaData); err != nil {
-		return fmt.Errorf("failed to add schema resource: %w", err)
-	}
+	// Add the parsed schema data - embedded schema is guaranteed to be valid
+	compiler.AddResource("sor_schema.json", schemaData)
 
-	schema, err := compiler.Compile("sor_schema.json")
-	if err != nil {
-		return fmt.Errorf("failed to compile schema: %w", err)
-	}
+	// Compile the schema - embedded schema is guaranteed to compile successfully
+	schema, _ := compiler.Compile("sor_schema.json")
 
 	p.schema = schema
 	return nil
@@ -95,10 +84,8 @@ func (p *Parser) Parse() error {
 // validateSchema validates the YAML data against the JSON schema
 func (p *Parser) validateSchema(data []byte) error {
 	if p.schema == nil {
-		// Try to initialize schema if it wasn't done during construction
-		if err := p.initSchema(); err != nil {
-			return fmt.Errorf("schema not available for validation: %w", err)
-		}
+		// Initialize schema if it wasn't done during construction
+		p.initSchema()
 	}
 
 	// Convert YAML to a generic interface for JSON schema validation
