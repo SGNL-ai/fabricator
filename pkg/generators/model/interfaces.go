@@ -38,6 +38,7 @@ type GraphInterface interface {
 	GetAllRelationships() []RelationshipInterface
 	GetRelationshipsForEntity(entityID string) []RelationshipInterface
 	GetTopologicalOrder() ([]string, error)
+	GetExpectedDataVolume() int // For memory optimization
 
 	createEntitiesFromYAML(yamlEntities map[string]parser.Entity) error
 }

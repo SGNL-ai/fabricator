@@ -52,7 +52,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -140,7 +140,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -225,7 +225,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -315,7 +315,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -381,7 +381,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				if err != nil {
 					// Graph creation should fail with missing attribute
 					return nil

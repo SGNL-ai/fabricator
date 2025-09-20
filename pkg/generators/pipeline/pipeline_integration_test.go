@@ -49,7 +49,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 		}
 
 		// Create graph from definition (this should mark FK attributes as relationships)
-		graphInterface, err := model.NewGraph(def)
+		graphInterface, err := model.NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*model.Graph)
 		require.True(t, ok)
@@ -183,7 +183,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 			},
 		}
 
-		graphInterface, err := model.NewGraph(def)
+		graphInterface, err := model.NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*model.Graph)
 		require.True(t, ok)
@@ -240,7 +240,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 			},
 		}
 
-		graphInterface, err := model.NewGraph(def)
+		graphInterface, err := model.NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*model.Graph)
 		require.True(t, ok)

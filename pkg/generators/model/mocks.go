@@ -97,6 +97,20 @@ func (mr *MockGraphInterfaceMockRecorder) GetEntity(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntity", reflect.TypeOf((*MockGraphInterface)(nil).GetEntity), id)
 }
 
+// GetExpectedDataVolume mocks base method.
+func (m *MockGraphInterface) GetExpectedDataVolume() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExpectedDataVolume")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// GetExpectedDataVolume indicates an expected call of GetExpectedDataVolume.
+func (mr *MockGraphInterfaceMockRecorder) GetExpectedDataVolume() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExpectedDataVolume", reflect.TypeOf((*MockGraphInterface)(nil).GetExpectedDataVolume))
+}
+
 // GetRelationship mocks base method.
 func (m *MockGraphInterface) GetRelationship(id string) (RelationshipInterface, bool) {
 	m.ctrl.T.Helper()

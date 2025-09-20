@@ -49,7 +49,7 @@ func TestValidator_ValidateRelationships(t *testing.T) {
 					Relationships: map[string]parser.Relationship{},
 				}
 
-				graph, err := model.NewGraph(sorDef)
+				graph, err := model.NewGraph(sorDef, 100)
 				if err != nil {
 					return nil // This will cause test to fail appropriately
 				}
@@ -127,7 +127,7 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 					Relationships: map[string]parser.Relationship{},
 				}
 
-				graph, err := model.NewGraph(sorDef)
+				graph, err := model.NewGraph(sorDef, 100)
 				if err != nil {
 					return nil // This will cause test to fail appropriately
 				}
@@ -168,7 +168,7 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 					},
 				}
 
-				graphInterface, err := model.NewGraph(sorDef)
+				graphInterface, err := model.NewGraph(sorDef, 100)
 				if err != nil {
 					return nil
 				}
@@ -241,7 +241,7 @@ func TestValidator_ValidateUniqueValues(t *testing.T) {
 					},
 				}
 
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				if err != nil {
 					return nil
 				}
@@ -321,7 +321,7 @@ func TestEntityAddRow_RejectsDuplicateUniqueValues(t *testing.T) {
 		},
 	}
 
-	graphInterface, err := model.NewGraph(def)
+	graphInterface, err := model.NewGraph(def, 100)
 	require.NoError(t, err)
 	graph, ok := graphInterface.(*model.Graph)
 	require.True(t, ok)

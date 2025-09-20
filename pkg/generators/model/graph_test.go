@@ -113,7 +113,7 @@ var testSORDefinition = &parser.SORDefinition{
 func TestNewGraph(t *testing.T) {
 	t.Run("should create a graph from valid YAML definition", func(t *testing.T) {
 		// Create a graph from the test SOR definition
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 
 		// Verify the graph was created successfully
 		require.NoError(t, err)
@@ -128,7 +128,7 @@ func TestNewGraph(t *testing.T) {
 
 	t.Run("should validate YAML definition is not nil", func(t *testing.T) {
 		// Attempt to create a graph with nil YAML definition
-		graph, err := NewGraph(nil)
+		graph, err := NewGraph(nil, 100)
 
 		// Verify the creation fails with appropriate error
 		assert.Error(t, err)
@@ -146,7 +146,7 @@ func TestNewGraph(t *testing.T) {
 		}
 
 		// Attempt to create a graph with empty entities
-		graph, err := NewGraph(emptySOR)
+		graph, err := NewGraph(emptySOR, 100)
 
 		// Verify the creation fails with appropriate error
 		assert.Error(t, err)
@@ -159,7 +159,7 @@ func TestNewGraph(t *testing.T) {
 func TestEntityCreation(t *testing.T) {
 	t.Run("should create all entities with correct attributes", func(t *testing.T) {
 		// Create a graph from the test SOR definition
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		require.NoError(t, err)
 
 		// Get specific entity
@@ -216,7 +216,7 @@ func TestEntityCreation(t *testing.T) {
 		invalidSOR.Entities = invalidEntities
 
 		// Attempt to create a graph with the invalid entity
-		graph, err := NewGraph(&invalidSOR)
+		graph, err := NewGraph(&invalidSOR, 100)
 
 		// Verify creation fails with appropriate error
 		assert.Error(t, err)
@@ -229,7 +229,7 @@ func TestEntityCreation(t *testing.T) {
 func TestRelationshipCreation(t *testing.T) {
 	t.Run("should create relationships with correct entities and attributes", func(t *testing.T) {
 		// Create a graph from the test SOR definition
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		require.NoError(t, err)
 
 		// Get specific relationship
@@ -281,7 +281,7 @@ func TestRelationshipCreation(t *testing.T) {
 		invalidSOR.Relationships = invalidRelationships
 
 		// Attempt to create a graph with the invalid relationship
-		graph, err := NewGraph(&invalidSOR)
+		graph, err := NewGraph(&invalidSOR, 100)
 
 		// Verify creation fails with appropriate error
 		assert.Error(t, err)
@@ -294,7 +294,7 @@ func TestRelationshipCreation(t *testing.T) {
 func TestTopologicalSorting(t *testing.T) {
 	t.Run("should return entities in correct dependency order", func(t *testing.T) {
 		// Create a graph from the test SOR definition
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		require.NoError(t, err)
 
 		// Get the topological order
@@ -404,7 +404,7 @@ func TestTopologicalSorting(t *testing.T) {
 		}
 
 		// Create a graph with the circular dependency
-		graph, err := NewGraph(circularSOR)
+		graph, err := NewGraph(circularSOR, 100)
 		require.NoError(t, err) // Graph creation should succeed
 
 		// Attempt to get topological order
@@ -421,7 +421,7 @@ func TestTopologicalSorting(t *testing.T) {
 func TestAccessorMethods(t *testing.T) {
 	t.Run("should retrieve entities and relationships by ID", func(t *testing.T) {
 		// Create a graph from the test SOR definition
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		require.NoError(t, err)
 
 		// Test GetEntity
@@ -449,7 +449,7 @@ func TestAccessorMethods(t *testing.T) {
 
 	t.Run("should retrieve all relationships for an entity", func(t *testing.T) {
 		// Create a graph from the test SOR definition
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		require.NoError(t, err)
 
 		// Get relationships for User entity
@@ -511,7 +511,7 @@ func TestGraphDottedAttributeReferenceBug(t *testing.T) {
 	}
 
 	// After fix: This should now succeed because dotted notation is properly handled
-	graph, err := NewGraph(def)
+	graph, err := NewGraph(def, 100)
 	assert.NoError(t, err, "Should succeed after dotted notation bug fix")
 	assert.NotNil(t, graph)
 
@@ -552,7 +552,7 @@ func TestGraphUUIDAttributeReferences(t *testing.T) {
 		},
 	}
 
-	graph, err := NewGraph(def)
+	graph, err := NewGraph(def, 100)
 	assert.NoError(t, err, "Should handle UUID attribute references")
 	assert.NotNil(t, graph)
 
@@ -606,7 +606,7 @@ func TestGraphUUIDEntityIDs(t *testing.T) {
 		},
 	}
 
-	graph, err := NewGraph(def)
+	graph, err := NewGraph(def, 100)
 	require.NoError(t, err)
 
 	// Check relationship metadata
@@ -628,7 +628,7 @@ func TestGraphUUIDEntityIDs(t *testing.T) {
 
 // Test GetEntitiesList method
 func TestGetEntitiesList(t *testing.T) {
-	graph, err := NewGraph(testSORDefinition)
+	graph, err := NewGraph(testSORDefinition, 100)
 	require.NoError(t, err)
 
 	entitiesList := graph.GetEntitiesList()
@@ -743,7 +743,7 @@ func TestGraph_GetTopologicalOrder_ErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(circularDef)
+		graph, err := NewGraph(circularDef, 100)
 		require.NoError(t, err) // Graph creation should succeed
 
 		// But topological order should fail due to circular dependency
@@ -755,7 +755,7 @@ func TestGraph_GetTopologicalOrder_ErrorCases(t *testing.T) {
 
 	t.Run("should handle dependency graph build error", func(t *testing.T) {
 		// Create a definition that might cause dependency graph build issues
-		graph, err := NewGraph(testSORDefinition) // Use valid definition
+		graph, err := NewGraph(testSORDefinition, 100) // Use valid definition
 		require.NoError(t, err)
 
 		// This should succeed with the valid definition
@@ -788,7 +788,7 @@ func TestGraph_ValidateGraph_ErrorCases(t *testing.T) {
 			Relationships: map[string]parser.Relationship{},
 		}
 
-		graph, err := NewGraph(noPKDef)
+		graph, err := NewGraph(noPKDef, 100)
 		assert.Error(t, err)
 		assert.Nil(t, graph)
 		// The actual error message mentions "unique attribute"
@@ -801,7 +801,7 @@ func TestGraph_ValidateGraph_ErrorCases(t *testing.T) {
 		// The error paths in validateGraph are defensive coding
 
 		// Test valid case to ensure the validation passes normally
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		assert.NoError(t, err)
 		assert.NotNil(t, graph)
 		// validateGraph was called during NewGraph and passed
@@ -843,7 +843,7 @@ func TestGraph_ValidateGraph_ErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(complexDef)
+		graph, err := NewGraph(complexDef, 100)
 		assert.NoError(t, err)
 		assert.NotNil(t, graph)
 		// validateGraph should pass for well-formed relationships
@@ -885,7 +885,7 @@ func TestGraph_ValidateGraph_ErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(validDef)
+		graph, err := NewGraph(validDef, 100)
 		assert.NoError(t, err)
 		assert.NotNil(t, graph)
 		// validateGraph was called and passed during NewGraph
@@ -911,7 +911,7 @@ func TestGraph_CreateEntitiesFromYAML_ErrorCases(t *testing.T) {
 			Relationships: map[string]parser.Relationship{},
 		}
 
-		graph, err := NewGraph(invalidDef)
+		graph, err := NewGraph(invalidDef, 100)
 		assert.Error(t, err)
 		assert.Nil(t, graph)
 	})
@@ -940,7 +940,7 @@ func TestGraph_CreateRelationshipsFromYAML_ErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(invalidRelDef)
+		graph, err := NewGraph(invalidRelDef, 100)
 		// This might not fail during creation but during validation
 		if err == nil {
 			// If creation succeeds, the relationship might just be skipped
@@ -995,7 +995,7 @@ func TestGraph_GetTopologicalOrder_MoreErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(circularDef)
+		graph, err := NewGraph(circularDef, 100)
 		require.NoError(t, err) // Graph creation should succeed
 
 		// GetTopologicalOrder should detect the circular dependency
@@ -1015,7 +1015,7 @@ func TestGraph_GetTopologicalOrder_MoreErrorCases(t *testing.T) {
 		// This tests the second error handling path in GetTopologicalOrder
 
 		// Use a valid definition that should work
-		graph, err := NewGraph(testSORDefinition)
+		graph, err := NewGraph(testSORDefinition, 100)
 		require.NoError(t, err)
 
 		// Normal case should work
@@ -1067,7 +1067,7 @@ func TestGraph_GetTopologicalOrder_MoreErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(circularDef)
+		graph, err := NewGraph(circularDef, 100)
 		assert.NoError(t, err) // Graph creation should succeed
 
 		// GetTopologicalOrder should handle the circular dependency
@@ -1124,7 +1124,7 @@ func TestGraph_GetTopologicalOrder_MoreErrorCases(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(problemDef)
+		graph, err := NewGraph(problemDef, 100)
 		assert.NoError(t, err)
 
 		// This should either succeed or trigger the error logging path
@@ -1165,7 +1165,7 @@ func TestSpecificUncoveredErrorPaths(t *testing.T) {
 			},
 		}
 
-		_, err := NewGraph(yamlModel)
+		_, err := NewGraph(yamlModel, 100)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "target entity not found")
 	})
@@ -1184,7 +1184,7 @@ func TestSpecificUncoveredErrorPaths(t *testing.T) {
 			},
 		}
 
-		_, err := NewGraph(yamlModel)
+		_, err := NewGraph(yamlModel, 100)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unique attribute")
 	})
@@ -1212,7 +1212,7 @@ func TestSpecificUncoveredErrorPaths(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(yamlModel)
+		graph, err := NewGraph(yamlModel, 100)
 		require.NoError(t, err) // Graph creation should succeed
 
 		// GetTopologicalOrder might fail due to path-based relationship issues
@@ -1269,7 +1269,7 @@ func TestSpecificUncoveredErrorPaths(t *testing.T) {
 			},
 		}
 
-		graph, err := NewGraph(complexDef)
+		graph, err := NewGraph(complexDef, 100)
 		if err == nil {
 			// Try GetTopologicalOrder - this complex circular structure should trigger errors
 			order, err := graph.GetTopologicalOrder()
@@ -1339,7 +1339,7 @@ func TestAttributeAliasRelationshipMarking(t *testing.T) {
 		},
 	}
 
-	graph, err := NewGraph(def)
+	graph, err := NewGraph(def, 100)
 	require.NoError(t, err)
 
 	entities := graph.GetAllEntities()

@@ -31,7 +31,7 @@ func RunValidation(def *parser.SORDefinition, outputDir string, options Validati
 	result := &ValidationResult{}
 
 	// Create graph from definition to get statistics
-	graphInterface, err := model.NewGraph(def)
+	graphInterface, err := model.NewGraph(def, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create entity graph: %w", err)
 	}

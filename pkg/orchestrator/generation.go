@@ -45,8 +45,8 @@ func RunGeneration(def *parser.SORDefinition, outputDir string, options Generati
 		RecordsPerEntity: options.DataVolume,
 	}
 
-	// Create graph from definition
-	graphInterface, err := model.NewGraph(def)
+	// Create graph from definition with data volume for memory optimization
+	graphInterface, err := model.NewGraph(def, options.DataVolume)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create entity graph: %w", err)
 	}

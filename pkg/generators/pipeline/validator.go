@@ -51,7 +51,7 @@ func (p *ValidationProcessor) ValidateExistingCSVFiles(def *parser.SORDefinition
 	var allErrors []string
 
 	// Create graph from definition
-	graphInterface, err := model.NewGraph(def)
+	graphInterface, err := model.NewGraph(def, 0)
 	if err != nil {
 		return []string{fmt.Sprintf("failed to create graph: %v", err)}, nil
 	}

@@ -27,7 +27,17 @@ type Entity struct {
 // newEntity creates a new entity with basic properties and attributes
 // Not exported as only Graph should create entities
 func newEntity(id, externalID, name string, description string, attributes []AttributeInterface, graph GraphInterface) (EntityInterface, error) {
-	// Create entity instance
+	// Get expected row count from graph for memory optimization
+	expectedRows := 0
+	if graph != nil {
+		expectedRows = graph.GetExpectedDataVolume()
+		// Use reasonable default for tests/small datasets
+		if expectedRows <= 0 {
+			expectedRows = 100
+		}
+	}
+
+	// Create entity instance with pre-allocated slices
 	entity := &Entity{
 		id:                id,
 		externalID:        externalID,
@@ -36,9 +46,9 @@ func newEntity(id, externalID, name string, description string, attributes []Att
 		attributes:        make(map[string]AttributeInterface, len(attributes)),
 		attributesByExtID: make(map[string]AttributeInterface, len(attributes)),
 		attrList:          make([]AttributeInterface, 0, len(attributes)),
-		rows:              make([]*Row, 0),
+		rows:              make([]*Row, 0, expectedRows), // Pre-allocate with expected capacity
 		graph:             graph,
-		usedPKValues:      make(map[string]bool),
+		usedPKValues:      make(map[string]bool, expectedRows), // Pre-allocate hash map
 	}
 
 	// Add attributes to entity
@@ -321,6 +331,16 @@ func (e *Entity) validateRow(row *Row) error {
 	}
 
 	return nil
+}
+
+// PreAllocateRows pre-allocates the rows slice for better memory performance
+func (e *Entity) PreAllocateRows(expectedRowCount int) {
+	if cap(e.rows) < expectedRowCount {
+		// Pre-allocate with exact capacity to avoid slice growth
+		e.rows = make([]*Row, 0, expectedRowCount)
+		// Also pre-allocate the PK hash map with expected size
+		e.usedPKValues = make(map[string]bool, expectedRowCount)
+	}
 }
 
 // GetRowByIndex returns a row by index for direct access (O(1) operation)

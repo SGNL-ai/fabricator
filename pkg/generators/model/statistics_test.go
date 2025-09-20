@@ -50,7 +50,7 @@ func TestGraphStatistics(t *testing.T) {
 			},
 		}
 
-		graphInterface, err := NewGraph(def)
+		graphInterface, err := NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*Graph)
 		require.True(t, ok)
@@ -100,7 +100,7 @@ func TestGraphStatistics(t *testing.T) {
 			},
 		}
 
-		graphInterface, err := NewGraph(def)
+		graphInterface, err := NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*Graph)
 		require.True(t, ok)
@@ -141,7 +141,7 @@ func TestGraphStatistics(t *testing.T) {
 			},
 		}
 
-		graphInterface, err := NewGraph(def)
+		graphInterface, err := NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*Graph)
 		require.True(t, ok)
@@ -164,7 +164,7 @@ func TestGraphStatistics(t *testing.T) {
 		}
 
 		// This should fail during graph creation due to validation
-		_, err := NewGraph(def)
+		_, err := NewGraph(def, 100)
 		assert.Error(t, err, "Should fail for empty SOR")
 		assert.Contains(t, err.Error(), "at least one entity", "Should mention entity requirement")
 	})

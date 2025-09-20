@@ -37,7 +37,7 @@ func TestCSVWriter_WriteFiles(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -114,7 +114,7 @@ func TestCSVWriter_getEntityFileName_EdgeCases(t *testing.T) {
 			},
 		}
 
-		graphInterface, err := model.NewGraph(def)
+		graphInterface, err := model.NewGraph(def, 100)
 		require.NoError(t, err)
 		graph, ok := graphInterface.(*model.Graph)
 		require.True(t, ok)
@@ -168,7 +168,7 @@ func TestCSVWriter_getEntityFileName_EdgeCases(t *testing.T) {
 					},
 				}
 
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)

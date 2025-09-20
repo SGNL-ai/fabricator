@@ -28,6 +28,7 @@ type Graph struct {
 	entityRelationships map[string][]RelationshipInterface // Maps entity ID to its relationships
 	attributeToEntity   map[string]EntityInterface         // Maps attribute externalID to its containing entity
 	yamlModel           *parser.SORDefinition              // Reference to original YAML model
+	dataVolume          int                                 // Expected number of rows per entity for memory optimization
 }
 
 // NewGraph creates a new Graph from the YAML model
@@ -36,7 +37,7 @@ type Graph struct {
 // 2. Validation - Validate the YAML model is not nil and has required elements
 // 3. Setup - Create entities and relationships from YAML
 // 4. Business logic - Validate graph integrity and build indexes
-func NewGraph(yamlModel *parser.SORDefinition) (GraphInterface, error) {
+func NewGraph(yamlModel *parser.SORDefinition, dataVolume int) (GraphInterface, error) {
 	// 1. Object creation - Create a new Graph with initialized data structures
 	graph := &Graph{
 		entities:            make(map[string]EntityInterface),
@@ -46,6 +47,7 @@ func NewGraph(yamlModel *parser.SORDefinition) (GraphInterface, error) {
 		entityRelationships: make(map[string][]RelationshipInterface),
 		attributeToEntity:   make(map[string]EntityInterface),
 		yamlModel:           yamlModel,
+		dataVolume:          dataVolume,
 	}
 
 	// 2. Validate the YAML model
@@ -126,6 +128,11 @@ func (g *Graph) GetTopologicalOrder() ([]string, error) {
 		return nil, err
 	}
 	return order, nil
+}
+
+// GetExpectedDataVolume returns the expected number of rows per entity for memory optimization
+func (g *Graph) GetExpectedDataVolume() int {
+	return g.dataVolume
 }
 
 // createEntitiesFromYAML creates Entity objects from YAML model definition
@@ -231,17 +238,17 @@ func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]parser.
 
 // buildIndexes builds all the optimized data structures for faster lookups
 func (g *Graph) buildIndexes() {
-	// Clear existing indexes
+	// Pre-allocate indexes with known capacities for memory efficiency
 	g.entitiesList = make([]EntityInterface, 0, len(g.entities))
 	g.relationshipsList = make([]RelationshipInterface, 0, len(g.relationships))
-	g.entityRelationships = make(map[string][]RelationshipInterface)
+	g.entityRelationships = make(map[string][]RelationshipInterface, len(g.entities))
 
 	// Build entities list
 	for _, entity := range g.entities {
 		g.entitiesList = append(g.entitiesList, entity)
 
-		// Initialize empty relationship list for each entity
-		g.entityRelationships[entity.GetID()] = make([]RelationshipInterface, 0)
+		// Pre-allocate relationship list for each entity (estimate: avg 2 relationships per entity)
+		g.entityRelationships[entity.GetID()] = make([]RelationshipInterface, 0, 2)
 	}
 
 	// Build relationships list and entity relationships map

@@ -45,7 +45,7 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -120,7 +120,7 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
@@ -163,7 +163,7 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 						},
 					},
 				}
-				graphInterface, err := model.NewGraph(def)
+				graphInterface, err := model.NewGraph(def, 100)
 				require.NoError(t, err)
 				graph, ok := graphInterface.(*model.Graph)
 				require.True(t, ok)
