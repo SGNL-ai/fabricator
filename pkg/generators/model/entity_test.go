@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 // We'll stop using global mocks in this test suite and create all objects within the test functions
@@ -28,6 +28,8 @@ func TestNewEntity(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create with empty attributes list
 		entity, err := newEntity(id, externalID, name, description, []AttributeInterface{}, mockGraph)
@@ -52,6 +54,7 @@ func TestNewEntity(t *testing.T) {
 	t.Run("should validate entity has valid ID and name", func(t *testing.T) {
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Test with empty ID
 		entity, err := newEntity("", "ext_id", "Entity Name", "Description", []AttributeInterface{}, mockGraph)
@@ -92,6 +95,7 @@ func TestNewEntity(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description", []AttributeInterface{idAttr, nameAttr}, mockGraph)
@@ -128,6 +132,7 @@ func TestNewEntity(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with multiple unique attributes - should fail
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -156,6 +161,7 @@ func TestNewEntity(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with duplicate attribute names - should fail
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -198,6 +204,7 @@ func TestGetAttributes(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -225,6 +232,7 @@ func TestGetAttributes(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with attribute
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -246,6 +254,7 @@ func TestGetAttributes(t *testing.T) {
 	t.Run("should get primary key attribute", func(t *testing.T) {
 		// Create a mock graph for the empty entity
 		mockGraphEmpty := NewMockGraphInterface(ctrl)
+		mockGraphEmpty.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with no attributes first
 		emptyEntity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description", []AttributeInterface{}, mockGraphEmpty)
@@ -266,6 +275,7 @@ func TestGetAttributes(t *testing.T) {
 
 		// Create a new mock graph for the entity with primary key
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with primary key
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -311,6 +321,7 @@ func TestGetAttributes(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with various attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -361,6 +372,7 @@ func TestEntityRows(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -391,6 +403,7 @@ func TestEntityRows(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with primary key
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -429,6 +442,7 @@ func TestEntityRows(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -446,6 +460,7 @@ func TestEntityRows(t *testing.T) {
 	t.Run("should validate foreign key references", func(t *testing.T) {
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create parent entity attributes
 		parentIDAttr := &Attribute{
@@ -543,6 +558,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr, nameAttr}, mockGraph)
@@ -587,6 +603,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr, statusAttr}, mockGraph)
@@ -622,6 +639,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr}, mockGraph)
@@ -651,6 +669,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr}, mockGraph)
@@ -691,6 +710,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr}, mockGraph)
@@ -719,6 +739,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr}, mockGraph)
@@ -752,6 +773,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
 			[]AttributeInterface{idAttr}, mockGraph)
@@ -788,6 +810,7 @@ func TestEntityRowIteration(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		parentEntity, err := newEntity("parent", "parent_ext", "Parent", "Parent entity",
 			[]AttributeInterface{parentIdAttr}, mockGraph)
@@ -865,6 +888,7 @@ func TestEntityValidateAllForeignKeys(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		parentEntity, err := newEntity("parent", "parent_ext", "Parent", "Parent entity",
 			[]AttributeInterface{parentIdAttr}, mockGraph)
@@ -923,6 +947,7 @@ func TestEntityValidateAllForeignKeys(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		parentEntity, err := newEntity("parent", "parent_ext", "Parent", "Parent entity",
 			[]AttributeInterface{parentIdAttr}, mockGraph)
@@ -994,6 +1019,7 @@ func TestEntityValidateAllForeignKeys(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity2, err := newEntity("entity2", "entity2_ext", "Entity2", "Entity2",
 			[]AttributeInterface{&Attribute{name: "id", externalID: "id", dataType: "string", isUnique: true}}, mockGraph)
@@ -1043,6 +1069,7 @@ func TestEntityValidateAllForeignKeys(t *testing.T) {
 		}
 
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		entity, err := newEntity("simple", "simple_ext", "Simple", "Simple entity",
 			[]AttributeInterface{idAttr}, mockGraph)
@@ -1083,6 +1110,7 @@ func TestEntityToCSV(t *testing.T) {
 
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create entity with attributes
 		entity, err := newEntity("test_entity", "test_ext_id", "Test Entity", "Description",
@@ -1137,6 +1165,7 @@ func TestAddRelationship(t *testing.T) {
 	t.Run("should create relationship between two entities", func(t *testing.T) {
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create source entity with unique attribute
 		sourceID := "source_entity"
@@ -1208,6 +1237,7 @@ func TestAddRelationship(t *testing.T) {
 	t.Run("should handle one-to-many relationship", func(t *testing.T) {
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create source entity with unique attribute (one side)
 		sourceIDAttr := &Attribute{
@@ -1270,6 +1300,7 @@ func TestAddRelationship(t *testing.T) {
 	t.Run("should fail when source attribute not found", func(t *testing.T) {
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create source entity
 		sourceIDAttr := &Attribute{
@@ -1315,6 +1346,7 @@ func TestAddRelationship(t *testing.T) {
 	t.Run("should fail when target attribute not found", func(t *testing.T) {
 		// Create a mock graph
 		mockGraph := NewMockGraphInterface(ctrl)
+		mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 		// Create source entity
 		sourceIDAttr := &Attribute{
@@ -1363,6 +1395,7 @@ func TestEntity_GetAttributeByExternalID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGraph := NewMockGraphInterface(ctrl)
+	mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 	// Create test attributes with different external IDs
 	attr1 := NewMockAttributeInterface(ctrl)
@@ -1426,6 +1459,7 @@ func TestEntity_ValidateRowNegativeCases(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGraph := NewMockGraphInterface(ctrl)
+	mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 	// Create a mock unique attribute
 	uniqueAttr := NewMockAttributeInterface(ctrl)
@@ -1477,6 +1511,7 @@ func TestEntity_ValidateForeignKeyValue_ErrorCases(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGraph := NewMockGraphInterface(ctrl)
+	mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 	// Create entity without any attributes for simplicity
 	entity, err := newEntity("test", "Test", "Test Entity", "Description", []AttributeInterface{}, mockGraph)
@@ -1494,6 +1529,7 @@ func TestEntity_AddRelationship_ErrorCases(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGraph := NewMockGraphInterface(ctrl)
+	mockGraph.EXPECT().GetExpectedDataVolume().Return(100).AnyTimes()
 
 	// Create source attribute
 	sourceAttr := NewMockAttributeInterface(ctrl)

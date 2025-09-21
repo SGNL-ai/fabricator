@@ -22,24 +22,71 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 		return fmt.Errorf("graph cannot be nil")
 	}
 
-	// Process relationships to establish foreign key links
-	for _, relationship := range graph.GetAllRelationships() {
-		sourceEntity := relationship.GetSourceEntity()
-		targetEntity := relationship.GetTargetEntity()
-		sourceAttr := relationship.GetSourceAttribute()
-		targetAttr := relationship.GetTargetAttribute()
+	// Process entities in order for optimal FK assignment
+	for _, entity := range graph.GetAllEntities() {
+		// Get relationships where this entity is the source (has FK attributes)
+		entityRelationships := graph.GetRelationshipsForEntity(entity.GetID())
 
-		if sourceEntity == nil || targetEntity == nil || sourceAttr == nil || targetAttr == nil {
-			continue // Skip invalid relationships
+		// Filter to only relationships where this entity is the source
+		sourceRelationships := make([]model.RelationshipInterface, 0)
+		for _, relationship := range entityRelationships {
+			if relationship.GetSourceEntity().GetID() == entity.GetID() {
+				sourceRelationships = append(sourceRelationships, relationship)
+			}
 		}
 
-		// Show progress for current relationship (will be cleared)
-		fmt.Printf("\r%-80s\r→ Linking %s relationships...", "", sourceEntity.GetName())
+		if len(sourceRelationships) == 0 {
+			continue // No FK relationships for this entity
+		}
 
-		// Establish FK relationship between entities
-		err := l.linkEntityRelationship(sourceEntity, targetEntity, sourceAttr, targetAttr, relationship, autoCardinality)
-		if err != nil {
-			return fmt.Errorf("failed to link relationship %s: %w", relationship.GetID(), err)
+		// Show progress for current entity relationships
+		fmt.Printf("\r%-80s\r→ Linking %s relationships...", "", entity.GetName())
+
+		// Process FK relationships for this entity
+		for i, relationship := range sourceRelationships {
+			isLastRelationship := (i == len(sourceRelationships)-1)
+
+			// Process all rows for this relationship
+			duplicateIndices := make([]int, 0)
+			rowIndex := 0
+			err := entity.ForEachRow(func(row *model.Row) error {
+				// Ask relationship to provide target PK value for this source row
+				targetValue, err := relationship.GetTargetValueForSourceRow(rowIndex, autoCardinality)
+				if err != nil {
+					return fmt.Errorf("failed to get target value for row %d: %w", rowIndex, err)
+				}
+
+				// Debug: Log what we're setting
+				fkFieldName := relationship.GetSourceAttribute().GetName()
+				fmt.Printf("DEBUG: Setting %s.%s = '%s' for row %d\n", entity.GetName(), fkFieldName, targetValue, rowIndex)
+
+				// Set the FK value in the source row
+				row.SetValue(fkFieldName, targetValue)
+
+				// If this is the last FK relationship for a junction table, check for duplicates
+				if isLastRelationship && len(sourceRelationships) > 1 {
+					if !entity.AddCompositeKeyIfUnique(row) {
+						// Duplicate composite key found - mark for removal
+						duplicateIndices = append(duplicateIndices, rowIndex)
+					}
+				}
+
+				rowIndex++
+				return nil
+			})
+
+			if err != nil {
+				return fmt.Errorf("failed to link relationship %s: %w", relationship.GetID(), err)
+			}
+
+			// Remove duplicate rows (in reverse order to maintain indices)
+			for i := len(duplicateIndices) - 1; i >= 0; i-- {
+				err := entity.RemoveRow(duplicateIndices[i])
+				if err != nil {
+					return fmt.Errorf("failed to remove duplicate row %d from entity %s: %w",
+						duplicateIndices[i], entity.GetName(), err)
+				}
+			}
 		}
 	}
 
@@ -47,61 +94,4 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 	fmt.Printf("\r%-80s\r", "")
 
 	return nil
-}
-
-// linkEntityRelationship establishes foreign key relationships between two entities
-func (l *RelationshipLinker) linkEntityRelationship(source, target model.EntityInterface, sourceAttr, targetAttr model.AttributeInterface, relationship model.RelationshipInterface, autoCardinality bool) error {
-	// Check if target entity has any rows
-	targetRowCount := target.GetRowCount()
-	if targetRowCount == 0 {
-		return nil // No target data to link to
-	}
-
-	// Determine FK distribution strategy based on cardinality
-	var getTargetValue func(rowIndex int) string
-
-	if autoCardinality {
-		// Use relationship cardinality to determine distribution
-		if relationship.IsOneToOne() {
-			// 1:1 - each source row gets unique target value
-			getTargetValue = func(rowIndex int) string {
-				targetRow := target.GetRowByIndex(rowIndex % targetRowCount)
-				if targetRow != nil {
-					return targetRow.GetValue(targetAttr.GetName())
-				}
-				return ""
-			}
-		} else {
-			// Default: round-robin distribution
-			getTargetValue = func(rowIndex int) string {
-				targetRow := target.GetRowByIndex(rowIndex % targetRowCount)
-				if targetRow != nil {
-					return targetRow.GetValue(targetAttr.GetName())
-				}
-				return ""
-			}
-		}
-	} else {
-		// Simple round-robin distribution when autoCardinality is disabled
-		getTargetValue = func(rowIndex int) string {
-			targetRow := target.GetRowByIndex(rowIndex % targetRowCount)
-			if targetRow != nil {
-				return targetRow.GetValue(targetAttr.GetName())
-			}
-			return ""
-		}
-	}
-
-	// Use iterator to set FK values in source entity rows
-	rowIndex := 0
-	return source.ForEachRow(func(row *model.Row) error {
-		// Pick target value based on cardinality strategy
-		targetValue := getTargetValue(rowIndex)
-
-		// Set the foreign key value
-		row.SetValue(sourceAttr.GetName(), targetValue)
-
-		rowIndex++
-		return nil
-	})
 }

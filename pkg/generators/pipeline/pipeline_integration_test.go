@@ -57,7 +57,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 		// Create temporary directory for CSV output
 		tempDir, err := os.MkdirTemp("", "pipeline-test-*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Execute the complete 3-phase pipeline
 		generator := NewDataGenerator(tempDir, 2, false)
@@ -190,7 +190,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 
 		tempDir, err := os.MkdirTemp("", "pipeline-alias-test-*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Execute pipeline directly
 		generator := NewDataGenerator(tempDir, 2, false)
@@ -247,7 +247,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 
 		tempDir, err := os.MkdirTemp("", "phase-test-*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Execute pipeline
 		generator := NewDataGenerator(tempDir, 1, false)

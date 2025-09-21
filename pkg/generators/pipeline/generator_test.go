@@ -146,7 +146,6 @@ func TestDataGenerator_Generate(t *testing.T) {
 				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
-				validator.On("ValidateRelationships", mock.Anything).Return([]string{})
 				csvWriter.On("WriteFiles", mock.Anything).Return(nil)
 			},
 			graph:           nil, // Will be initialized in test
@@ -206,7 +205,6 @@ func TestDataGenerator_Generate(t *testing.T) {
 				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
-				validator.On("ValidateRelationships", mock.Anything).Return([]string{})
 				// CSV writing fails
 				csvWriter.On("WriteFiles", mock.Anything).Return(errors.New("CSV writing error"))
 			},
@@ -223,11 +221,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
-				// Validator returns some errors
-				validator.On("ValidateRelationships", mock.Anything).Return([]string{
-					"Validation error 1",
-					"Validation error 2",
-				})
+				// No validation expectations since validation was removed from generation
 				csvWriter.On("WriteFiles", mock.Anything).Return(nil)
 			},
 			graph:           nil,

@@ -21,14 +21,14 @@ var simpleAliasFKYAML string
 // This integration test verifies that generated CSV files maintain proper foreign key relationships
 func TestForeignKeyIntegration(t *testing.T) {
 	testCases := []struct {
-		name               string
-		yamlContent        string
-		useExternalFile    bool
-		externalFilePath   string
-		expectedFiles      int
-		expectedRecords    int
-		dataVolume         int
-		description        string
+		name             string
+		yamlContent      string
+		useExternalFile  bool
+		externalFilePath string
+		expectedFiles    int
+		expectedRecords  int
+		dataVolume       int
+		description      string
 	}{
 		{
 			name:            "dotted notation relationships",
@@ -61,7 +61,7 @@ func TestForeignKeyIntegration(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tempDir, err := os.MkdirTemp("", "fk-test-*")
 			require.NoError(t, err)
-			defer os.RemoveAll(tempDir)
+			defer func() { _ = os.RemoveAll(tempDir) }()
 
 			var yamlPath string
 			if tc.useExternalFile {
@@ -110,4 +110,3 @@ func TestForeignKeyIntegration(t *testing.T) {
 		})
 	}
 }
-

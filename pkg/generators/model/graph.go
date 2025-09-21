@@ -28,7 +28,7 @@ type Graph struct {
 	entityRelationships map[string][]RelationshipInterface // Maps entity ID to its relationships
 	attributeToEntity   map[string]EntityInterface         // Maps attribute externalID to its containing entity
 	yamlModel           *parser.SORDefinition              // Reference to original YAML model
-	dataVolume          int                                 // Expected number of rows per entity for memory optimization
+	dataVolume          int                                // Expected number of rows per entity for memory optimization
 }
 
 // NewGraph creates a new Graph from the YAML model
@@ -266,4 +266,3 @@ func (g *Graph) buildIndexes() {
 		}
 	}
 }
-

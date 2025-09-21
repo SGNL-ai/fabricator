@@ -519,7 +519,7 @@ func TestGenerateErrorPathsCoverage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		outputPath := filepath.Join(tempDir, "test.dot")
 
@@ -587,7 +587,7 @@ func TestGenerateErrorPathsCoverage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		outputPath := filepath.Join(tempDir, "path_test.dot")
 
@@ -641,7 +641,7 @@ func TestGenerateErrorPathsCoverage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		outputPath := filepath.Join(tempDir, "edge_test.dot")
 
@@ -675,7 +675,7 @@ func TestGenerateErrorPathsCoverage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Use a file without .dot extension - should trigger extension change logic
 		outputPath := filepath.Join(tempDir, "diagram.svg") // .svg extension but no Graphviz
@@ -757,7 +757,7 @@ func TestGenerateErrorPathsCoverage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		outputPath := filepath.Join(tempDir, "coverage_test.dot")
 

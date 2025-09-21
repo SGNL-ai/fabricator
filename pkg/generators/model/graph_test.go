@@ -891,8 +891,6 @@ func TestGraph_ValidateGraph_ErrorCases(t *testing.T) {
 		// validateGraph was called and passed during NewGraph
 	})
 
-
-
 }
 
 func TestGraph_CreateEntitiesFromYAML_ErrorCases(t *testing.T) {

@@ -20,8 +20,9 @@ type Entity struct {
 	attrList          []AttributeInterface          // Ordered list of attributes
 	rows              []*Row
 	primaryKey        AttributeInterface
-	graph             GraphInterface // Reference to parent graph for lookups
+	graph             GraphInterface  // Reference to parent graph for lookups
 	usedPKValues      map[string]bool // Track used primary key values for O(1) duplicate detection
+	usedCompositeKeys map[string]bool // Track used composite FK keys for junction table duplicate prevention
 }
 
 // newEntity creates a new entity with basic properties and attributes
@@ -49,6 +50,7 @@ func newEntity(id, externalID, name string, description string, attributes []Att
 		rows:              make([]*Row, 0, expectedRows), // Pre-allocate with expected capacity
 		graph:             graph,
 		usedPKValues:      make(map[string]bool, expectedRows), // Pre-allocate hash map
+		usedCompositeKeys: make(map[string]bool, expectedRows), // Pre-allocate composite key index
 	}
 
 	// Add attributes to entity
@@ -343,6 +345,40 @@ func (e *Entity) PreAllocateRows(expectedRowCount int) {
 	}
 }
 
+// RemoveRow removes a row from the entity and updates hash maps
+func (e *Entity) RemoveRow(rowIndex int) error {
+	if rowIndex < 0 || rowIndex >= len(e.rows) {
+		return fmt.Errorf("row index %d out of range [0, %d)", rowIndex, len(e.rows))
+	}
+
+	row := e.rows[rowIndex]
+
+	// Remove PK value from hash map if it exists
+	if e.primaryKey != nil {
+		pkName := e.primaryKey.GetName()
+		if pkValue := row.GetValue(pkName); pkValue != "" {
+			delete(e.usedPKValues, pkValue)
+		}
+	}
+
+	// Remove composite key from hash map if it exists
+	if len(e.GetRelationshipAttributes()) > 1 {
+		compositeKey := ""
+		for i, fkAttr := range e.GetRelationshipAttributes() {
+			if i > 0 {
+				compositeKey += "|"
+			}
+			compositeKey += row.GetValue(fkAttr.GetName())
+		}
+		delete(e.usedCompositeKeys, compositeKey)
+	}
+
+	// Remove row from slice
+	e.rows = append(e.rows[:rowIndex], e.rows[rowIndex+1:]...)
+
+	return nil
+}
+
 // GetRowByIndex returns a row by index for direct access (O(1) operation)
 func (e *Entity) GetRowByIndex(index int) *Row {
 	if index < 0 || index >= len(e.rows) {
@@ -354,6 +390,34 @@ func (e *Entity) GetRowByIndex(index int) *Row {
 // CheckKeyExists checks if a key value exists in the used primary key values (O(1) lookup)
 func (e *Entity) CheckKeyExists(keyValue string) bool {
 	return e.usedPKValues[keyValue]
+}
+
+// AddCompositeKeyIfUnique adds a row's composite FK key to the index if unique
+// Returns true if unique (successfully added), false if duplicate
+func (e *Entity) AddCompositeKeyIfUnique(row *Row) bool {
+	// Get all FK attribute names for this entity
+	fkAttributes := e.GetRelationshipAttributes()
+	if len(fkAttributes) <= 1 {
+		return true // Not a junction table, always allow
+	}
+
+	// Build composite key from all FK values
+	compositeKey := ""
+	for i, fkAttr := range fkAttributes {
+		if i > 0 {
+			compositeKey += "|"
+		}
+		compositeKey += row.GetValue(fkAttr.GetName())
+	}
+
+	// Check for duplicate
+	if e.usedCompositeKeys[compositeKey] {
+		return false // Duplicate composite key found
+	}
+
+	// Index this unique composite key
+	e.usedCompositeKeys[compositeKey] = true
+	return true // Unique composite key successfully added
 }
 
 // ValidateAllForeignKeys validates all FK relationships for this entity (post-generation validation)

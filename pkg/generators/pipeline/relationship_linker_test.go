@@ -119,24 +119,23 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 							DisplayName: "User",
 							ExternalId:  "User",
 							Attributes: []parser.Attribute{
-								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
-								{Name: "profileId", ExternalId: "profileId", Type: "String", UniqueId: false}, // FK attribute, not unique
+								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true}, // PK
 							},
 						},
-						"profile": {
-							DisplayName: "Profile",
-							ExternalId:  "Profile",
+						"employee": {
+							DisplayName: "Employee",
+							ExternalId:  "Employee",
 							Attributes: []parser.Attribute{
-								{Name: "id", ExternalId: "id", Type: "String", UniqueId: true},
+								{Name: "user_id", ExternalId: "user_id", Type: "String", UniqueId: true}, // Unique FK for true 1:1
 							},
 						},
 					},
 					Relationships: map[string]parser.Relationship{
-						"user_profile": {
-							DisplayName:   "User Profile",
-							Name:          "user_profile",
-							FromAttribute: "user.profileId",
-							ToAttribute:   "profile.id",
+						"employee_user": {
+							DisplayName:   "Employee User",
+							Name:          "employee_user",
+							FromAttribute: "employee.user_id", // Unique FK
+							ToAttribute:   "user.id",          // Unique PK
 						},
 					},
 				}
@@ -147,20 +146,20 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 
 				entities := graph.GetAllEntities()
 				userEntity := entities["user"]
-				profileEntity := entities["profile"]
+				employeeEntity := entities["employee"]
 
-				// Add 3 profiles
+				// Add 3 users
 				for i := 0; i < 3; i++ {
-					err := profileEntity.AddRow(model.NewRow(map[string]string{
-						"id": fmt.Sprintf("profile-%d", i),
+					err := userEntity.AddRow(model.NewRow(map[string]string{
+						"id": fmt.Sprintf("user-%d", i),
 					}))
 					require.NoError(t, err)
 				}
 
-				// Add 3 users (should get unique profile assignments in 1:1 relationship)
+				// Add 3 employees (will get unique user assignments in 1:1 relationship)
 				for i := 0; i < 3; i++ {
-					err := userEntity.AddRow(model.NewRow(map[string]string{
-						"id": fmt.Sprintf("user-%d", i),
+					err := employeeEntity.AddRow(model.NewRow(map[string]string{
+						"user_id": fmt.Sprintf("temp-emp-%d", i), // Temporary value, will be overwritten by relationship linker
 					}))
 					require.NoError(t, err)
 				}
@@ -171,23 +170,23 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			wantErr:         false,
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
+				employeeEntity := entities["employee"]
 
-				// For 1:1 relationship with autoCardinality, each user should get unique profile
-				csvData := userEntity.ToCSV()
-				profileIdCol := -1
+				// For 1:1 relationship with autoCardinality, each employee should get unique user
+				csvData := employeeEntity.ToCSV()
+				userIdCol := -1
 				for i, header := range csvData.Headers {
-					if header == "profileId" {
-						profileIdCol = i
+					if header == "user_id" {
+						userIdCol = i
 						break
 					}
 				}
-				require.NotEqual(t, -1, profileIdCol)
+				require.NotEqual(t, -1, userIdCol)
 
 				// Check that all FK values are unique (1:1 cardinality)
 				usedValues := make(map[string]bool)
 				for _, row := range csvData.Rows {
-					fkValue := row[profileIdCol]
+					fkValue := row[userIdCol]
 					assert.False(t, usedValues[fkValue], "1:1 relationship should have unique FK values")
 					usedValues[fkValue] = true
 				}
@@ -240,10 +239,10 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				}))
 				require.NoError(t, err)
 
-				// Add user with no FK (linker will set it)
+				// Add user with empty FK field (linker will set it)
 				err = userEntity.AddRow(model.NewRow(map[string]string{
-					"id": "user-1",
-					// roleId will be set by relationship linker
+					"id":     "user-1",
+					"roleId": "", // Empty FK field that linker will populate
 				}))
 				require.NoError(t, err)
 
@@ -271,7 +270,11 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 
 				// Verify FK points to valid role
 				fkValue := csvData.Rows[0][roleIdCol]
-				assert.Equal(t, "role-1", fkValue, "Should link to valid role ID")
+				t.Logf("FK value set: '%s'", fkValue)
+
+				// With power law, FK might not be "role-1" specifically, but should be a valid role ID
+				assert.NotEmpty(t, fkValue, "FK should be set to some role ID")
+				assert.Equal(t, "role-1", fkValue, "Should link to role-1 (only available role)")
 			},
 		},
 		{

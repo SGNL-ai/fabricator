@@ -229,7 +229,7 @@ func TestNewParser(t *testing.T) {
 		parsers := []string{
 			"file1.yaml",
 			"file2.yaml",
-			"",           // Empty filename
+			"", // Empty filename
 			"very/long/path/to/nonexistent/file.yaml",
 		}
 

@@ -193,6 +193,20 @@ func (m *MockEntityInterface) EXPECT() *MockEntityInterfaceMockRecorder {
 	return m.recorder
 }
 
+// AddCompositeKeyIfUnique mocks base method.
+func (m *MockEntityInterface) AddCompositeKeyIfUnique(row *Row) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddCompositeKeyIfUnique", row)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AddCompositeKeyIfUnique indicates an expected call of AddCompositeKeyIfUnique.
+func (mr *MockEntityInterfaceMockRecorder) AddCompositeKeyIfUnique(row any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCompositeKeyIfUnique", reflect.TypeOf((*MockEntityInterface)(nil).AddCompositeKeyIfUnique), row)
+}
+
 // AddRow mocks base method.
 func (m *MockEntityInterface) AddRow(row *Row) error {
 	m.ctrl.T.Helper()
@@ -419,6 +433,20 @@ func (mr *MockEntityInterfaceMockRecorder) GetRowCount() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRowCount", reflect.TypeOf((*MockEntityInterface)(nil).GetRowCount))
 }
 
+// RemoveRow mocks base method.
+func (m *MockEntityInterface) RemoveRow(rowIndex int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveRow", rowIndex)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveRow indicates an expected call of RemoveRow.
+func (mr *MockEntityInterfaceMockRecorder) RemoveRow(rowIndex any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRow", reflect.TypeOf((*MockEntityInterface)(nil).RemoveRow), rowIndex)
+}
+
 // ToCSV mocks base method.
 func (m *MockEntityInterface) ToCSV() *CSVData {
 	m.ctrl.T.Helper()
@@ -625,6 +653,21 @@ func (m *MockRelationshipInterface) GetTargetEntity() EntityInterface {
 func (mr *MockRelationshipInterfaceMockRecorder) GetTargetEntity() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTargetEntity", reflect.TypeOf((*MockRelationshipInterface)(nil).GetTargetEntity))
+}
+
+// GetTargetValueForSourceRow mocks base method.
+func (m *MockRelationshipInterface) GetTargetValueForSourceRow(sourceRowIndex int, autoCardinality bool) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTargetValueForSourceRow", sourceRowIndex, autoCardinality)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTargetValueForSourceRow indicates an expected call of GetTargetValueForSourceRow.
+func (mr *MockRelationshipInterfaceMockRecorder) GetTargetValueForSourceRow(sourceRowIndex, autoCardinality any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTargetValueForSourceRow", reflect.TypeOf((*MockRelationshipInterface)(nil).GetTargetValueForSourceRow), sourceRowIndex, autoCardinality)
 }
 
 // IsManyToOne mocks base method.

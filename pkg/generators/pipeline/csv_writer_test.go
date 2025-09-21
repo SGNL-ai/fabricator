@@ -128,7 +128,7 @@ func TestCSVWriter_getEntityFileName_EdgeCases(t *testing.T) {
 
 		tempDir, err := os.MkdirTemp("", "csv-minimal-id-test-*")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		writer := NewCSVWriter(tempDir)
 		err = writer.WriteFiles(graph)
@@ -182,7 +182,7 @@ func TestCSVWriter_getEntityFileName_EdgeCases(t *testing.T) {
 
 				tempDir, err := os.MkdirTemp("", "csv-filename-test-*")
 				require.NoError(t, err)
-				defer os.RemoveAll(tempDir)
+				defer func() { _ = os.RemoveAll(tempDir) }()
 
 				writer := NewCSVWriter(tempDir)
 				err = writer.WriteFiles(graph)

@@ -28,7 +28,7 @@ func NewParser(filePath string) *Parser {
 	}
 
 	// Initialize the JSON schema - embedded schema is guaranteed to be valid
-	parser.initSchema()
+	_ = parser.initSchema()
 
 	return parser
 }
@@ -37,12 +37,12 @@ func NewParser(filePath string) *Parser {
 func (p *Parser) initSchema() error {
 	// Parse the embedded JSON schema - guaranteed to be valid
 	var schemaData interface{}
-	json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
+	_ = json.Unmarshal([]byte(sorSchemaJSON), &schemaData)
 
 	compiler := jsonschema.NewCompiler()
 
 	// Add the parsed schema data - embedded schema is guaranteed to be valid
-	compiler.AddResource("sor_schema.json", schemaData)
+	_ = compiler.AddResource("sor_schema.json", schemaData)
 
 	// Compile the schema - embedded schema is guaranteed to compile successfully
 	schema, _ := compiler.Compile("sor_schema.json")
@@ -85,7 +85,7 @@ func (p *Parser) Parse() error {
 func (p *Parser) validateSchema(data []byte) error {
 	if p.schema == nil {
 		// Initialize schema if it wasn't done during construction
-		p.initSchema()
+		_ = p.initSchema()
 	}
 
 	// Convert YAML to a generic interface for JSON schema validation

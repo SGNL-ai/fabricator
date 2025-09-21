@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"math"
 )
 
 // Relationship represents a relationship between two entities and their attributes
@@ -177,4 +178,85 @@ func (r *Relationship) determineCardinality() {
 
 	// Default to many-to-one, though this should not happen due to validation
 	r.cardinality = ManyToOne
+}
+
+// GetTargetValueForSourceRow returns a target PK value for a specific source row
+// Uses cardinality-appropriate distribution algorithms for realistic data
+func (r *Relationship) GetTargetValueForSourceRow(sourceRowIndex int, autoCardinality bool) (string, error) {
+	if r.targetEntity == nil {
+		return "", fmt.Errorf("target entity is nil for relationship %s", r.id)
+	}
+
+	if r.sourceEntity == nil {
+		return "", fmt.Errorf("source entity is nil for relationship %s", r.id)
+	}
+
+	targetRowCount := r.targetEntity.GetRowCount()
+	if targetRowCount == 0 {
+		return "", nil // Gracefully handle empty target entity (no FK values to assign)
+	}
+
+	sourceRowCount := r.sourceEntity.GetRowCount()
+	if sourceRowCount == 0 {
+		return "", nil // Gracefully handle empty source entity (no rows to process)
+	}
+
+	// Select target index using appropriate algorithm
+	targetIndex := r.selectTargetIndex(sourceRowIndex, targetRowCount, autoCardinality)
+
+	// Get the target row and extract PK value
+	targetRow := r.targetEntity.GetRowByIndex(targetIndex)
+	if targetRow == nil {
+		return "", fmt.Errorf("unable to get target row at index %d for relationship %s", targetIndex, r.id)
+	}
+
+	if r.targetAttr == nil {
+		return "", fmt.Errorf("target attribute is nil for relationship %s", r.id)
+	}
+
+	targetValue := targetRow.GetValue(r.targetAttr.GetName())
+	fmt.Printf("DEBUG: GetTargetValueForSourceRow - targetIndex=%d, targetAttr=%s, targetValue='%s'\n",
+		targetIndex, r.targetAttr.GetName(), targetValue)
+	return targetValue, nil
+}
+
+// selectTargetIndex chooses the appropriate target index based on cardinality and settings
+func (r *Relationship) selectTargetIndex(sourceRowIndex, targetRowCount int, autoCardinality bool) int {
+	if !autoCardinality || r.cardinality == OneToOne {
+		// Round-robin for predictable distribution or 1:1 unique assignment
+		return sourceRowIndex % targetRowCount
+	}
+
+	// Use power law clustering for many-to-one relationships
+	return r.powerLawIndex(sourceRowIndex, targetRowCount)
+}
+
+// powerLawIndex generates a power law distributed index for realistic clustering
+func (r *Relationship) powerLawIndex(sourceRowIndex, targetCount int) int {
+	if targetCount <= 1 {
+		return 0
+	}
+
+	// Get the maximum source row index (dataVolume - 1) from the source entity
+	maxSourceIndex := r.sourceEntity.GetRowCount() - 1
+	if maxSourceIndex <= 0 {
+		return 0
+	}
+
+	// Normalize sourceRowIndex to [0, 1] range
+	normalizedIndex := float64(sourceRowIndex) / float64(maxSourceIndex)
+
+	// Create relationship-specific alpha variation to avoid identical distributions
+	baseAlpha := 1.3                               // Base power law exponent for moderate clustering
+	alphaVariation := float64(len(r.id)%10) * 0.05 // Vary alpha by 0-0.45 based on relationship ID length
+	alpha := baseAlpha + alphaVariation
+
+	// Apply power law: y = x^alpha where x is normalized input
+	// This creates clustering toward index 0 (lower indices more popular)
+	powerValue := math.Pow(normalizedIndex, alpha)
+
+	// Scale to target count range [0, targetCount-1]
+	index := int(powerValue * float64(targetCount-1))
+
+	return index
 }

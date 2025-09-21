@@ -95,6 +95,10 @@ vet:
 lint:
 	$(GOLINT) run $(SOURCE_DIRS)
 
+# Run linter in fix mode
+lint-fix:
+	$(GOLINT) run --fix $(SOURCE_DIRS)
+
 # Run all CI checks
 ci: fmt vet lint coverage-check build
 

@@ -145,8 +145,8 @@ func TestBuildEntityDependencyGraph(t *testing.T) {
 		relationships := map[string]parser.Relationship{
 			"self_ref": {
 				DisplayName:   "Self Reference",
-				FromAttribute: "parent-id",   // Non-unique FK
-				ToAttribute:   "entity1-id",  // Unique PK, same entity
+				FromAttribute: "parent-id",  // Non-unique FK
+				ToAttribute:   "entity1-id", // Unique PK, same entity
 			},
 		}
 

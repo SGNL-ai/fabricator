@@ -134,7 +134,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		if err != nil {
 			return fmt.Errorf("could not create CPU profile: %w", err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		if err := pprof.StartCPUProfile(f); err != nil {
 			return fmt.Errorf("could not start CPU profile: %w", err)
 		}
@@ -211,7 +211,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		if err != nil {
 			return fmt.Errorf("could not create memory profile: %w", err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		runtime.GC() // Get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
 			return fmt.Errorf("could not write memory profile: %w", err)

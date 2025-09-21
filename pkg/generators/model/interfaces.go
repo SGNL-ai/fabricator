@@ -78,8 +78,12 @@ type EntityInterface interface {
 	getRows() []*Row
 
 	// Performance optimizations
-	GetRowByIndex(index int) *Row         // Direct row access by index (O(1))
-	CheckKeyExists(keyValue string) bool  // O(1) primary key existence check
+	GetRowByIndex(index int) *Row        // Direct row access by index (O(1))
+	CheckKeyExists(keyValue string) bool // O(1) primary key existence check
+
+	// Junction table duplicate prevention
+	AddCompositeKeyIfUnique(row *Row) bool // Check and index composite FK keys, returns true if unique
+	RemoveRow(rowIndex int) error          // Remove row and update hash maps
 }
 
 // RelationshipInterface defines operations for relationships
@@ -94,6 +98,9 @@ type RelationshipInterface interface {
 	IsOneToOne() bool
 	IsOneToMany() bool
 	IsManyToOne() bool
+
+	// Target value selection for FK population
+	GetTargetValueForSourceRow(sourceRowIndex int, autoCardinality bool) (string, error)
 }
 
 // AttributeInterface defines operations for attributes

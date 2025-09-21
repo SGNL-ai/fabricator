@@ -297,42 +297,42 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 		validateFunc     func(t *testing.T, result string)
 	}{
 		{
-			name:         "email field by name",
-			attrName:     "email",
-			dataType:     "String",
+			name:     "email field by name",
+			attrName: "email",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.Contains(t, result, "@", "Email should contain @")
 			},
 		},
 		{
-			name:         "user_email field by name",
-			attrName:     "user_email",
-			dataType:     "String",
+			name:     "user_email field by name",
+			attrName: "user_email",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.Contains(t, result, "@", "Email field should contain @")
 			},
 		},
 		{
-			name:         "name field by name",
-			attrName:     "name",
-			dataType:     "String",
+			name:     "name field by name",
+			attrName: "name",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Name should not be empty")
 				assert.True(t, len(result) > 1, "Name should have reasonable length")
 			},
 		},
 		{
-			name:         "full_name field by name",
-			attrName:     "full_name",
-			dataType:     "String",
+			name:     "full_name field by name",
+			attrName: "full_name",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Name should not be empty")
 			},
 		},
 		{
-			name:         "phone field by name",
-			attrName:     "phone",
-			dataType:     "String",
+			name:     "phone field by name",
+			attrName: "phone",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Phone should not be empty")
 				// Phone numbers typically contain digits or common characters
@@ -340,51 +340,51 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "phone_number field by name",
-			attrName:     "phone_number",
-			dataType:     "String",
+			name:     "phone_number field by name",
+			attrName: "phone_number",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Phone should not be empty")
 			},
 		},
 		{
-			name:         "address field by name",
-			attrName:     "address",
-			dataType:     "String",
+			name:     "address field by name",
+			attrName: "address",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Address should not be empty")
 			},
 		},
 		{
-			name:         "home_address field by name",
-			attrName:     "home_address",
-			dataType:     "String",
+			name:     "home_address field by name",
+			attrName: "home_address",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Address should not be empty")
 			},
 		},
 		{
-			name:         "status field by name",
-			attrName:     "status",
-			dataType:     "String",
+			name:     "status field by name",
+			attrName: "status",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				validStatuses := []string{"active", "inactive", "pending"}
 				assert.Contains(t, validStatuses, result, "Status should be one of the predefined values")
 			},
 		},
 		{
-			name:         "user_status field by name",
-			attrName:     "user_status",
-			dataType:     "String",
+			name:     "user_status field by name",
+			attrName: "user_status",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				validStatuses := []string{"active", "inactive", "pending"}
 				assert.Contains(t, validStatuses, result, "Status should be one of the predefined values")
 			},
 		},
 		{
-			name:         "date field by name",
-			attrName:     "date",
-			dataType:     "String",
+			name:     "date field by name",
+			attrName: "date",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Date should not be empty")
 				// Should be in RFC3339 format
@@ -392,33 +392,33 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "created_date field by name",
-			attrName:     "created_date",
-			dataType:     "String",
+			name:     "created_date field by name",
+			attrName: "created_date",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Date should not be empty")
 			},
 		},
 		{
-			name:         "time field by name",
-			attrName:     "time",
-			dataType:     "String",
+			name:     "time field by name",
+			attrName: "time",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Time should not be empty")
 			},
 		},
 		{
-			name:         "created_time field by name",
-			attrName:     "created_time",
-			dataType:     "String",
+			name:     "created_time field by name",
+			attrName: "created_time",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Time should not be empty")
 			},
 		},
 		{
-			name:         "Integer data type",
-			attrName:     "count",
-			dataType:     "Integer",
+			name:     "Integer data type",
+			attrName: "count",
+			dataType: "Integer",
 			validateFunc: func(t *testing.T, result string) {
 				// Should be a valid integer
 				num := 0
@@ -428,9 +428,9 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "Int64 data type",
-			attrName:     "big_number",
-			dataType:     "Int64",
+			name:     "Int64 data type",
+			attrName: "big_number",
+			dataType: "Int64",
 			validateFunc: func(t *testing.T, result string) {
 				num := 0
 				_, err := fmt.Sscanf(result, "%d", &num)
@@ -438,25 +438,25 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "Boolean data type",
-			attrName:     "flag",
-			dataType:     "Boolean",
+			name:     "Boolean data type",
+			attrName: "flag",
+			dataType: "Boolean",
 			validateFunc: func(t *testing.T, result string) {
 				assert.True(t, result == "true" || result == "false", "Should be valid boolean string")
 			},
 		},
 		{
-			name:         "Bool data type",
-			attrName:     "enabled",
-			dataType:     "Bool",
+			name:     "Bool data type",
+			attrName: "enabled",
+			dataType: "Bool",
 			validateFunc: func(t *testing.T, result string) {
 				assert.True(t, result == "true" || result == "false", "Should be valid boolean string")
 			},
 		},
 		{
-			name:         "Date data type",
-			attrName:     "birth_date",
-			dataType:     "Date",
+			name:     "Date data type",
+			attrName: "birth_date",
+			dataType: "Date",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Date should not be empty")
 				// Should be in YYYY-MM-DD format
@@ -464,18 +464,18 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "DateTime data type",
-			attrName:     "timestamp",
-			dataType:     "DateTime",
+			name:     "DateTime data type",
+			attrName: "timestamp",
+			dataType: "DateTime",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "DateTime should not be empty")
 				assert.Contains(t, result, "T", "DateTime should contain time separator")
 			},
 		},
 		{
-			name:         "Float data type",
-			attrName:     "rate",
-			dataType:     "Float",
+			name:     "Float data type",
+			attrName: "rate",
+			dataType: "Float",
 			validateFunc: func(t *testing.T, result string) {
 				var f float64
 				_, err := fmt.Sscanf(result, "%f", &f)
@@ -484,9 +484,9 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "Double data type",
-			attrName:     "precision",
-			dataType:     "Double",
+			name:     "Double data type",
+			attrName: "precision",
+			dataType: "Double",
 			validateFunc: func(t *testing.T, result string) {
 				var f float64
 				_, err := fmt.Sscanf(result, "%f", &f)
@@ -494,18 +494,18 @@ func TestFieldGenerator_generateFieldValue(t *testing.T) {
 			},
 		},
 		{
-			name:         "Unknown data type defaults to word",
-			attrName:     "random_field",
-			dataType:     "UnknownType",
+			name:     "Unknown data type defaults to word",
+			attrName: "random_field",
+			dataType: "UnknownType",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Should generate some word")
 				assert.True(t, len(result) > 0, "Should have some content")
 			},
 		},
 		{
-			name:         "String data type defaults to word",
-			attrName:     "description",
-			dataType:     "String",
+			name:     "String data type defaults to word",
+			attrName: "description",
+			dataType: "String",
 			validateFunc: func(t *testing.T, result string) {
 				assert.NotEmpty(t, result, "Should generate some word")
 			},
