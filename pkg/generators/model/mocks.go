@@ -193,20 +193,6 @@ func (m *MockEntityInterface) EXPECT() *MockEntityInterfaceMockRecorder {
 	return m.recorder
 }
 
-// AddCompositeKeyIfUnique mocks base method.
-func (m *MockEntityInterface) AddCompositeKeyIfUnique(row *Row) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCompositeKeyIfUnique", row)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// AddCompositeKeyIfUnique indicates an expected call of AddCompositeKeyIfUnique.
-func (mr *MockEntityInterfaceMockRecorder) AddCompositeKeyIfUnique(row any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCompositeKeyIfUnique", reflect.TypeOf((*MockEntityInterface)(nil).AddCompositeKeyIfUnique), row)
-}
-
 // AddRow mocks base method.
 func (m *MockEntityInterface) AddRow(row *Row) error {
 	m.ctrl.T.Helper()
@@ -236,7 +222,7 @@ func (mr *MockEntityInterfaceMockRecorder) CheckKeyExists(keyValue any) *gomock.
 }
 
 // ForEachRow mocks base method.
-func (m *MockEntityInterface) ForEachRow(fn func(*Row) error) error {
+func (m *MockEntityInterface) ForEachRow(fn func(*Row, int) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ForEachRow", fn)
 	ret0, _ := ret[0].(error)
@@ -431,6 +417,20 @@ func (m *MockEntityInterface) GetRowCount() int {
 func (mr *MockEntityInterfaceMockRecorder) GetRowCount() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRowCount", reflect.TypeOf((*MockEntityInterface)(nil).GetRowCount))
+}
+
+// IsForeignKeyUnique mocks base method.
+func (m *MockEntityInterface) IsForeignKeyUnique(row *Row) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsForeignKeyUnique", row)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsForeignKeyUnique indicates an expected call of IsForeignKeyUnique.
+func (mr *MockEntityInterfaceMockRecorder) IsForeignKeyUnique(row any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsForeignKeyUnique", reflect.TypeOf((*MockEntityInterface)(nil).IsForeignKeyUnique), row)
 }
 
 // RemoveRow mocks base method.

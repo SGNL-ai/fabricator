@@ -47,7 +47,7 @@ func (g *FieldGenerator) GenerateFields(graph *model.Graph) error {
 		}
 
 		// Use iterator to set field values in entity rows
-		err := entity.ForEachRow(func(row *model.Row) error {
+		err := entity.ForEachRow(func(row *model.Row, index int) error {
 			for _, attr := range regularFields {
 				// Generate appropriate value based on attribute type and name
 				value := g.generateFieldValue(attr)

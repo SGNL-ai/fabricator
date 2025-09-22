@@ -48,30 +48,24 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 
 			// Process all rows for this relationship
 			duplicateIndices := make([]int, 0)
-			rowIndex := 0
-			err := entity.ForEachRow(func(row *model.Row) error {
+			err := entity.ForEachRow(func(row *model.Row, rowIndex int) error {
 				// Ask relationship to provide target PK value for this source row
 				targetValue, err := relationship.GetTargetValueForSourceRow(rowIndex, autoCardinality)
 				if err != nil {
 					return fmt.Errorf("failed to get target value for row %d: %w", rowIndex, err)
 				}
 
-				// Debug: Log what we're setting
-				fkFieldName := relationship.GetSourceAttribute().GetName()
-				fmt.Printf("DEBUG: Setting %s.%s = '%s' for row %d\n", entity.GetName(), fkFieldName, targetValue, rowIndex)
-
 				// Set the FK value in the source row
-				row.SetValue(fkFieldName, targetValue)
+				row.SetValue(relationship.GetSourceAttribute().GetName(), targetValue)
 
 				// If this is the last FK relationship for a junction table, check for duplicates
 				if isLastRelationship && len(sourceRelationships) > 1 {
-					if !entity.AddCompositeKeyIfUnique(row) {
+					if !entity.IsForeignKeyUnique(row) {
 						// Duplicate composite key found - mark for removal
 						duplicateIndices = append(duplicateIndices, rowIndex)
 					}
 				}
 
-				rowIndex++
 				return nil
 			})
 

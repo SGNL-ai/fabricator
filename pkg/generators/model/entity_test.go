@@ -572,7 +572,7 @@ func TestEntityRowIteration(t *testing.T) {
 
 		// Test iteration
 		rowCount := 0
-		err = entity.ForEachRow(func(row *Row) error {
+		err = entity.ForEachRow(func(row *Row, index int) error {
 			rowCount++
 			// Verify we can read row data
 			assert.NotEmpty(t, row.GetValue("id"))
@@ -616,7 +616,7 @@ func TestEntityRowIteration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Use iterator to add status values
-		err = entity.ForEachRow(func(row *Row) error {
+		err = entity.ForEachRow(func(row *Row, index int) error {
 			row.SetValue("status", "active")
 			return nil
 		})
@@ -651,7 +651,7 @@ func TestEntityRowIteration(t *testing.T) {
 
 		// Test that iteration errors are properly propagated
 		testError := fmt.Errorf("test error")
-		err = entity.ForEachRow(func(row *Row) error {
+		err = entity.ForEachRow(func(row *Row, index int) error {
 			return testError
 		})
 		assert.Error(t, err)
@@ -681,19 +681,17 @@ func TestEntityRowIteration(t *testing.T) {
 		err = entity.AddRow(&Row{values: map[string]string{"id": "2"}})
 		require.NoError(t, err)
 
-		// Try to set duplicate unique ID during iteration - should fail
-		rowIndex := 0
-		err = entity.ForEachRow(func(row *Row) error {
-			if rowIndex == 1 {
+		// Try to set duplicate unique ID during iteration - should fail during re-add
+		err = entity.ForEachRow(func(row *Row, index int) error {
+			if index == 1 {
 				// Try to set second row's ID to same as first row
 				row.SetValue("id", "1") // This should create a duplicate
 			}
-			rowIndex++
 			return nil
 		})
 
-		// ForEachRow should reject the duplicate and return an error
-		assert.Error(t, err, "ForEachRow should reject duplicate unique values")
+		// ForEachRow should reject the duplicate during atomic re-add and return an error
+		assert.Error(t, err, "ForEachRow should reject duplicate unique values during re-add")
 		assert.Contains(t, err.Error(), "duplicate", "Error should mention duplicate")
 
 		// Note: When ForEachRow fails, entity state is undefined (partial processing)
@@ -720,7 +718,7 @@ func TestEntityRowIteration(t *testing.T) {
 
 		// Iteration should handle empty entity gracefully
 		rowCount := 0
-		err = entity.ForEachRow(func(row *Row) error {
+		err = entity.ForEachRow(func(row *Row, index int) error {
 			rowCount++
 			return nil
 		})
@@ -750,7 +748,7 @@ func TestEntityRowIteration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Try to set value for nonexistent attribute during iteration
-		err = entity.ForEachRow(func(row *Row) error {
+		err = entity.ForEachRow(func(row *Row, index int) error {
 			// Row.SetValue doesn't validate attribute existence
 			row.SetValue("nonexistent_field", "value")
 			return nil
@@ -786,7 +784,7 @@ func TestEntityRowIteration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Try to create duplicate unique ID using iterator - should fail
-		err = entity.ForEachRow(func(row *Row) error {
+		err = entity.ForEachRow(func(row *Row, index int) error {
 			if row.GetValue("id") == "unique-2" {
 				// Try to change second row's ID to duplicate the first
 				row.SetValue("id", "unique-1")
@@ -852,14 +850,14 @@ func TestEntityRowIteration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Try to set valid FK using iterator - should succeed
-		err = childEntity.ForEachRow(func(row *Row) error {
+		err = childEntity.ForEachRow(func(row *Row, index int) error {
 			row.SetValue("parent_id", "parent-1")
 			return nil
 		})
 		assert.NoError(t, err, "Should accept valid foreign key")
 
 		// Try to set invalid FK using iterator - should succeed (FK validation deferred)
-		err = childEntity.ForEachRow(func(row *Row) error {
+		err = childEntity.ForEachRow(func(row *Row, index int) error {
 			row.SetValue("parent_id", "nonexistent-parent")
 			return nil
 		})
@@ -1403,6 +1401,7 @@ func TestEntity_GetAttributeByExternalID(t *testing.T) {
 	attr1.EXPECT().GetName().Return("simple").AnyTimes()
 	attr1.EXPECT().IsUnique().Return(false).AnyTimes()
 	attr1.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	attr1.EXPECT().IsRelationship().Return(false).AnyTimes()
 	attr1.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
 
 	attr2 := NewMockAttributeInterface(ctrl)
@@ -1410,6 +1409,7 @@ func TestEntity_GetAttributeByExternalID(t *testing.T) {
 	attr2.EXPECT().GetName().Return("dotted").AnyTimes()
 	attr2.EXPECT().IsUnique().Return(true).AnyTimes()
 	attr2.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	attr2.EXPECT().IsRelationship().Return(false).AnyTimes()
 	attr2.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
 
 	entity, err := newEntity("test_entity", "TestEntity", "Test", "Description", []AttributeInterface{attr1, attr2}, mockGraph)
@@ -1467,6 +1467,7 @@ func TestEntity_ValidateRowNegativeCases(t *testing.T) {
 	uniqueAttr.EXPECT().GetExternalID().Return("id").AnyTimes()
 	uniqueAttr.EXPECT().IsUnique().Return(true).AnyTimes()
 	uniqueAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	uniqueAttr.EXPECT().IsRelationship().Return(false).AnyTimes()
 	uniqueAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
 
 	// Create a mock non-unique attribute
@@ -1475,6 +1476,7 @@ func TestEntity_ValidateRowNegativeCases(t *testing.T) {
 	nonUniqueAttr.EXPECT().GetExternalID().Return("name").AnyTimes()
 	nonUniqueAttr.EXPECT().IsUnique().Return(false).AnyTimes()
 	nonUniqueAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	nonUniqueAttr.EXPECT().IsRelationship().Return(false).AnyTimes()
 	nonUniqueAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
 
 	entity, err := newEntity("test", "Test", "Test Entity", "Description", []AttributeInterface{uniqueAttr, nonUniqueAttr}, mockGraph)
@@ -1537,6 +1539,7 @@ func TestEntity_AddRelationship_ErrorCases(t *testing.T) {
 	sourceAttr.EXPECT().GetExternalID().Return("source_id").AnyTimes()
 	sourceAttr.EXPECT().IsUnique().Return(true).AnyTimes() // Make it unique to serve as primary key
 	sourceAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	sourceAttr.EXPECT().IsRelationship().Return(false).AnyTimes()
 	sourceAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
 
 	sourceEntity, err := newEntity("source", "Source", "Source Entity", "Description", []AttributeInterface{sourceAttr}, mockGraph)
@@ -1548,6 +1551,7 @@ func TestEntity_AddRelationship_ErrorCases(t *testing.T) {
 	targetAttr.EXPECT().GetExternalID().Return("target_id").AnyTimes()
 	targetAttr.EXPECT().IsUnique().Return(true).AnyTimes() // Make it unique to serve as primary key
 	targetAttr.EXPECT().GetAttributeAlias().Return("").AnyTimes()
+	targetAttr.EXPECT().IsRelationship().Return(false).AnyTimes()
 	targetAttr.EXPECT().setParentEntity(gomock.Any()).AnyTimes()
 
 	targetEntity, err := newEntity("target", "Target", "Target Entity", "Description", []AttributeInterface{targetAttr}, mockGraph)

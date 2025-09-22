@@ -245,37 +245,48 @@ func (e *Entity) AddRow(row *Row) error {
 		}
 	}
 
+	// Track composite FK key for junction tables
+	e.addCompositeKeyToIndex(row)
+
 	return nil
 }
 
 // ForEachRow iterates over all rows and allows modification during iteration
 // Any changes made to the row are validated using AddRow validation
 // Row order is preserved after iteration completes
-func (e *Entity) ForEachRow(fn func(row *Row) error) error {
+func (e *Entity) ForEachRow(fn func(row *Row, index int) error) error {
 	originalRowCount := len(e.rows)
 
-	// Process each row by popping from front and re-adding at end
+	// Process each row by temporarily removing and re-adding for atomic validation
 	for i := range originalRowCount {
-		// Pop the first row
+		// Get the first row (don't pop yet to maintain entity state during fn call)
 		row := e.rows[0]
-		e.rows = e.rows[1:]
 
-		// Remove PK value from hash map since row is being removed
+		// Capture original PK value before modification
+		var originalPKValue string
 		if e.primaryKey != nil {
 			pkName := e.primaryKey.GetName()
-			if pkValue, exists := row.values[pkName]; exists && pkValue != "" {
-				delete(e.usedPKValues, pkValue)
+			if pkValue, exists := row.values[pkName]; exists {
+				originalPKValue = pkValue
 			}
 		}
 
 		// Call the function to potentially modify the row
-		if err := fn(row); err != nil {
+		if err := fn(row, i); err != nil {
 			return fmt.Errorf("error processing row %d in entity %s: %w", i, e.name, err)
 		}
 
-		// Re-add the row using AddRow for validation
+		// Now atomically pop the old row and re-add the modified row
+		e.rows = e.rows[1:] // Remove the processed row
+
+		// Remove original PK value from hash map (before modification)
+		if e.primaryKey != nil && originalPKValue != "" {
+			delete(e.usedPKValues, originalPKValue)
+		}
+
+		// Re-add the modified row using AddRow for validation
 		if err := e.AddRow(row); err != nil {
-			return err
+			return fmt.Errorf("failed to re-add modified row %d in entity %s: %w", i, e.name, err)
 		}
 	}
 	return nil
@@ -362,14 +373,9 @@ func (e *Entity) RemoveRow(rowIndex int) error {
 	}
 
 	// Remove composite key from hash map if it exists
-	if len(e.GetRelationshipAttributes()) > 1 {
-		compositeKey := ""
-		for i, fkAttr := range e.GetRelationshipAttributes() {
-			if i > 0 {
-				compositeKey += "|"
-			}
-			compositeKey += row.GetValue(fkAttr.GetName())
-		}
+	fkAttributes := e.GetRelationshipAttributes()
+	if len(fkAttributes) > 1 {
+		compositeKey := e.buildCompositeKey(row, fkAttributes)
 		delete(e.usedCompositeKeys, compositeKey)
 	}
 
@@ -392,16 +398,32 @@ func (e *Entity) CheckKeyExists(keyValue string) bool {
 	return e.usedPKValues[keyValue]
 }
 
-// AddCompositeKeyIfUnique adds a row's composite FK key to the index if unique
-// Returns true if unique (successfully added), false if duplicate
-func (e *Entity) AddCompositeKeyIfUnique(row *Row) bool {
-	// Get all FK attribute names for this entity
+// IsForeignKeyUnique checks if a row's FK combination is unique
+// Returns true if unique, false if duplicate. Caller decides when to use this.
+func (e *Entity) IsForeignKeyUnique(row *Row) bool {
 	fkAttributes := e.GetRelationshipAttributes()
-	if len(fkAttributes) <= 1 {
-		return true // Not a junction table, always allow
+	if len(fkAttributes) == 0 {
+		return true // No FK attributes - always unique
 	}
 
-	// Build composite key from all FK values
+	compositeKey := e.buildCompositeKey(row, fkAttributes)
+	return !e.usedCompositeKeys[compositeKey]
+}
+
+// addCompositeKeyToIndex adds a row's composite FK key to the internal index
+// Should only be called after verifying the key is unique
+func (e *Entity) addCompositeKeyToIndex(row *Row) {
+	fkAttributes := e.GetRelationshipAttributes()
+	if len(fkAttributes) == 0 {
+		return // No FK attributes to index
+	}
+
+	compositeKey := e.buildCompositeKey(row, fkAttributes)
+	e.usedCompositeKeys[compositeKey] = true
+}
+
+// buildCompositeKey creates a composite key string from FK attribute values
+func (e *Entity) buildCompositeKey(row *Row, fkAttributes []AttributeInterface) string {
 	compositeKey := ""
 	for i, fkAttr := range fkAttributes {
 		if i > 0 {
@@ -409,15 +431,7 @@ func (e *Entity) AddCompositeKeyIfUnique(row *Row) bool {
 		}
 		compositeKey += row.GetValue(fkAttr.GetName())
 	}
-
-	// Check for duplicate
-	if e.usedCompositeKeys[compositeKey] {
-		return false // Duplicate composite key found
-	}
-
-	// Index this unique composite key
-	e.usedCompositeKeys[compositeKey] = true
-	return true // Unique composite key successfully added
+	return compositeKey
 }
 
 // ValidateAllForeignKeys validates all FK relationships for this entity (post-generation validation)

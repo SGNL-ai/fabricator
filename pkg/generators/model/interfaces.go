@@ -58,7 +58,7 @@ type EntityInterface interface {
 	GetNonRelationshipAttributes() []AttributeInterface
 	GetRowCount() int
 	AddRow(row *Row) error
-	ForEachRow(fn func(row *Row) error) error
+	ForEachRow(fn func(row *Row, index int) error) error
 	ToCSV() *CSVData
 
 	// Internal method for relationships
@@ -82,8 +82,8 @@ type EntityInterface interface {
 	CheckKeyExists(keyValue string) bool // O(1) primary key existence check
 
 	// Junction table duplicate prevention
-	AddCompositeKeyIfUnique(row *Row) bool // Check and index composite FK keys, returns true if unique
-	RemoveRow(rowIndex int) error          // Remove row and update hash maps
+	IsForeignKeyUnique(row *Row) bool // Check if row's FK combination is unique for junction tables
+	RemoveRow(rowIndex int) error     // Remove row and update hash maps
 }
 
 // RelationshipInterface defines operations for relationships

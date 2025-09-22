@@ -85,6 +85,11 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
 				userEntity := entities["user"]
+				profileEntity := entities["profile"]
+
+				// Verify row counts after relationship linking
+				assert.Equal(t, 2, userEntity.GetRowCount(), "User entity should still have 2 rows after linking")
+				assert.Equal(t, 2, profileEntity.GetRowCount(), "Profile entity should still have 2 rows after linking")
 
 				// Check that FK values were set by the relationship linker
 				userCSV := userEntity.ToCSV()
@@ -170,26 +175,30 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			wantErr:         false,
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
+				userEntity := entities["user"]
 				employeeEntity := entities["employee"]
 
-				// For 1:1 relationship with autoCardinality, each employee should get unique user
-				csvData := employeeEntity.ToCSV()
-				userIdCol := -1
-				for i, header := range csvData.Headers {
-					if header == "user_id" {
-						userIdCol = i
-						break
-					}
-				}
-				require.NotEqual(t, -1, userIdCol)
+				// Verify row counts after relationship linking
+				assert.Equal(t, 3, userEntity.GetRowCount(), "User entity should still have 3 rows after linking")
+				assert.Equal(t, 3, employeeEntity.GetRowCount(), "Employee entity should still have 3 rows after linking")
 
-				// Check that all FK values are unique (1:1 cardinality)
+				// Directly inspect entity rows for FK values
+				require.Equal(t, 3, employeeEntity.GetRowCount(), "Should have 3 employee rows")
+
+				// Check FK values directly from entity rows
 				usedValues := make(map[string]bool)
-				for _, row := range csvData.Rows {
-					fkValue := row[userIdCol]
+				for i := 0; i < employeeEntity.GetRowCount(); i++ {
+					row := employeeEntity.GetRowByIndex(i)
+					require.NotNil(t, row, "Row %d should exist", i)
+
+					fkValue := row.GetValue("user_id")
+					assert.NotEmpty(t, fkValue, "FK should be set for employee %d", i)
 					assert.False(t, usedValues[fkValue], "1:1 relationship should have unique FK values")
 					usedValues[fkValue] = true
 				}
+
+				// Should have used 3 unique user IDs
+				assert.Len(t, usedValues, 3, "Should have 3 unique FK values for 1:1 relationship")
 			},
 		},
 		{
@@ -242,9 +251,42 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				// Add user with empty FK field (linker will set it)
 				err = userEntity.AddRow(model.NewRow(map[string]string{
 					"id":     "user-1",
-					"roleId": "", // Empty FK field that linker will populate
+					"roleId": "xxx", // Empty FK field that linker will populate
 				}))
 				require.NoError(t, err)
+
+				// Verify relationship exists in graph
+				relationships := graph.GetAllRelationships()
+				assert.Len(t, relationships, 1, "Graph should have 1 relationship")
+
+				// Verify User entity has the relationship
+				userRelationships := graph.GetRelationshipsForEntity("user")
+				assert.Len(t, userRelationships, 1, "User entity should have 1 relationship")
+
+				// Verify relationship details
+				rel := relationships[0]
+				assert.Equal(t, "user", rel.GetSourceEntity().GetID(), "Source entity should be user")
+				assert.Equal(t, "role", rel.GetTargetEntity().GetID(), "Target entity should be role")
+				assert.NotNil(t, rel.GetSourceAttribute(), "Source attribute should not be nil")
+				assert.NotNil(t, rel.GetTargetAttribute(), "Target attribute should not be nil")
+				assert.Equal(t, "roleId", rel.GetSourceAttribute().GetName(), "Source attribute should be roleId")
+				assert.Equal(t, "id", rel.GetTargetAttribute().GetName(), "Target attribute should be id")
+
+				// Verify initial FK value by directly inspecting row
+				userRow := userEntity.GetRowByIndex(0)
+				require.NotNil(t, userRow, "User row should exist")
+				initialFK := userRow.GetValue("roleId")
+				assert.Equal(t, "xxx", initialFK, "Initial FK should be xxx before linking")
+
+				// CRITICAL: Final state verification before relationship linking
+				assert.Equal(t, 1, userEntity.GetRowCount(), "User entity should have 1 row")
+				assert.Equal(t, 1, roleEntity.GetRowCount(), "Role entity should have 1 row")
+				assert.Equal(t, 1, rel.GetSourceEntity().GetRowCount(), "Relationship's source entity should have 1 row")
+				assert.Equal(t, 1, rel.GetTargetEntity().GetRowCount(), "Relationship's target entity should have 1 row")
+
+				// CRITICAL: Verify relationship points to same entity instances
+				assert.Equal(t, userEntity, rel.GetSourceEntity(), "Relationship should point to same User entity instance")
+				assert.Equal(t, roleEntity, rel.GetTargetEntity(), "Relationship should point to same Role entity instance")
 
 				return graph
 			},
@@ -254,25 +296,13 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				entities := graph.GetAllEntities()
 				userEntity := entities["user"]
 
-				// Verify FK was set correctly
-				csvData := userEntity.ToCSV()
-				require.Len(t, csvData.Rows, 1)
+				// Directly inspect entity row for FK value
+				require.Equal(t, 1, userEntity.GetRowCount(), "Should have 1 user row")
 
-				// Find roleId column
-				roleIdCol := -1
-				for i, header := range csvData.Headers {
-					if header == "roleId" {
-						roleIdCol = i
-						break
-					}
-				}
-				require.NotEqual(t, -1, roleIdCol)
+				row := userEntity.GetRowByIndex(0)
+				require.NotNil(t, row, "User row should exist")
 
-				// Verify FK points to valid role
-				fkValue := csvData.Rows[0][roleIdCol]
-				t.Logf("FK value set: '%s'", fkValue)
-
-				// With power law, FK might not be "role-1" specifically, but should be a valid role ID
+				fkValue := row.GetValue("roleId")
 				assert.NotEmpty(t, fkValue, "FK should be set to some role ID")
 				assert.Equal(t, "role-1", fkValue, "Should link to role-1 (only available role)")
 			},
@@ -336,7 +366,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				return graph
 			},
 			autoCardinality: false,
-			wantErr:         false, // Should handle gracefully, not error
+			wantErr:         true, // Should error with explicit empty target entity message
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
 				userEntity := entities["user"]

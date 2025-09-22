@@ -193,12 +193,12 @@ func (r *Relationship) GetTargetValueForSourceRow(sourceRowIndex int, autoCardin
 
 	targetRowCount := r.targetEntity.GetRowCount()
 	if targetRowCount == 0 {
-		return "", nil // Gracefully handle empty target entity (no FK values to assign)
+		return "", fmt.Errorf("target entity %s has no rows for relationship %s", r.targetEntity.GetName(), r.id)
 	}
 
 	sourceRowCount := r.sourceEntity.GetRowCount()
 	if sourceRowCount == 0 {
-		return "", nil // Gracefully handle empty source entity (no rows to process)
+		return "", fmt.Errorf("source entity %s has no rows for relationship %s", r.sourceEntity.GetName(), r.id)
 	}
 
 	// Select target index using appropriate algorithm
@@ -215,8 +215,6 @@ func (r *Relationship) GetTargetValueForSourceRow(sourceRowIndex int, autoCardin
 	}
 
 	targetValue := targetRow.GetValue(r.targetAttr.GetName())
-	fmt.Printf("DEBUG: GetTargetValueForSourceRow - targetIndex=%d, targetAttr=%s, targetValue='%s'\n",
-		targetIndex, r.targetAttr.GetName(), targetValue)
 	return targetValue, nil
 }
 
