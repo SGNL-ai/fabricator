@@ -346,8 +346,8 @@ func (e *Entity) validateRow(row *Row) error {
 	return nil
 }
 
-// PreAllocateRows pre-allocates the rows slice for better memory performance
-func (e *Entity) PreAllocateRows(expectedRowCount int) {
+// preAllocateRows pre-allocates the rows slice for better memory performance
+func (e *Entity) preAllocateRows(expectedRowCount int) {
 	if cap(e.rows) < expectedRowCount {
 		// Pre-allocate with exact capacity to avoid slice growth
 		e.rows = make([]*Row, 0, expectedRowCount)

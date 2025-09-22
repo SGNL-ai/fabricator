@@ -43,10 +43,10 @@ coverage:
 	$(GOCMD) tool cover -func=coverage.out
 
 # Coverage helpers
-# Usage: make cov-view FILE=pkg/parser/parser.go
+# Usage: make coverage-view FILE=pkg/parser/parser.go
 coverage-view:
 	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make cov-view FILE=path/to/file.go"; \
+		echo "Usage: make coverage-view FILE=path/to/file.go"; \
 		exit 1; \
 	fi; \
 	if [ ! -f "$(FILE)" ]; then \
