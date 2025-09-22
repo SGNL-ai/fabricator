@@ -118,19 +118,23 @@ func (g *ERDiagramGenerator) Generate(outputPath string) error {
 		}
 
 		// Check if vertex already exists
-		_, err := entityGraph.Vertex(id)
+		_, properties, err := entityGraph.VertexWithProperties(id)
 		if err == nil {
-			// Vertex already exists, just continue
-			continue
-		} else if !errors.Is(err, graph.ErrVertexNotFound) {
-			// Some other error
+			// Vertex exists, update its attributes
+			if properties.Attributes == nil {
+				properties.Attributes = make(map[string]string)
+			}
+			for key, value := range attributes {
+				properties.Attributes[key] = value
+			}
+		} else if errors.Is(err, graph.ErrVertexNotFound) {
+			// Vertex doesn't exist, add it with attributes
+			err = entityGraph.AddVertex(id, graph.VertexAttributes(attributes))
+			if err != nil {
+				return fmt.Errorf("failed to add vertex for entity %s: %w", id, err)
+			}
+		} else {
 			return fmt.Errorf("failed to check vertex %s: %w", id, err)
-		}
-
-		// Add vertex with attributes (vertex doesn't exist yet)
-		err = entityGraph.AddVertex(id, graph.VertexAttributes(attributes))
-		if err != nil {
-			return fmt.Errorf("failed to add vertex for entity %s: %w", id, err)
 		}
 	}
 
