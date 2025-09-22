@@ -37,12 +37,21 @@ jobs:
         go version
         go env GOPROXY
         go env GOMODCACHE
-        ls -la go.mod go.sum
+      shell: bash
+
+    - name: List module files (Unix)
+      if: runner.os != 'Windows'
+      run: ls -la go.mod go.sum
+
+    - name: List module files (Windows)
+      if: runner.os == 'Windows'
+      run: dir go.mod go.sum
 
     - name: Install dependencies
       run: |
         go mod download
         go mod verify
+      shell: bash
 
     - name: Install golangci-lint
       uses: golangci/golangci-lint-action@v8
@@ -54,9 +63,11 @@ jobs:
       run: |
         go list ./...
         go test -race -v ./...
+      shell: bash
 
     - name: Run CI checks
       run: make ci
+      shell: bash
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
