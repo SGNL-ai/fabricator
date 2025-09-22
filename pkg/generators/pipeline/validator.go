@@ -116,7 +116,7 @@ func (l *CSVLoader) LoadCSVFiles(graph *model.Graph, directory string) []string 
 
 // loadEntityCSV loads a single CSV file into an entity
 func (l *CSVLoader) loadEntityCSV(entity model.EntityInterface, csvPath string) error {
-	file, err := os.Open(csvPath)
+	file, err := os.Open(csvPath) // #nosec G304 - csvPath is from trusted source
 	if err != nil {
 		return fmt.Errorf("failed to open CSV file %s: %w", csvPath, err)
 	}

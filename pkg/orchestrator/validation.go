@@ -84,6 +84,7 @@ func countValidatedData(directory string) (int, int) {
 
 			// Count records in this CSV file
 			csvPath := filepath.Join(directory, file.Name())
+			// #nosec G304 - csvPath is safely constructed from directory listing
 			if csvFile, err := os.Open(csvPath); err == nil {
 				if reader := csv.NewReader(csvFile); reader != nil {
 					if records, err := reader.ReadAll(); err == nil && len(records) > 1 {

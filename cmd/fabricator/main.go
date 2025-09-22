@@ -130,7 +130,7 @@ func main() {
 func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) error {
 	// Start profiling if requested
 	if cpuProfile != "" {
-		f, err := os.Create(cpuProfile)
+		f, err := os.Create(cpuProfile) // #nosec G304 - cpuProfile is from CLI argument
 		if err != nil {
 			return fmt.Errorf("could not create CPU profile: %w", err)
 		}
@@ -207,7 +207,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 
 	// Write memory profile if requested
 	if memProfile != "" {
-		f, err := os.Create(memProfile)
+		f, err := os.Create(memProfile) // #nosec G304 - memProfile is from CLI argument
 		if err != nil {
 			return fmt.Errorf("could not create memory profile: %w", err)
 		}
