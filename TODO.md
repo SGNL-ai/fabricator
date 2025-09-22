@@ -1,59 +1,41 @@
-# Fabricator CSV Generator TODO
+# TODO
 
-## Project Structure
-- [x] Create directory structure
-- [x] Define package structure
-- [x] Create basic CLI framework
+## Performance Optimization
 
-## Core Functionality
-- [x] YAML Parsing
-  - [x] Create YAML model structures
-  - [x] Load and parse YAML file
-  - [x] Validate YAML structure
+**CRITICAL: O(n²) Performance Bug Found**
 
-- [x] Entity Analysis
-  - [x] Extract entity names and attributes 
-  - [x] Identify relationships between entities
-  - [x] Map externalId to CSV file names
+### Issue
+- **Location**: `pkg/generators/model/entity.go:300-304` in `validateRow` function
+- **Problem**: Uses O(n) linear search to check for duplicate primary keys on every row insertion
+- **Impact**: Creates O(n²) total performance that makes large datasets unusable
+- **Evidence**: CPU profiling shows `validateRow` consumes 68% of CPU time
 
-- [x] CSV Generation
-  - [x] Create generators for different data types
-  - [x] Ensure relationship consistency between entities
-  - [x] Add support for test data volume parameter
+### Performance Impact
+- **1K records**: ~500K operations (acceptable)
+- **20K records**: ~200M operations (31 seconds)
+- **100K records**: ~5B operations (timeout)
+- **1M records**: ~500B operations (completely unusable)
 
-- [x] Output Management
-  - [x] Create output directory structure
-  - [x] Write CSV files
-  - [x] Implement colorful and informative user output
+### Fix Required
+Replace the O(n) loop with a hash map for O(1) duplicate detection:
 
-## CLI Improvements
-- [x] Add short and long-form command-line options (-f/--file)
-- [x] Update README with improved usage examples
-- [x] Make CLI output more informative
-- [x] Ensure error handling is comprehensive
+```go
+// Current O(n) approach:
+for _, existingRow := range e.rows {
+    if existingRow.values[pkName] == pkValue {
+        return fmt.Errorf("duplicate value...")
+    }
+}
 
-## Generalization
-- [x] Make data generation generic (not specific to SGNL)
-- [x] Improve field type detection for better data generation
-- [x] Support both namespaced and non-namespaced entity IDs
-- [x] Generate appropriate data based on field name patterns
+// Should be O(1) approach:
+// Use a map[string]bool to track used primary key values
+```
 
-## Testing
-- [x] Write unit tests for YAML parsing
-- [x] Write unit tests for CLI
-- [ ] Create integration tests
+## Completed Items
 
-## Documentation
-- [x] Update README.md with usage instructions
-- [x] Add examples
-- [x] Document code
-- [x] Create IMPLEMENTATION.md with details
-- [x] Update CLAUDE.md with project information
-
-## Potential Future Enhancements
-- [ ] Add support for Claude API integration for more realistic test data
-- [ ] Add support for custom data generation rules
-- [ ] Add a web UI for visualizing the generated data
-- [ ] Support for additional output formats (JSON, XML, etc.)
-- [ ] Create a validation mode to verify existing CSV files
-- [ ] Add schema documentation generator from YAML
+✅ **Add comprehensive foreign key relationship testing**
+✅ **Remove malformed sample.yaml and replace with proper examples**
+✅ **Add CLI profiling support** (`--cpuprofile`, `--memprofile`)
+✅ **Verify foreign key relationships work correctly** with both dotted notation and attributeAlias
+✅ **Achieve 90.1% test coverage** with all packages above 80%
+✅ **Remove debug output** and unreachable defensive code

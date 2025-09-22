@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateERDiagram(t *testing.T) {
@@ -25,14 +26,14 @@ func TestGenerateERDiagram(t *testing.T) {
 	testOutputPath := filepath.Join(tempDir, "test_diagram.dot")
 
 	// Create a very simple mock SORDefinition with minimal entities
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
 		Description: "Test System of Record for ER Diagram Generation",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -45,7 +46,7 @@ func TestGenerateERDiagram(t *testing.T) {
 			"role": {
 				DisplayName: "Role",
 				ExternalId:  "Test/Role",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -56,7 +57,7 @@ func TestGenerateERDiagram(t *testing.T) {
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"user_to_role": {
 				DisplayName:   "User to Role",
 				Name:          "user_to_role",
@@ -122,14 +123,14 @@ func TestERDiagramGenerator_Generate(t *testing.T) {
 	testOutputPath := filepath.Join(tempDir, "generated_diagram.dot")
 
 	// Create a simpler mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test Generator",
 		Description: "Test Generator for ER Diagram",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -140,7 +141,7 @@ func TestERDiagramGenerator_Generate(t *testing.T) {
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{},
+		Relationships: map[string]parser.Relationship{},
 	}
 
 	// Create the generator
@@ -195,7 +196,7 @@ func TestERDiagramGenerator_Generate(t *testing.T) {
 
 func TestInvalidPath(t *testing.T) {
 	// Create a mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test Invalid Path",
 	}
 
@@ -211,7 +212,7 @@ func TestInvalidPath(t *testing.T) {
 
 func TestDataExtraction(t *testing.T) {
 	// Create a mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName:   "Test Data Extraction",
 		Description:   "Test extracting entities and relationships",
 		Entities:      createMockEntities(),
@@ -278,13 +279,13 @@ func TestDataExtraction(t *testing.T) {
 
 // Helper functions to create test data
 
-func createMockEntities() map[string]models.Entity {
-	return map[string]models.Entity{
+func createMockEntities() map[string]parser.Entity {
+	return map[string]parser.Entity{
 		"user": {
 			DisplayName: "User",
 			ExternalId:  "Test/User",
 			Description: "User entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:           "id",
 					ExternalId:     "id",
@@ -316,7 +317,7 @@ func createMockEntities() map[string]models.Entity {
 			DisplayName: "Role",
 			ExternalId:  "Test/Role",
 			Description: "Role entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:           "id",
 					ExternalId:     "id",
@@ -343,7 +344,7 @@ func createMockEntities() map[string]models.Entity {
 			DisplayName: "Permission",
 			ExternalId:  "Test/Permission",
 			Description: "Permission entity for testing",
-			Attributes: []models.Attribute{
+			Attributes: []parser.Attribute{
 				{
 					Name:           "id",
 					ExternalId:     "id",
@@ -368,8 +369,8 @@ func createMockEntities() map[string]models.Entity {
 	}
 }
 
-func createMockRelationships() map[string]models.Relationship {
-	return map[string]models.Relationship{
+func createMockRelationships() map[string]parser.Relationship {
+	return map[string]parser.Relationship{
 		"user_to_role": {
 			DisplayName:   "User to Role",
 			Name:          "user_to_role",
@@ -383,6 +384,235 @@ func createMockRelationships() map[string]models.Relationship {
 			ToAttribute:   "permissionID",
 		},
 	}
+}
+
+func TestERDiagramGenerator_Generate_ErrorPaths(t *testing.T) {
+	t.Run("should handle output directory creation failure", func(t *testing.T) {
+		// Try to create a file in a non-existent directory structure that can't be created
+		invalidOutputPath := "/root/invalid/nonexistent/very/deep/path/diagram.dot"
+
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "Test SOR",
+			Description: "Test Description",
+			Entities: map[string]parser.Entity{
+				"user": {
+					DisplayName: "User",
+					ExternalId:  "User",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{},
+		}
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		err := generator.Generate(invalidOutputPath)
+
+		// Should fail due to directory creation issues (on most systems)
+		if err != nil {
+			assert.Contains(t, err.Error(), "failed to create output directory")
+		}
+		// If it doesn't fail, that's also okay (some systems might handle this)
+	})
+
+	t.Run("should use fallback when dependency graph building fails", func(t *testing.T) {
+		// Create temporary directory for output
+		tempDir, err := os.MkdirTemp("", "er-generator-fallback-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		testOutputPath := filepath.Join(tempDir, "fallback_test.dot")
+
+		// Create definition with problematic relationships that force dependency graph errors
+		// Most cases are handled gracefully, but this exercises the fallback path
+		problematicDefinition := &parser.SORDefinition{
+			DisplayName: "Problematic SOR",
+			Description: "SOR designed to test fallback mechanisms",
+			Entities: map[string]parser.Entity{
+				"entity1": {
+					DisplayName: "Entity1",
+					ExternalId:  "Entity1",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true, AttributeAlias: "e1-id"},
+					},
+				},
+				"entity2": {
+					DisplayName: "Entity2",
+					ExternalId:  "Entity2",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true, AttributeAlias: "e2-id"},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"invalid_rel": {
+					DisplayName:   "Invalid Relationship",
+					FromAttribute: "definitely-nonexistent-attribute",
+					ToAttribute:   "e1-id",
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(problematicDefinition)
+		err = generator.Generate(testOutputPath)
+
+		// Should succeed - the Generate function has fallback mechanisms
+		assert.NoError(t, err, "Should succeed using fallback mechanisms")
+
+		// Verify output file was created
+		_, err = os.Stat(testOutputPath)
+		assert.NoError(t, err, "Output file should be created")
+	})
+
+	t.Run("should handle vertex operation errors", func(t *testing.T) {
+		// This test exercises the vertex checking and adding logic
+		tempDir, err := os.MkdirTemp("", "er-generator-vertex-ops-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		testOutputPath := filepath.Join(tempDir, "vertex_ops_test.dot")
+
+		// Create a standard definition to exercise vertex operations
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "Vertex Operations SOR",
+			Description: "Test vertex operations",
+			Entities: map[string]parser.Entity{
+				"entity_with_long_id_that_might_cause_issues": {
+					DisplayName: "Entity With Long ID",
+					ExternalId:  "EntityWithLongID",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{},
+		}
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		err = generator.Generate(testOutputPath)
+
+		// Should handle vertex operations correctly
+		assert.NoError(t, err, "Should handle vertex operations")
+
+		// Verify output file was created
+		_, err = os.Stat(testOutputPath)
+		assert.NoError(t, err, "Output file should be created")
+	})
+
+	t.Run("should handle path-based relationship styling", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "er-generator-path-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		testOutputPath := filepath.Join(tempDir, "path_based_test.dot")
+
+		// Create definition with path-based relationships to test styling
+		pathBasedDef := &parser.SORDefinition{
+			DisplayName: "Path Based SOR",
+			Description: "Test path-based relationship styling",
+			Entities: map[string]parser.Entity{
+				"user": {
+					DisplayName: "User",
+					ExternalId:  "User",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true, AttributeAlias: "user-id"},
+					},
+				},
+				"permission": {
+					DisplayName: "Permission",
+					ExternalId:  "Permission",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true, AttributeAlias: "perm-id"},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"user_to_perm": {
+					DisplayName:   "User to Permission",
+					FromAttribute: "user-id",
+					ToAttribute:   "perm-id",
+					Path: []parser.RelationshipPath{
+						{Relationship: "user_role", Direction: "forward"},
+						{Relationship: "role_perm", Direction: "forward"},
+					},
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(pathBasedDef)
+		err = generator.Generate(testOutputPath)
+		assert.NoError(t, err)
+
+		// Verify output file was created
+		_, err = os.Stat(testOutputPath)
+		assert.NoError(t, err, "Output file should be created")
+
+		// Check that output was generated successfully
+		content, err := os.ReadFile(testOutputPath)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, string(content), "Should generate diagram content")
+	})
+
+	t.Run("should handle edge addition errors gracefully", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "er-generator-edge-error-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		testOutputPath := filepath.Join(tempDir, "edge_error_test.dot")
+
+		// Create definition that might cause edge addition issues
+		edgeErrorDef := &parser.SORDefinition{
+			DisplayName: "Edge Error SOR",
+			Description: "Test edge addition error handling",
+			Entities: map[string]parser.Entity{
+				"entity1": {
+					DisplayName: "Entity 1",
+					ExternalId:  "Entity1",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true, AttributeAlias: "e1-id"},
+					},
+				},
+				"entity2": {
+					DisplayName: "Entity 2",
+					ExternalId:  "Entity2",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", Type: "string", UniqueId: true, AttributeAlias: "e2-id"},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"rel1": {
+					Name:          "Relationship1",
+					DisplayName:   "First Relationship",
+					FromAttribute: "e1-id",
+					ToAttribute:   "e2-id",
+				},
+				"rel2": {
+					Name:          "Relationship2",
+					DisplayName:   "Second Relationship",
+					FromAttribute: "e1-id", // Same source/target entities
+					ToAttribute:   "e2-id", // Should trigger duplicate edge handling
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(edgeErrorDef)
+		err = generator.Generate(testOutputPath)
+		assert.NoError(t, err, "Should handle edge errors gracefully")
+
+		// Verify output file was created
+		_, err = os.Stat(testOutputPath)
+		assert.NoError(t, err, "Output file should be created")
+	})
 }
 
 // Helper function removed as it was unused

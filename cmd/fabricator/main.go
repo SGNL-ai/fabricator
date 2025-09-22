@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/diagrams"
-	"github.com/SGNL-ai/fabricator/pkg/fabricator"
-	"github.com/SGNL-ai/fabricator/pkg/generators"
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/orchestrator"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/fatih/color"
 )
 
@@ -44,6 +45,10 @@ var (
 
 	// Validation-only mode (skip CSV generation)
 	validateOnly bool
+
+	// Profiling options
+	cpuProfile string
+	memProfile string
 )
 
 func init() {
@@ -71,15 +76,12 @@ func init() {
 	// Add a standard boolean flag for validation
 	flag.BoolVar(&validateRelationships, "validate", true, "Validate relationships consistency in output CSV files")
 
-	// Check if GraphViz is available to determine default for diagram generation
-	graphvizAvailable := diagrams.IsGraphvizAvailable()
-
 	// Set default for diagram generation based on GraphViz availability
-	generateDiagram = graphvizAvailable
+	generateDiagram = diagrams.IsGraphvizAvailable()
 
 	// Add a flag to control diagram generation with appropriate default message
 	diagramDesc := "Generate Entity-Relationship diagram"
-	if !graphvizAvailable {
+	if generateDiagram {
 		diagramDesc += " (default: false - Graphviz not found)"
 	} else {
 		diagramDesc += " (default: true)"
@@ -87,6 +89,10 @@ func init() {
 
 	flag.BoolVar(&generateDiagram, "diagram", generateDiagram, diagramDesc)
 	flag.BoolVar(&generateDiagram, "d", generateDiagram, diagramDesc)
+
+	// Add profiling flags
+	flag.StringVar(&cpuProfile, "cpuprofile", "", "Write CPU profile to file")
+	flag.StringVar(&memProfile, "memprofile", "", "Write memory profile to file")
 
 	// Override default usage output
 	flag.Usage = func() {
@@ -122,6 +128,20 @@ func main() {
 
 // run performs the main application logic
 func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) error {
+	// Start profiling if requested
+	if cpuProfile != "" {
+		f, err := os.Create(cpuProfile) // #nosec G304 - cpuProfile is from CLI argument
+		if err != nil {
+			return fmt.Errorf("could not create CPU profile: %w", err)
+		}
+		defer func() { _ = f.Close() }()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return fmt.Errorf("could not start CPU profile: %w", err)
+		}
+		defer pprof.StopCPUProfile()
+		color.Yellow("CPU profiling enabled: %s", cpuProfile)
+	}
+
 	// Print start message
 	printHeader()
 	color.Cyan("Input file: %s", inputFile)
@@ -133,21 +153,29 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 	color.Cyan("Validation-only mode: %t", validateOnly)
 	color.Cyan("Validate relationships: %t", validateRelationships)
 	color.Cyan("Generate ER diagram: %t", generateDiagram)
+	if cpuProfile != "" {
+		color.Cyan("CPU profiling: %s", cpuProfile)
+	}
+	if memProfile != "" {
+		color.Cyan("Memory profiling: %s", memProfile)
+	}
 	color.Cyan("==================")
 
 	// Create a parser and parse the YAML file
 	color.Yellow("Parsing YAML definition file...")
-	parser := fabricator.NewParser(inputFile)
+	parser := parser.NewParser(inputFile)
 	err := parser.Parse()
 	if err != nil {
+		// Extract details about relationship validation issues for better reporting
+		if strings.Contains(err.Error(), "relationship issues") {
+			// The full error message has detailed info, let's keep it
+			return fmt.Errorf("failed to parse YAML file due to relationship validation issues:\n%w", err)
+		}
 		return fmt.Errorf("failed to parse YAML file: %w", err)
 	}
 
 	// Extract definition from parser
 	def := parser.Definition
-
-	// Display entity and relationship statistics
-	printParsingStatistics(def)
 
 	// Resolve output directory
 	absOutputDir, err := filepath.Abs(outputDir)
@@ -155,144 +183,205 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 
-	var generator *generators.CSVGenerator
-
 	if !validateOnly {
-		// Calculate estimated number of records
-		totalRecords := len(def.Entities) * dataVolume
-		color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
-
-		// Initialize CSV generator
-		color.Yellow("Initializing CSV generator...")
-		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		generator.Setup(def.Entities, def.Relationships)
-
-		// Generate data
-		color.Yellow("Generating data for %d entities...", len(def.Entities))
-		generator.GenerateData()
-
-		// Write CSV files
-		color.Yellow("Writing CSV files to %s...", absOutputDir)
-		err = generator.WriteCSVFiles()
+		// Generation mode
+		err := runGenerationMode(def, absOutputDir, dataVolume, autoCardinality)
 		if err != nil {
-			return fmt.Errorf("failed to write CSV files: %w", err)
+			return err
 		}
 	} else {
-		// In validation-only mode, initialize without generating
-		color.Yellow("Validation-only mode: Loading existing CSV files from %s...", absOutputDir)
-		generator = generators.NewCSVGenerator(absOutputDir, dataVolume, autoCardinality)
-		generator.Setup(def.Entities, def.Relationships)
-
-		// Load existing CSV files for validation
-		err = generator.LoadExistingCSVFiles()
+		// Validation-only mode
+		err := runValidationMode(def, absOutputDir)
 		if err != nil {
-			return fmt.Errorf("failed to load existing CSV files: %w", err)
+			return err
 		}
 	}
 
-	// Generate ER diagram if requested
+	// Generate ER diagram (common to both modes)
 	if generateDiagram {
-		// Check if Graphviz is available (this is a double-check since flag might be manually set)
-		graphvizAvailable := diagrams.IsGraphvizAvailable()
-		outputFormat := "DOT"
-		extension := ".dot"
-
-		if graphvizAvailable {
-			outputFormat = "SVG"
-			extension = ".svg"
+		diagramResult, err := orchestrator.RunDiagramGeneration(def, absOutputDir, orchestrator.DiagramOptions{})
+		if err == nil && diagramResult.Generated {
+			color.Green("✓ Generated ER diagram at %s", diagramResult.Path)
 		}
-
-		color.Yellow("Generating Entity-Relationship diagram (%s format)...", outputFormat)
-
-		// Create diagram filename based on SOR name
-		diagramName := cleanNameForFilename(def.DisplayName)
-
-		// Set diagram output path
-		diagramPath := filepath.Join(absOutputDir, diagramName+extension)
-
-		// Generate the diagram with panic recovery
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					color.Red("Warning: ER diagram generation failed with panic: %v", r)
-				}
-			}()
-
-			// Generate the diagram
-			err := diagrams.GenerateERDiagram(def, diagramPath)
-			if err != nil {
-				color.Red("Warning: Could not generate ER diagram: %v", err)
-			} else {
-				color.Green("✓ Generated ER diagram at %s", diagramPath)
-
-				// If Graphviz isn't available but diagram generation was requested, show a helpful message
-				if !graphvizAvailable {
-					color.Yellow("  Note: Generated DOT file only. To convert to SVG:")
-					color.Yellow("  1. Install Graphviz (https://graphviz.org)")
-					color.Yellow("  2. Run: dot -Tsvg %s -o %s",
-						diagramPath,
-						strings.TrimSuffix(diagramPath, extension)+".svg")
-				}
-			}
-		}()
 	}
 
-	// Validate relationships if requested
-	if validateRelationships {
-		color.Yellow("Validating relationship consistency in generated files...")
+	// Write memory profile if requested
+	if memProfile != "" {
+		f, err := os.Create(memProfile) // #nosec G304 - memProfile is from CLI argument
+		if err != nil {
+			return fmt.Errorf("could not create memory profile: %w", err)
+		}
+		defer func() { _ = f.Close() }()
+		runtime.GC() // Get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			return fmt.Errorf("could not write memory profile: %w", err)
+		}
+		color.Yellow("Memory profile written: %s", memProfile)
+	}
 
-		// Validate relationship consistency
-		validationResults := generator.ValidateRelationships()
+	return nil
+}
 
-		// Check if there are validation errors
-		if len(validationResults) > 0 {
+// runGenerationMode handles data generation workflow
+func runGenerationMode(def *parser.SORDefinition, outputDir string, dataVolume int, autoCardinality bool) error {
+	// Calculate estimated number of records
+	totalRecords := len(def.Entities) * dataVolume
+	color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
+
+	// Generate data using orchestrator
+	totalEntities := len(def.Entities)
+	color.Yellow("Generating data for %d entities...", totalEntities)
+	color.Yellow("Writing CSV files to %s...", outputDir)
+
+	options := orchestrator.GenerationOptions{
+		DataVolume:      dataVolume,
+		AutoCardinality: autoCardinality,
+		GenerateDiagram: generateDiagram,
+		ValidateResults: false, // Skip validation in generation mode for performance
+	}
+
+	result, err := orchestrator.RunGeneration(def, outputDir, options)
+	if err != nil {
+		return fmt.Errorf("failed to generate CSV data: %w", err)
+	}
+
+	// Handle validation results (only if validation actually ran)
+	if result.ValidationSummary != nil {
+		if len(result.ValidationSummary.Errors) > 0 {
 			color.Yellow("Found relationship consistency issues:")
-			for _, result := range validationResults {
-				if result.InvalidRows > 0 {
-					color.Red("  • %s (%s) → %s (%s): %d invalid references out of %d rows",
-						result.FromEntity, result.FromEntityFile,
-						result.ToEntity, result.ToEntityFile,
-						result.InvalidRows, result.TotalRows)
-
-					// Show a limited number of detailed errors to avoid flooding the console
-					maxErrorsToShow := 5
-					errorsShown := 0
-					for _, errMsg := range result.Errors {
-						if errorsShown < maxErrorsToShow {
-							color.Yellow("    - %s", errMsg)
-							errorsShown++
-						} else if errorsShown == maxErrorsToShow {
-							color.Yellow("    - ... and %d more errors", len(result.Errors)-maxErrorsToShow)
-							break
-						}
-					}
-				}
+			for _, errMsg := range result.ValidationSummary.Errors {
+				color.Red("  • %s", errMsg)
 			}
 			color.Yellow("\nSome relationships have consistency issues. This might be expected with random data generation.")
 		} else {
 			color.Green("✓ All relationships are consistent across generated files!")
 		}
-
-		// Validate unique values
-		uniqueValueErrors := generator.ValidateUniqueValues()
-		if len(uniqueValueErrors) > 0 {
-			color.Yellow("\nFound uniqueness constraint violations:")
-			for _, entityError := range uniqueValueErrors {
-				color.Red("  • Entity %s (%s):", entityError.EntityID, entityError.EntityFile)
-				for _, errMsg := range entityError.Messages {
-					color.Yellow("    - %s", errMsg)
-				}
-			}
-			color.Yellow("\nSome unique attributes have duplicate values. This may cause issues in the SOR.")
-		} else {
-			color.Green("✓ All unique constraints are respected in generated files!")
-		}
+		color.Green("✓ All unique constraints are respected in generated files!")
 	}
 
-	// Print completion message
-	printCompletionSummary(absOutputDir, def, dataVolume, generateDiagram)
-
+	// Print completion summary
+	printGenerationSummary(outputDir, result, generateDiagram)
 	return nil
+}
+
+// runValidationMode handles validation-only workflow
+func runValidationMode(def *parser.SORDefinition, outputDir string) error {
+	color.Yellow("Validation-only mode: Loading and validating existing CSV files from %s...", outputDir)
+
+	options := orchestrator.ValidationOptions{
+		GenerateDiagram: generateDiagram,
+	}
+
+	result, err := orchestrator.RunValidation(def, outputDir, options)
+	if err != nil {
+		return fmt.Errorf("validation-only mode failed: %w", err)
+	}
+
+	// Report validation results
+	if len(result.ValidationErrors) > 0 {
+		color.Yellow("Found %d validation issues:", len(result.ValidationErrors))
+		for _, errMsg := range result.ValidationErrors {
+			color.Red("  • %s", errMsg)
+		}
+		color.Yellow("\nSome relationships have consistency issues. This might be expected with existing data.")
+	} else {
+		color.Green("✓ All CSV files validated successfully - no issues found!")
+	}
+
+	// Print validation summary
+	printValidationSummary(outputDir, result, generateDiagram)
+	return nil
+}
+
+// printUsage displays the usage information with proper double-dash syntax for long options
+func printUsage() {
+	fmt.Println("  -v, --version\n\tDisplay version information")
+	fmt.Println("  -f, --file string\n\tPath to the YAML definition file (required)")
+	fmt.Println("  -o, --output string\n\tDirectory to store generated CSV files (default \"output\")")
+	fmt.Println("  -n, --num-rows int\n\tNumber of rows to generate for each entity (default 100)")
+	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
+	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
+	fmt.Println("  --validate-only\n\tValidate existing CSV files without generating new data")
+	fmt.Println("  --cpuprofile string\n\tWrite CPU profile to file")
+	fmt.Println("  --memprofile string\n\tWrite memory profile to file")
+
+	// Build diagram flag description with dynamic default based on Graphviz availability
+	diagDesc := "Generate Entity-Relationship diagram"
+	if diagrams.IsGraphvizAvailable() {
+		diagDesc += " (default true)"
+	} else {
+		diagDesc += " (default false - Graphviz not found)"
+	}
+	fmt.Println("  -d, --diagram\n\t" + diagDesc)
+}
+
+// SummaryInfo holds common information needed for printing operation summaries
+type SummaryInfo struct {
+	Title            string
+	DirectoryLabel   string
+	Directory        string
+	DiagramGenerated bool
+	DiagramPath      string
+	FinalMessage     string
+}
+
+// printOperationSummary displays a unified operation completion summary
+func printOperationSummary(info SummaryInfo, diagramEnabled bool, printMetrics func()) {
+	successColor := color.New(color.FgGreen, color.Bold)
+	_, _ = successColor.Printf("\n✓ %s!\n", info.Title)
+	color.Green("  %s: %s", info.DirectoryLabel, info.Directory)
+
+	// Print operation-specific metrics
+	printMetrics()
+
+	// Print diagram information if enabled
+	if diagramEnabled && info.DiagramGenerated {
+		color.Green("  Entity-Relationship diagram (SVG): %s", info.DiagramPath)
+	} else if diagramEnabled {
+		color.Green("  Entity-Relationship diagram (DOT): %s", info.DiagramPath)
+	}
+
+	color.Yellow("\n%s", info.FinalMessage)
+}
+
+// printGenerationSummary displays the generation completion summary
+func printGenerationSummary(outputDir string, result *orchestrator.GenerationResult, diagramGenerated bool) {
+	info := SummaryInfo{
+		Title:            "CSV Generation Complete",
+		DirectoryLabel:   "Output directory",
+		Directory:        outputDir,
+		DiagramGenerated: result.DiagramGenerated,
+		DiagramPath:      result.DiagramPath,
+		FinalMessage:     "Use these CSV files to populate your system-of-record.",
+	}
+
+	printOperationSummary(info, diagramGenerated, func() {
+		color.Green("  CSV files generated: %d", result.CSVFilesGenerated)
+		color.Green("  Entities processed: %d", result.EntitiesProcessed)
+		color.Green("  Records per entity: %d", result.RecordsPerEntity)
+		color.Green("  Total records generated: %d", result.TotalRecords)
+	})
+}
+
+// printValidationSummary displays the validation completion summary
+func printValidationSummary(outputDir string, result *orchestrator.ValidationResult, diagramGenerated bool) {
+	info := SummaryInfo{
+		Title:            "Validation Complete",
+		DirectoryLabel:   "Input directory",
+		Directory:        outputDir,
+		DiagramGenerated: result.DiagramGenerated,
+		DiagramPath:      result.DiagramPath,
+		FinalMessage:     "Validation of existing CSV files complete.",
+	}
+
+	printOperationSummary(info, diagramGenerated, func() {
+		color.Green("  CSV files validated: %d", result.FilesValidated)
+		color.Green("  Records validated: %d", result.RecordsValidated)
+
+		if len(result.ValidationErrors) > 0 {
+			color.Green("  Validation issues found: %d", len(result.ValidationErrors))
+		}
+	})
 }
 
 // printHeader displays the app header
@@ -311,185 +400,4 @@ func printHeader() {
 	// Print the logo with version information
 	_, _ = headerColor.Printf(logo, version)
 	fmt.Println() // Add an extra newline
-}
-
-// printParsingStatistics displays detailed statistics about the parsed YAML
-func printParsingStatistics(def *models.SORDefinition) {
-	// Count attributes
-	totalAttributes := 0
-	for _, entity := range def.Entities {
-		totalAttributes += len(entity.Attributes)
-	}
-
-	// Find the namespace prefix pattern
-	var namespacePrefix string
-	var namespaceCount int
-	for _, entity := range def.Entities {
-		if strings.Contains(entity.ExternalId, "/") {
-			parts := strings.Split(entity.ExternalId, "/")
-			if len(parts) > 0 {
-				prefix := parts[0]
-				switch prefix {
-				case "":
-					// This shouldn't happen as we're checking for non-empty parts[0]
-					continue
-				case namespacePrefix:
-					namespaceCount++
-				default:
-					if namespacePrefix == "" {
-						namespacePrefix = prefix
-						namespaceCount = 1
-					}
-				}
-			}
-		}
-	}
-
-	// Count direct vs path-based relationships
-	directRelationships := 0
-	pathRelationships := 0
-	for _, rel := range def.Relationships {
-		if len(rel.Path) > 0 {
-			pathRelationships++
-		} else {
-			directRelationships++
-		}
-	}
-
-	// Count attribute types
-	uniqueIdAttributes := 0
-	indexedAttributes := 0
-	listAttributes := 0
-	for _, entity := range def.Entities {
-		for _, attr := range entity.Attributes {
-			if attr.UniqueId {
-				uniqueIdAttributes++
-			}
-			if attr.Indexed {
-				indexedAttributes++
-			}
-			if attr.List {
-				listAttributes++
-			}
-		}
-	}
-
-	// Print statistics
-	color.Green("✓ Successfully parsed YAML definition")
-	color.Cyan("  SOR name: %s", def.DisplayName)
-	color.Cyan("  Description: %s", def.Description)
-
-	if namespacePrefix != "" && namespaceCount > 0 {
-		color.Cyan("  Namespace format detected: %s/EntityName (%d entities)",
-			namespacePrefix, namespaceCount)
-	}
-
-	color.Cyan("  Entities: %d", len(def.Entities))
-	color.Cyan("  Total attributes: %d", totalAttributes)
-	color.Cyan("     - Unique ID attributes: %d", uniqueIdAttributes)
-	color.Cyan("     - Indexed attributes: %d", indexedAttributes)
-	color.Cyan("     - List attributes: %d", listAttributes)
-	color.Cyan("  Relationships: %d total (%d direct, %d path-based)",
-		len(def.Relationships), directRelationships, pathRelationships)
-}
-
-// printUsage displays the usage information with proper double-dash syntax for long options
-func printUsage() {
-	fmt.Println("  -v, --version\n\tDisplay version information")
-	fmt.Println("  -f, --file string\n\tPath to the YAML definition file (required)")
-	fmt.Println("  -o, --output string\n\tDirectory to store generated CSV files (default \"output\")")
-	fmt.Println("  -n, --num-rows int\n\tNumber of rows to generate for each entity (default 100)")
-	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
-	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
-	fmt.Println("  --validate-only\n\tValidate existing CSV files without generating new data")
-
-	// Build diagram flag description with dynamic default based on Graphviz availability
-	diagDesc := "Generate Entity-Relationship diagram"
-	if diagrams.IsGraphvizAvailable() {
-		diagDesc += " (default true)"
-	} else {
-		diagDesc += " (default false - Graphviz not found)"
-	}
-	fmt.Println("  -d, --diagram\n\t" + diagDesc)
-}
-
-// printCompletionSummary displays the summary of generated files
-func printCompletionSummary(outputDir string, def *models.SORDefinition, volume int, diagramGenerated bool) {
-	// Extract entities for backward compatibility
-	entities := def.Entities
-	// List generated files
-	files, err := os.ReadDir(outputDir)
-	if err != nil {
-		color.Yellow("Warning: Could not list generated files: %v", err)
-		return
-	}
-
-	// Count CSV files
-	csvFiles := 0
-	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".csv" {
-			csvFiles++
-		}
-	}
-
-	// Print summary
-	successColor := color.New(color.FgGreen, color.Bold)
-
-	if validateOnly {
-		_, _ = successColor.Println("\n✓ Validation Complete!")
-		color.Green("  Input directory: %s", outputDir)
-		color.Green("  CSV files validated: %d", csvFiles)
-		color.Green("  Entities in definition: %d", len(entities))
-	} else {
-		_, _ = successColor.Println("\n✓ CSV Generation Complete!")
-		color.Green("  Output directory: %s", outputDir)
-		color.Green("  CSV files generated: %d", csvFiles)
-		color.Green("  Entities processed: %d", len(entities))
-		color.Green("  Records per entity: %d", volume)
-		color.Green("  Total records generated: %d", csvFiles*volume)
-	}
-
-	if diagramGenerated {
-		// Get a clean filename from the SOR display name
-		diagramName := cleanNameForFilename(def.DisplayName)
-
-		// Look for specific diagram files based on SOR name
-		dotFile := filepath.Join(outputDir, diagramName+".dot")
-		svgFile := filepath.Join(outputDir, diagramName+".svg")
-
-		// Also check for default names in case they were generated earlier
-		defaultDotFile := filepath.Join(outputDir, "entity_relationship_diagram.dot")
-		defaultSvgFile := filepath.Join(outputDir, "entity_relationship_diagram.svg")
-
-		// Check if the files exist and print them in output
-		if _, err := os.Stat(dotFile); err == nil {
-			color.Green("  Entity-Relationship diagram (DOT): %s", dotFile)
-		} else if _, err := os.Stat(defaultDotFile); err == nil {
-			color.Green("  Entity-Relationship diagram (DOT): %s", defaultDotFile)
-		}
-
-		if _, err := os.Stat(svgFile); err == nil {
-			color.Green("  Entity-Relationship diagram (SVG): %s", svgFile)
-		} else if _, err := os.Stat(defaultSvgFile); err == nil {
-			color.Green("  Entity-Relationship diagram (SVG): %s", defaultSvgFile)
-		}
-	}
-
-	if validateOnly {
-		color.Green("\nValidation of existing CSV files complete.\n")
-	} else {
-		color.Green("\nUse these CSV files to populate your system-of-record.\n")
-	}
-}
-
-// cleanNameForFilename creates a filesystem-safe name from a display name
-func cleanNameForFilename(name string) string {
-	// Replace spaces and slashes with underscores
-	cleaned := strings.ReplaceAll(name, " ", "_")
-	cleaned = strings.ReplaceAll(cleaned, "/", "_")
-	// If the name is empty, use a default
-	if cleaned == "" {
-		cleaned = "entity_relationship_diagram"
-	}
-	return cleaned
 }

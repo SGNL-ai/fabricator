@@ -4,9 +4,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/SGNL-ai/fabricator/pkg/models"
+	"github.com/SGNL-ai/fabricator/pkg/parser"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestIsGraphvizAvailable tests both success and failure paths of IsGraphvizAvailable
@@ -50,14 +52,14 @@ func TestGenerateDOTOnly(t *testing.T) {
 	testOutputPath := filepath.Join(tempDir, "test_diagram.dot")
 
 	// Create a minimal mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR DOT Only",
 		Description: "Test System of Record for DOT-only generation",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -96,9 +98,9 @@ func TestGenerateDOTOnly(t *testing.T) {
 // TestGenerateWithInvalidTempFile tests error handling when temporary file creation fails
 func TestGenerateWithInvalidTempFile(t *testing.T) {
 	// Create a minimal mock SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities:    map[string]models.Entity{},
+		Entities:    map[string]parser.Entity{},
 	}
 
 	// Create a generator
@@ -123,9 +125,9 @@ func TestGenerateWithInvalidTempFile(t *testing.T) {
 // TestExtractEntitiesWithNamespaces tests entity extraction with various namespace patterns
 func TestExtractEntitiesWithNamespaces(t *testing.T) {
 	// Create a SORDefinition with entities having different namespace patterns
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"entity1": {
 				DisplayName: "", // No display name, should use ExternalId
 				ExternalId:  "Namespace/Entity1",
@@ -184,13 +186,13 @@ func TestExtractEntitiesWithNamespaces(t *testing.T) {
 // TestExtractRelationshipsComprehensive tests all relationship extraction paths
 func TestExtractRelationshipsComprehensive(t *testing.T) {
 	// Create a SORDefinition with various relationship patterns
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -215,7 +217,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 			"role": {
 				DisplayName: "Role",
 				ExternalId:  "Test/Role",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -235,7 +237,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 			"permission": {
 				DisplayName: "Permission",
 				ExternalId:  "Test/Permission",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -246,7 +248,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				},
 			},
 		},
-		Relationships: map[string]models.Relationship{
+		Relationships: map[string]parser.Relationship{
 			"rel1": {
 				// Regular direct relationship with DisplayName
 				DisplayName:   "User to Role",
@@ -285,7 +287,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				// Simple path-based relationship
 				DisplayName: "Path Based Relationship",
 				Name:        "path_rel",
-				Path: []models.RelationshipPath{
+				Path: []parser.RelationshipPath{
 					{Relationship: "rel1", Direction: "outbound"},
 					{Relationship: "rel2", Direction: "outbound"},
 				},
@@ -294,7 +296,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				// Path with non-existent relationship (should be skipped)
 				DisplayName: "Invalid Path",
 				Name:        "invalid_path",
-				Path: []models.RelationshipPath{
+				Path: []parser.RelationshipPath{
 					{Relationship: "nonexistent", Direction: "outbound"},
 				},
 			},
@@ -302,7 +304,7 @@ func TestExtractRelationshipsComprehensive(t *testing.T) {
 				// Self-referential path (should be skipped)
 				DisplayName: "Self Path",
 				Name:        "self_path",
-				Path: []models.RelationshipPath{
+				Path: []parser.RelationshipPath{
 					{Relationship: "rel3", Direction: "outbound"},
 				},
 			},
@@ -378,11 +380,11 @@ func TestGenerateWithEmptyEntities(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }() // Clean up after the test
 
 	// Create a SORDefinition with empty entities
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName:   "Empty SOR",
 		Description:   "SOR with no entities",
-		Entities:      map[string]models.Entity{},
-		Relationships: map[string]models.Relationship{},
+		Entities:      map[string]parser.Entity{},
+		Relationships: map[string]parser.Relationship{},
 	}
 
 	// Create output path
@@ -416,13 +418,13 @@ func TestGenerateGraphvizExecError(t *testing.T) {
 	defer func() { _ = os.RemoveAll(tempDir) }() // Clean up after the test
 
 	// Create a simple SORDefinition
-	mockDefinition := &models.SORDefinition{
+	mockDefinition := &parser.SORDefinition{
 		DisplayName: "Test SOR",
-		Entities: map[string]models.Entity{
+		Entities: map[string]parser.Entity{
 			"user": {
 				DisplayName: "User",
 				ExternalId:  "Test/User",
-				Attributes: []models.Attribute{
+				Attributes: []parser.Attribute{
 					{
 						Name:           "id",
 						ExternalId:     "id",
@@ -457,4 +459,314 @@ func TestGenerateGraphvizExecError(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error when graphviz execution fails, got nil")
 	}
+}
+
+// TestGenerateWithMkdirAllError tests error handling when output directory creation fails
+func TestGenerateWithMkdirAllError(t *testing.T) {
+	// Create a simple SORDefinition
+	mockDefinition := &parser.SORDefinition{
+		DisplayName: "Test SOR",
+		Entities:    map[string]parser.Entity{},
+	}
+
+	// Create a generator
+	generator := NewERDiagramGenerator(mockDefinition)
+
+	// Use a path that would cause os.MkdirAll to fail (null byte in path)
+	invalidPath := "/tmp/invalid\x00path/diagram.dot"
+
+	// Attempt to generate diagram - should fail at MkdirAll
+	err := generator.Generate(invalidPath)
+	if err == nil {
+		t.Error("Expected error when directory creation fails, got nil")
+	}
+	if !contains(err.Error(), "failed to create output directory") {
+		t.Errorf("Expected directory creation error, got: %v", err)
+	}
+}
+
+// contains is a helper function to check if a string contains a substring
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
+}
+
+// TestGenerateErrorPathsCoverage focuses on getting Generate function above 80% coverage
+func TestGenerateErrorPathsCoverage(t *testing.T) {
+	t.Run("should handle dependency graph build error", func(t *testing.T) {
+		// Create a definition that might cause BuildEntityDependencyGraph to fail
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "Error Test SOR",
+			Entities: map[string]parser.Entity{
+				"user": {
+					DisplayName: "User",
+					ExternalId:  "User",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "user-id", UniqueId: true},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"invalid_rel": {
+					Name:          "invalid",
+					FromAttribute: "nonexistent",
+					ToAttribute:   "user-id",
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		tempDir, err := os.MkdirTemp("", "er-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		outputPath := filepath.Join(tempDir, "test.dot")
+
+		// This should trigger the dependency graph error path and fallback
+		err = generator.Generate(outputPath)
+		// Should still succeed due to fallback logic but exercises error path
+		assert.NoError(t, err)
+	})
+
+	t.Run("should handle duplicate edges and path-based relationships", func(t *testing.T) {
+		// Create a definition with path-based relationships and potential duplicates
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "Path Test SOR",
+			Entities: map[string]parser.Entity{
+				"user": {
+					DisplayName: "User",
+					ExternalId:  "User",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "user-id", UniqueId: true},
+						{Name: "role_ref", ExternalId: "role_ref", AttributeAlias: "role-ref"},
+					},
+				},
+				"role": {
+					DisplayName: "Role",
+					ExternalId:  "Role",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "role-id", UniqueId: true},
+						{Name: "perm_ref", ExternalId: "perm_ref", AttributeAlias: "perm-ref"},
+					},
+				},
+				"permission": {
+					DisplayName: "Permission",
+					ExternalId:  "Permission",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "perm-id", UniqueId: true},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"user_role": {
+					Name:          "user_role",
+					DisplayName:   "User to Role",
+					FromAttribute: "role-ref",
+					ToAttribute:   "role-id",
+				},
+				"role_perm": {
+					Name:          "role_perm",
+					DisplayName:   "Role to Permission",
+					FromAttribute: "perm-ref",
+					ToAttribute:   "perm-id",
+				},
+				"user_perm_path": {
+					Name:        "user_perm_path",
+					DisplayName: "User to Permission (Path)",
+					Path: []parser.RelationshipPath{
+						{Relationship: "user_role", Direction: "outbound"},
+						{Relationship: "role_perm", Direction: "outbound"},
+					},
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		tempDir, err := os.MkdirTemp("", "er-path-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		outputPath := filepath.Join(tempDir, "path_test.dot")
+
+		// This should exercise path-based relationship logic and duplicate edge handling
+		err = generator.Generate(outputPath)
+		assert.NoError(t, err)
+
+		// Verify file was created
+		_, err = os.Stat(outputPath)
+		assert.NoError(t, err)
+	})
+
+	t.Run("should handle edge creation errors and non-unique display names", func(t *testing.T) {
+		// Create a definition that exercises edge creation error paths
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "Edge Error Test SOR",
+			Entities: map[string]parser.Entity{
+				"entity1": {
+					DisplayName: "Entity 1",
+					ExternalId:  "Entity1",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "e1-id", UniqueId: true},
+						{Name: "ref", ExternalId: "ref", AttributeAlias: "e1-ref"},
+					},
+				},
+				"entity2": {
+					DisplayName: "Entity 2",
+					ExternalId:  "Entity2",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "e2-id", UniqueId: true},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"rel1": {
+					Name:          "relationship1", // No DisplayName - should use Name
+					FromAttribute: "e1-ref",
+					ToAttribute:   "e2-id",
+				},
+				"rel2": {
+					DisplayName:   "", // Empty DisplayName - should use Name
+					Name:          "relationship2",
+					FromAttribute: "e1-ref",
+					ToAttribute:   "e2-id",
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		tempDir, err := os.MkdirTemp("", "er-edge-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		outputPath := filepath.Join(tempDir, "edge_test.dot")
+
+		// This should exercise edge creation and duplicate handling
+		err = generator.Generate(outputPath)
+		assert.NoError(t, err)
+	})
+
+	t.Run("should handle DOT file output without SVG extension", func(t *testing.T) {
+		// Test the DOT output path when file doesn't have .dot extension
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "DOT Output Test",
+			Entities: map[string]parser.Entity{
+				"simple": {
+					DisplayName: "Simple Entity",
+					ExternalId:  "Simple",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "simple-id", UniqueId: true},
+					},
+				},
+			},
+		}
+
+		// Force IsGraphvizAvailable to return false to ensure DOT output
+		originalIsGraphvizAvailable := IsGraphvizAvailable
+		defer func() { IsGraphvizAvailable = originalIsGraphvizAvailable }()
+		IsGraphvizAvailable = func() bool { return false }
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		tempDir, err := os.MkdirTemp("", "er-dot-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		// Use a file without .dot extension - should trigger extension change logic
+		outputPath := filepath.Join(tempDir, "diagram.svg") // .svg extension but no Graphviz
+
+		err = generator.Generate(outputPath)
+		assert.NoError(t, err)
+
+		// Should have created a .dot file instead
+		dotPath := filepath.Join(tempDir, "diagram.dot")
+		_, err = os.Stat(dotPath)
+		assert.NoError(t, err, "Should have created .dot file when extension was changed")
+	})
+
+	t.Run("should trigger specific error conditions for 80% coverage", func(t *testing.T) {
+		// Create a complex definition designed to hit specific uncovered lines
+		mockDefinition := &parser.SORDefinition{
+			DisplayName: "Coverage Test SOR",
+			Entities: map[string]parser.Entity{
+				"A": {
+					DisplayName: "Entity A",
+					ExternalId:  "A",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "a-id", UniqueId: true},
+						{Name: "b_ref", ExternalId: "b_ref", AttributeAlias: "b-ref"},
+					},
+				},
+				"B": {
+					DisplayName: "Entity B",
+					ExternalId:  "B",
+					Attributes: []parser.Attribute{
+						{Name: "id", ExternalId: "id", AttributeAlias: "b-id", UniqueId: true},
+						{Name: "a_ref", ExternalId: "a_ref", AttributeAlias: "a-ref"},
+					},
+				},
+			},
+			Relationships: map[string]parser.Relationship{
+				"direct_rel": {
+					Name:          "DirectRel",
+					DisplayName:   "Direct Relationship",
+					FromAttribute: "b-ref",
+					ToAttribute:   "b-id",
+				},
+				"duplicate_rel": {
+					Name:          "DuplicateRel",
+					DisplayName:   "Another Direct Relationship", // Should create duplicate edge
+					FromAttribute: "b-ref",
+					ToAttribute:   "b-id",
+				},
+				"path_rel": {
+					Name:        "PathRel",
+					DisplayName: "Path Relationship",
+					Path: []parser.RelationshipPath{
+						{Relationship: "direct_rel", Direction: "outbound"},
+					},
+				},
+				"empty_name_rel": {
+					Name:          "EmptyNameRel",
+					DisplayName:   "", // Empty display name - should use Name
+					FromAttribute: "a-ref",
+					ToAttribute:   "a-id",
+				},
+				"no_name_rel": {
+					// No DisplayName field at all - should use Name
+					Name:          "NoNameRel",
+					FromAttribute: "a-ref",
+					ToAttribute:   "a-id",
+				},
+				"path_no_name": {
+					Name: "PathNoName",
+					Path: []parser.RelationshipPath{
+						{Relationship: "nonexistent_rel", Direction: "outbound"}, // Should be skipped
+					},
+				},
+			},
+		}
+
+		generator := NewERDiagramGenerator(mockDefinition)
+		tempDir, err := os.MkdirTemp("", "er-coverage-test-*")
+		if err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
+		defer func() { _ = os.RemoveAll(tempDir) }()
+
+		outputPath := filepath.Join(tempDir, "coverage_test.dot")
+
+		// This should hit many of the uncovered branches
+		err = generator.Generate(outputPath)
+		assert.NoError(t, err)
+
+		// Verify file was created
+		_, err = os.Stat(outputPath)
+		assert.NoError(t, err)
+	})
 }

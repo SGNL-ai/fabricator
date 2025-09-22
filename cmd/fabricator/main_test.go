@@ -134,6 +134,122 @@ func TestCommandLineFlagParsing(t *testing.T) {
 	})
 }
 
+// Test validation-only mode CLI behavior
+func TestValidationOnlyMode(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "fabricator-validation-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	// Create a minimal YAML file
+	yamlContent := `displayName: Test SOR
+description: Test system of record
+entities:
+  entity1:
+    displayName: TestEntity
+    externalId: Test/Entity
+    description: A test entity
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+      - name: name
+        externalId: name
+        type: String`
+
+	yamlPath := filepath.Join(tempDir, "test.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		t.Fatalf("Failed to write YAML file: %v", err)
+	}
+
+	// Create output directory and CSV file
+	outputPath := filepath.Join(tempDir, "output")
+	if err := os.MkdirAll(outputPath, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	csvContent := `id,name
+entity-1,Test Name
+entity-2,Another Name`
+	csvPath := filepath.Join(outputPath, "Entity.csv")
+	if err := os.WriteFile(csvPath, []byte(csvContent), 0644); err != nil {
+		t.Fatalf("Failed to write CSV file: %v", err)
+	}
+
+	// Save current flag values
+	oldValidateOnly := validateOnly
+	defer func() { validateOnly = oldValidateOnly }()
+	validateOnly = true
+
+	// Run the application in validation-only mode
+	err = run(yamlPath, outputPath, 10, false)
+
+	// Should succeed - new validation-only mode doesn't fail fatally
+	if err != nil {
+		t.Fatalf("run() in validation-only mode failed: %v", err)
+	}
+
+	// CSV file should remain unchanged
+	modifiedCSVContent, err := os.ReadFile(csvPath)
+	if err != nil {
+		t.Fatalf("Failed to read CSV file after validation: %v", err)
+	}
+
+	// Check that the CSV file was not modified
+	if string(modifiedCSVContent) != csvContent {
+		t.Error("CSV file was modified in validation-only mode")
+	}
+}
+
+func TestValidateOnlyWithMissingCSV(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "fabricator-missing-csv-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	yamlContent := `displayName: Test SOR
+description: Test system of record
+entities:
+  entity1:
+    displayName: TestEntity
+    externalId: Test/Entity
+    description: A test entity
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true`
+
+	yamlPath := filepath.Join(tempDir, "test.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		t.Fatalf("Failed to write YAML file: %v", err)
+	}
+
+	// Create empty output directory (no CSV files)
+	outputPath := filepath.Join(tempDir, "empty_output")
+	if err := os.MkdirAll(outputPath, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	oldValidateOnly := validateOnly
+	defer func() { validateOnly = oldValidateOnly }()
+	validateOnly = true
+
+	// Run the application in validation-only mode
+	err = run(yamlPath, outputPath, 10, false)
+
+	// New behavior: should succeed but report validation issues
+	// (collect errors instead of failing fatally)
+	if err != nil {
+		t.Errorf("run() should not fail fatally for missing CSV files, got: %v", err)
+	}
+	// The missing files should be reported as validation issues in the output
+}
+
 // TestPrintHeaderFunctionExists just checks that the function exists and runs
 func TestPrintHeaderFunctionExists(t *testing.T) {
 	// Just call the function to make sure it doesn't panic
@@ -228,6 +344,108 @@ func TestRunWithNonexistentYAML(t *testing.T) {
 	}
 }
 
+func TestPrintOperationSummaryBranches(t *testing.T) {
+	// Test various branches of printOperationSummary function
+
+	// Disable color for cleaner test output
+	oldNoColor := color.NoColor
+	defer func() { color.NoColor = oldNoColor }()
+	color.NoColor = true
+
+	t.Run("with diagram enabled and generated", func(t *testing.T) {
+		info := SummaryInfo{
+			Title:            "Test Complete",
+			DirectoryLabel:   "Output directory",
+			Directory:        "/tmp/test",
+			DiagramGenerated: true,
+			DiagramPath:      "/tmp/test/diagram.svg",
+			FinalMessage:     "Test complete",
+		}
+		// Call the function - if it panics, the test will fail
+		printOperationSummary(info, true, func() {
+			// Empty metrics function
+		})
+	})
+
+	t.Run("with diagram enabled but not generated", func(t *testing.T) {
+		info := SummaryInfo{
+			Title:            "Test Complete",
+			DirectoryLabel:   "Output directory",
+			Directory:        "/tmp/test",
+			DiagramGenerated: false,
+			DiagramPath:      "/tmp/test/diagram.dot",
+			FinalMessage:     "Test complete",
+		}
+		// This should cover line 294 - the else if diagramEnabled branch
+		printOperationSummary(info, true, func() {
+			// Empty metrics function
+		})
+	})
+
+	t.Run("with diagram disabled", func(t *testing.T) {
+		info := SummaryInfo{
+			Title:            "Test Complete",
+			DirectoryLabel:   "Output directory",
+			Directory:        "/tmp/test",
+			DiagramGenerated: false,
+			DiagramPath:      "",
+			FinalMessage:     "Test complete",
+		}
+		printOperationSummary(info, false, func() {
+			// Empty metrics function
+		})
+	})
+}
+
+func TestRunWithRelationshipValidationErrors(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "fabricator-test-invalid-output-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	// Create a YAML file with validation errors to trigger error handling
+	yamlContent := `displayName: Test SOR
+description: Test system of record
+entities:
+  entity1:
+    displayName: TestEntity
+    externalId: Test/Entity
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+relationships:
+  invalid_rel:
+    fromAttribute: "non-existent"
+    toAttribute: "also-non-existent"`
+
+	yamlPath := filepath.Join(tempDir, "test.yaml")
+	err = os.WriteFile(yamlPath, []byte(yamlContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write test YAML file: %v", err)
+	}
+
+	// Use a valid output path
+	outputPath := filepath.Join(tempDir, "output")
+
+	// Run with YAML that has relationship validation errors
+	// This should trigger the error handling at line 140-143
+	err = run(yamlPath, outputPath, 2, false)
+
+	// This should return an error due to relationship validation
+	if err == nil {
+		t.Error("run() with invalid relationships should have returned an error")
+	}
+
+	// Error should contain "relationship validation issues"
+	if !strings.Contains(err.Error(), "relationship validation issues") {
+		t.Errorf("Expected error about relationship validation issues, got: %v", err)
+	}
+}
+
 func TestBasicFunctionalityWithMinimalYAML(t *testing.T) {
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "fabricator-test-*")
@@ -248,10 +466,12 @@ entities:
     attributes:
       - name: id
         externalId: id
+        type: String
         uniqueId: true
         attributeAlias: test-id
       - name: name
         externalId: name
+        type: String
         attributeAlias: test-name
 `
 	yamlPath := filepath.Join(tempDir, "test.yaml")

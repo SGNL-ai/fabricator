@@ -1,0 +1,37 @@
+displayName: Alias FK Test
+description: Test attributeAlias foreign key relationships like exported okta
+entities:
+  group-member-entity:
+    displayName: GroupMember
+    externalId: GroupMember
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+        attributeAlias: group-member-pk-alias
+      - name: groupId
+        externalId: groupId
+        type: String
+        indexed: true
+        uniqueId: false
+        attributeAlias: group-member-group-fk-alias
+  group-entity:
+    displayName: Group
+    externalId: Group
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+        attributeAlias: group-pk-alias
+      - name: name
+        externalId: name
+        type: String
+        attributeAlias: group-name-alias
+relationships:
+  group-membership:
+    displayName: Group Membership
+    name: GroupMembership
+    fromAttribute: group-member-group-fk-alias
+    toAttribute: group-pk-alias

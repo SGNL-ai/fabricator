@@ -1,0 +1,291 @@
+displayName: Okta
+icon: PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTM0LjM5MDMgOC4zMzMzM0wzMy40MDM3IDIwLjQ5MzNDMzIuOTM3IDIwLjQ0IDMyLjQ3MDQgMjAuNDEzMyAzMS45OTA0IDIwLjQxMzNDMzEuMzkwNCAyMC40MTMzIDMwLjgwMzcgMjAuNDUzMyAzMC4yMzA0IDIwLjU0NjdMMjkuNjcwNCAxNC42NTMzQzI5LjY1NyAxNC40NjY3IDI5LjgwMzcgMTQuMzA2NyAyOS45OTA0IDE0LjMwNjdIMzAuOTkwNEwzMC41MTA0IDguMzQ2NjdDMzAuNDk3IDguMTYgMzAuNjQzNyA4IDMwLjgxNyA4SDM0LjA4MzdDMzQuMjcwMyA4IDM0LjQxNyA4LjE2IDM0LjM5MDMgOC4zNDY2N1Y4LjMzMzMzWk0yNi4xNTA0IDguOTMzMzNDMjYuMDk3IDguNzYgMjUuOTEwNCA4LjY1MzMzIDI1LjczNyA4LjcyTDIyLjY3MDQgOS44NEMyMi40OTcgOS45MDY2NyAyMi40MTcgMTAuMTA2NyAyMi40OTcgMTAuMjY2N0wyNC45OTA0IDE1LjcwNjdMMjQuMDQzNyAxNi4wNTMzQzIzLjg3MDQgMTYuMTIgMjMuNzkwNCAxNi4zMiAyMy44NzA0IDE2LjQ4TDI2LjQxNyAyMS44MjY3QzI3LjMzNyAyMS4zMiAyOC4zMzcgMjAuOTMzMyAyOS4zOTA0IDIwLjY5MzNMMjYuMTYzNyA4LjkzMzMzSDI2LjE1MDRaTTE4LjYzMDQgMTIuMzJMMjUuNjgzNyAyMi4yNjY3QzI0Ljc5MDQgMjIuODUzMyAyMy45NzcgMjMuNTQ2NyAyMy4yODM3IDI0LjM0NjdMMTkuMDU3IDIwLjE4NjdDMTguOTIzNyAyMC4wNTMzIDE4LjkzNyAxOS44NCAxOS4wNzA0IDE5LjcyTDE5Ljg0MzcgMTkuMDhMMTUuNjQzNyAxNC44MjY3QzE1LjUxMDQgMTQuNjkzMyAxNS41MjM3IDE0LjQ4IDE1LjY3MDQgMTQuMzZMMTguMTYzNyAxMi4yNjY3QzE4LjMxMDQgMTIuMTQ2NyAxOC41MTA0IDEyLjE3MzMgMTguNjE3IDEyLjMySDE4LjYzMDRaTTEyLjcxMDQgMTguMDhDMTIuNTYzNyAxNy45NzMzIDEyLjM1MDQgMTguMDI2NyAxMi4yNTcgMTguMTg2N0wxMC42MzA0IDIxLjAxMzNDMTAuNTM3IDIxLjE3MzMgMTAuNjAzNyAyMS4zNzMzIDEwLjc2MzcgMjEuNDUzM0wxNi4xNzcgMjQuMDEzM0wxNS42NzA0IDI0Ljg4QzE1LjU3NyAyNS4wNCAxNS42NDM3IDI1LjI1MzMgMTUuODE3IDI1LjMyTDIxLjIwMzcgMjcuNzg2N0MyMS41OTA0IDI2Ljc4NjcgMjIuMTEwNCAyNS44NTMzIDIyLjc1MDQgMjUuMDEzM0wxMi43MTA0IDE4LjA4Wk04LjcyMzcgMjUuNzZDOC43NTAzNyAyNS41NzMzIDguOTM3MDMgMjUuNDY2NyA5LjExMDM2IDI1LjUwNjdMMjAuOTEwNCAyOC41ODY3QzIwLjYwMzcgMjkuNTg2NyAyMC40MzA0IDMwLjY0IDIwLjQwMzcgMzEuNzMzM0wxNC40OTcgMzEuMjUzM0MxNC4zMTA0IDMxLjI0IDE0LjE3NyAzMS4wNjY3IDE0LjIxNyAzMC44OEwxNC4zOTA0IDI5Ljg5MzNMOC40MzAzNyAyOS4zMzMzQzguMjQzNyAyOS4zMiA4LjEyMzcgMjkuMTQ2NyA4LjE1MDM3IDI4Ljk2TDguNzEwMzcgMjUuNzQ2N0w4LjcyMzcgMjUuNzZaTTguMjgzNyAzMy43MzMzQzguMDk3MDMgMzMuNzQ2NyA3Ljk3NzAzIDMzLjkyIDguMDAzNyAzNC4xMDY3TDguNTc3MDMgMzcuMzJDOC42MDM3IDM3LjUwNjcgOC43OTAzNiAzNy42MTMzIDguOTYzNyAzNy41NzMzTDE0Ljc1MDQgMzYuMDY2N0wxNC45MjM3IDM3LjA1MzNDMTQuOTUwNCAzNy4yNCAxNS4xMzcgMzcuMzQ2NyAxNS4zMTA0IDM3LjMwNjdMMjEuMDE3IDM1LjczMzNDMjAuNjgzNyAzNC43NDY3IDIwLjQ3MDQgMzMuNjkzMyAyMC40MTcgMzIuNjEzM0w4LjI3MDM3IDMzLjczMzNIOC4yODM3Wk0xMC4xNzcgNDIuMTg2N0MxMC4wODM3IDQyLjAyNjcgMTAuMTUwNCA0MS44MjY3IDEwLjMxMDQgNDEuNzQ2N0wyMS4zMjM3IDM2LjUyQzIxLjczNyAzNy41MDY3IDIyLjI5NyAzOC40MjY3IDIyLjk2MzcgMzkuMjUzM0wxOC4xMzcgNDIuNjkzM0MxNy45OTA0IDQyLjggMTcuNzc3IDQyLjc2IDE3LjY4MzcgNDIuNkwxNy4xNzcgNDEuNzJMMTIuMjU3IDQ1LjEyQzEyLjExMDQgNDUuMjI2NyAxMS44OTcgNDUuMTczMyAxMS44MDM3IDQ1LjAxMzNMMTAuMTYzNyA0Mi4xODY3SDEwLjE3N1pNMjMuNTIzNyAzOS44OTMzTDE0Ljk1MDQgNDguNTczM0MxNC44MTcgNDguNzA2NyAxNC44MzA0IDQ4LjkyIDE0Ljk3NyA0OS4wNEwxNy40ODM3IDUxLjEzMzNDMTcuNjMwNCA1MS4yNTMzIDE3LjgzMDQgNTEuMjI2NyAxNy45MzcgNTEuMDhMMjEuNDAzNyA0Ni4yTDIyLjE3NyA0Ni44NTMzQzIyLjMyMzcgNDYuOTczMyAyMi41MzcgNDYuOTQ2NyAyMi42NDM3IDQ2Ljc4NjdMMjYuMDAzNyA0MS45MDY3QzI1LjA5NyA0MS4zNDY3IDI0LjI1NyA0MC42NjY3IDIzLjUzNyAzOS44OTMzSDIzLjUyMzdaTTIxLjgzMDQgNTMuODI2N0MyMS42NTcgNTMuNzYgMjEuNTc3IDUzLjU2IDIxLjY1NyA1My40TDI2LjczNyA0Mi4zMDY3QzI3LjY3MDQgNDIuNzg2NyAyOC42ODM3IDQzLjE0NjcgMjkuNzM3IDQzLjM0NjdMMjguMjQzNyA0OS4wOEMyOC4yMDM3IDQ5LjI1MzMgMjguMDAzNyA0OS4zNiAyNy44MzA0IDQ5LjI5MzNMMjYuODgzNyA0OC45NDY3TDI1LjI5NyA1NC43MkMyNS4yNDM3IDU0Ljg5MzMgMjUuMDU3IDU1IDI0Ljg4MzcgNTQuOTMzM0wyMS44MTcgNTMuODEzM0wyMS44MzA0IDUzLjgyNjdaTTMwLjU3NyA0My40OTMzTDI5LjU5MDQgNTUuNjUzM0MyOS41NzcgNTUuODQgMjkuNzIzNyA1NiAyOS44OTcgNTZIMzMuMTYzN0MzMy4zNTAzIDU2IDMzLjQ5NyA1NS44NCAzMy40NzA0IDU1LjY1MzNMMzIuOTkwMyA0OS42OTMzSDMzLjk5MDNDMzQuMTc3IDQ5LjY5MzMgMzQuMzIzNyA0OS41MzMzIDM0LjMxMDMgNDkuMzQ2N0wzMy43NTAzIDQzLjQ1MzNDMzMuMTc3IDQzLjU0NjcgMzIuNTkwMyA0My41ODY3IDMxLjk5MDQgNDMuNTg2N0MzMS41MTA0IDQzLjU4NjcgMzEuMDQzNyA0My41NiAzMC41NzcgNDMuNDkzM1pNNDIuMzM3IDEwLjU3MzNDNDIuNDE3IDEwLjQgNDIuMzM3IDEwLjIxMzMgNDIuMTYzNyAxMC4xNDY3TDM5LjA5NyA5LjAyNjY3QzM4LjkyMzcgOC45NiAzOC43MzcgOS4wNjY2NyAzOC42ODM3IDkuMjRMMzcuMDk3IDE1LjAxMzNMMzYuMTUwMyAxNC42NjY3QzM1Ljk3NyAxNC42IDM1Ljc5MDMgMTQuNzA2NyAzNS43MzcgMTQuODhMMzQuMjQzNyAyMC42MTMzQzM1LjMxMDMgMjAuODI2NyAzNi4zMTAzIDIxLjE4NjcgMzcuMjQzNyAyMS42NTMzTDQyLjMzNyAxMC41NzMzWk00OS4wMzAzIDE1LjQxMzNMNDAuNDU3IDI0LjA5MzNDMzkuNzM3IDIzLjMyIDM4LjkxMDMgMjIuNjQgMzcuOTkwMyAyMi4wOEw0MS4zNTAzIDE3LjJDNDEuNDU3IDE3LjA1MzMgNDEuNjcwMyAxNy4wMTMzIDQxLjgxNyAxNy4xMzMzTDQyLjU5MDMgMTcuNzg2N0w0Ni4wNTcgMTIuOTA2N0M0Ni4xNjM3IDEyLjc2IDQ2LjM3NyAxMi43MzMzIDQ2LjUxMDMgMTIuODUzM0w0OS4wMTcgMTQuOTQ2N0M0OS4xNjM3IDE1LjA2NjcgNDkuMTYzNyAxNS4yOCA0OS4wNDM3IDE1LjQxMzNINDkuMDMwM1pNNTMuNjcwMyAyMi4yNEM1My44NDM3IDIyLjE2IDUzLjg5NyAyMS45NiA1My44MDM3IDIxLjhMNTIuMTYzNyAxOC45NzMzQzUyLjA3MDMgMTguODEzMyA1MS44NTcgMTguNzczMyA1MS43MTAzIDE4Ljg2NjdMNDYuNzkwMyAyMi4yNjY3TDQ2LjI4MzcgMjEuNEM0Ni4xOTAzIDIxLjI0IDQ1Ljk3NyAyMS4xODY3IDQ1LjgzMDMgMjEuMzA2N0w0MS4wMDM3IDI0Ljc0NjdDNDEuNjcwMyAyNS41NzMzIDQyLjIxNyAyNi40OTMzIDQyLjY0MzcgMjcuNDhMNTMuNjU3IDIyLjI1MzNMNTMuNjcwMyAyMi4yNFpNNTUuNDAzNyAyNi42NjY3TDU1Ljk2MzcgMjkuODhDNTUuOTkwMyAzMC4wNjY3IDU1Ljg3MDMgMzAuMjI2NyA1NS42ODM3IDMwLjI1MzNMNDMuNTM3IDMxLjM4NjdDNDMuNDgzNyAzMC4yOTMzIDQzLjI3MDMgMjkuMjUzMyA0Mi45MzcgMjguMjY2N0w0OC42NDM3IDI2LjY5MzNDNDguODE3IDI2LjY0IDQ5LjAwMzcgMjYuNzYgNDkuMDMwMyAyNi45NDY3TDQ5LjIwMzcgMjcuOTMzM0w1NC45OTAzIDI2LjQyNjdDNTUuMTYzNyAyNi4zODY3IDU1LjM1MDMgMjYuNDkzMyA1NS4zNzcgMjYuNjhMNTUuNDAzNyAyNi42NjY3Wk01NC44NTcgMzguNDY2N0M1NS4wMzAzIDM4LjUwNjcgNTUuMjE3IDM4LjQgNTUuMjQzNyAzOC4yMTMzTDU1LjgwMzcgMzVDNTUuODMwMyAzNC44MTMzIDU1LjcxMDMgMzQuNjUzMyA1NS41MjM3IDM0LjYyNjdMNDkuNTYzNyAzNC4wNjY3TDQ5LjczNyAzMy4wOEM0OS43NjM3IDMyLjg5MzMgNDkuNjQzNyAzMi43MzMzIDQ5LjQ1NyAzMi43MDY3TDQzLjU1MDMgMzIuMjI2N0M0My41MjM3IDMzLjMyIDQzLjM1MDMgMzQuMzczMyA0My4wNDM3IDM1LjM3MzNMNTQuODQzNyAzOC40NTMzTDU0Ljg1NyAzOC40NjY3Wk01MS43MTAzIDQ1LjhDNTEuNjE3IDQ1Ljk2IDUxLjQwMzcgNDYgNTEuMjU3IDQ1LjkwNjdMNDEuMjE3IDM4Ljk3MzNDNDEuODU3IDM4LjEzMzMgNDIuMzc3IDM3LjIgNDIuNzYzNyAzNi4yTDQ4LjE1MDMgMzguNjY2N0M0OC4zMjM3IDM4Ljc0NjcgNDguMzkwMyAzOC45NDY3IDQ4LjI5NyAzOS4xMDY3TDQ3Ljc5MDMgMzkuOTczM0w1My4yMDM3IDQyLjUzMzNDNTMuMzYzNyA0Mi42MTMzIDUzLjQzMDMgNDIuODEzMyA1My4zMzcgNDIuOTczM0w1MS43MTAzIDQ1LjhaTTM4LjI4MzcgNDEuNzA2N0w0NS4zMzcgNTEuNjUzM0M0NS40NDM3IDUxLjggNDUuNjU3IDUxLjgyNjcgNDUuNzkwMyA1MS43MDY3TDQ4LjI4MzcgNDkuNjEzM0M0OC40MzAzIDQ5LjQ5MzMgNDguNDMwMyA0OS4yOCA0OC4zMTAzIDQ5LjE0NjdMNDQuMTEwMyA0NC44OTMzTDQ0Ljg4MzcgNDQuMjUzM0M0NS4wMzAzIDQ0LjEzMzMgNDUuMDMwMyA0My45MiA0NC44OTcgNDMuNzg2N0w0MC42NzAzIDM5LjYyNjdDMzkuOTYzNyA0MC40MjY3IDM5LjE2MzcgNDEuMTMzMyAzOC4yNzAzIDQxLjcwNjdIMzguMjgzN1pNMzguMjE3IDU1LjI1MzNDMzguMDQzNyA1NS4zMiAzNy44NTcgNTUuMjEzMyAzNy44MDM3IDU1LjA0TDM0LjU3NyA0My4yOEMzNS42MzAzIDQzLjA0IDM2LjYzMDMgNDIuNjUzMyAzNy41NTAzIDQyLjE0NjdMNDAuMDk3IDQ3LjQ5MzNDNDAuMTc3IDQ3LjY2NjcgNDAuMDk3IDQ3Ljg2NjcgMzkuOTIzNyA0Ny45MkwzOC45NzcgNDguMjY2N0w0MS40NzAzIDUzLjcwNjdDNDEuNTUwMyA1My44OCA0MS40NzAzIDU0LjA2NjcgNDEuMjk3IDU0LjEzMzNMMzguMjMwMyA1NS4yNTMzSDM4LjIxN1oiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=
+description: Okta as a System of Record
+hostname: sgnl-dev.oktapreview.com
+defaultSyncFrequency: HOURLY
+defaultSyncMinInterval: 1
+defaultApiCallFrequency: SECONDLY
+defaultApiCallMinInterval: 1
+type: Okta-1.0.1
+adapterConfig: eyJyZXF1ZXN0VGltZW91dFNlY29uZHMiOjEwLCJhcGlWZXJzaW9uIjoidjEifQ==
+auth:
+  - oAuth2ClientCredentials:
+      authStyle: AutoDetect
+      clientId: 0oa8r8uvwl6nyhWlV1d7
+      scope: okta.users.read okta.groups.read
+      tokenUrl: https://sgnl-dev.oktapreview.com/oauth2/v1/token
+deliveryMethod: syncPoll
+entities:
+  d5ad4cfedd33454398665b4424822973:
+    displayName: User
+    externalId: User
+    description: User entity in Okta
+    pageSize: 100
+    pagesOrderedById: false
+    attributes:
+      - name: profile__title
+        externalId: profile__title
+        type: String
+        attributeAlias: 0a52d1d6-e9ae-49a9-b88b-2ca67d79786c
+      - name: lastLogin
+        externalId: lastLogin
+        type: DateTime
+        attributeAlias: 0a989e2f-ef00-4e7a-9ed8-9588f632c868
+      - name: profile__firstName
+        externalId: profile__firstName
+        type: String
+        attributeAlias: 103e2b8f-35c7-433f-afc1-8187a5c19060
+      - name: profile__countryCode
+        externalId: profile__countryCode
+        type: String
+        attributeAlias: 1132e006-fdb2-4d0e-8c1f-5be464d2ae0e
+      - name: transitioningToStatus
+        externalId: transitioningToStatus
+        type: String
+        attributeAlias: 1a909548-965c-403e-a5a3-8fe5a1220727
+      - name: status
+        externalId: status
+        description: ""
+        type: String
+        indexed: true
+        attributeAlias: 1fedf035-6323-464d-a1ff-c7f058173237
+      - name: profile__displayName
+        externalId: profile__displayName
+        type: String
+        attributeAlias: 2084f9f0-8aa4-4000-9fb1-1e51885ea322
+      - name: profile__login
+        externalId: profile__login
+        type: String
+        attributeAlias: 2a57de9a-a933-45af-ad35-cdfcbafd3ef4
+      - name: profile__honorificPrefix
+        externalId: profile__honorificPrefix
+        type: String
+        attributeAlias: 2df5130a-26bd-4f2c-9e12-912a46b16c56
+      - name: profile__streetAddress
+        externalId: profile__streetAddress
+        type: String
+        attributeAlias: 31055c31-1bf8-4231-b68b-294700f2f8f5
+      - name: profile__primaryPhone
+        externalId: profile__primaryPhone
+        type: String
+        attributeAlias: 3519c991-3e56-4713-be90-dbcf1fa7f40c
+      - name: profile__department
+        externalId: profile__department
+        type: String
+        attributeAlias: 35a0e13d-3a95-4232-88d1-717055072393
+      - name: profile__costCenter
+        externalId: profile__costCenter
+        type: String
+        attributeAlias: 3f70053c-324c-459b-a254-22322f788175
+      - name: profile__lastName
+        externalId: profile__lastName
+        type: String
+        attributeAlias: 4756245c-4636-4d49-86d8-a69603e5da4d
+      - name: profile__profileUrl
+        externalId: profile__profileUrl
+        type: String
+        attributeAlias: 4b04d465-dc46-4e6d-8e0f-267b330d55d8
+      - name: created
+        externalId: created
+        type: DateTime
+        attributeAlias: 4eec369a-5dc7-4016-844b-d1d1f0d22b30
+      - name: profile__mobilePhone
+        externalId: profile__mobilePhone
+        type: String
+        attributeAlias: 511dd64f-7462-49fc-ac5c-9c4e3a302f29
+      - name: profile__zipCode
+        externalId: profile__zipCode
+        type: String
+        attributeAlias: 52f01d9b-61a7-40ea-9dba-cfe71a3212c7
+      - name: profile__managerId
+        externalId: profile__managerId
+        type: String
+        indexed: true
+        attributeAlias: 5b2c86d6-23d6-43f5-a860-af736980f671
+      - name: type__id
+        externalId: type__id
+        type: String
+        attributeAlias: 5fa00430-53c5-4d8d-8276-95eb785424cb
+      - name: passwordChanged
+        externalId: passwordChanged
+        type: DateTime
+        attributeAlias: 670849e5-25d2-49ef-b6d3-2716214e9065
+      - name: profile__secondEmail
+        externalId: profile__secondEmail
+        type: String
+        indexed: true
+        attributeAlias: 709b6012-527f-4a31-bb70-483b94ae1166
+      - name: profile__division
+        externalId: profile__division
+        type: String
+        attributeAlias: 7bf5db89-c5b8-4df1-a0d6-66cbce8d30bd
+      - name: profile__preferredLanguage
+        externalId: profile__preferredLanguage
+        type: String
+        attributeAlias: 9c7c7cd3-06f5-4417-9a4e-8d4b29f738c5
+      - name: profile__employeeNumber
+        externalId: profile__employeeNumber
+        description: ""
+        type: String
+        indexed: true
+        attributeAlias: a4b9e906-b451-4ec6-82c0-858592090647
+      - name: profile__postalAddress
+        externalId: profile__postalAddress
+        type: String
+        attributeAlias: ab665e30-498e-49d8-9d24-feef10870107
+      - name: profile__locale
+        externalId: profile__locale
+        type: String
+        attributeAlias: abcd27e0-1517-4bed-8c14-a6df8830ac49
+      - name: profile__manager
+        externalId: profile__manager
+        type: String
+        attributeAlias: ac144edc-883a-455e-aa04-e27930f77423
+      - name: id
+        externalId: id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: aed08015-38ea-43cf-b8c8-df117a045614
+      - name: profile__userType
+        externalId: profile__userType
+        type: String
+        attributeAlias: b11167ec-1540-45f7-afa0-ade9166d9dbe
+      - name: profile__middleName
+        externalId: profile__middleName
+        type: String
+        attributeAlias: b15e83be-daa6-4ad7-9cdf-b9f6fcc22be4
+      - name: profile__organization
+        externalId: profile__organization
+        type: String
+        attributeAlias: b9b65db3-94df-49bd-82a1-0f37388b9cd5
+      - name: profile__email
+        externalId: profile__email
+        type: String
+        indexed: true
+        attributeAlias: bd493257-6d5e-4be1-8651-8ab7bd81c60d
+      - name: profile__state
+        externalId: profile__state
+        type: String
+        attributeAlias: bef7472b-77a5-472b-ab13-c51060d43a73
+      - name: activated
+        externalId: activated
+        type: DateTime
+        attributeAlias: bfae3631-7d14-4a4a-acb5-0a8fd2e69bb4
+      - name: lastUpdated
+        externalId: lastUpdated
+        type: DateTime
+        attributeAlias: d3b56552-3ffb-4d7b-ba05-be13e8a4b2a0
+      - name: profile__timezone
+        externalId: profile__timezone
+        type: String
+        attributeAlias: db5a288d-338a-44c4-a976-573a9846b7ac
+      - name: statusChanged
+        externalId: statusChanged
+        type: DateTime
+        attributeAlias: e3ab99c9-d7ec-4692-ba55-bb0ea7452983
+      - name: profile__honorificSuffix
+        externalId: profile__honorificSuffix
+        type: String
+        attributeAlias: e9ec9e5c-6f47-450a-9c7e-a3281ff7f4f9
+      - name: profile__city
+        externalId: profile__city
+        type: String
+        attributeAlias: f4bae7c4-3054-4750-a73a-cb975dec9ca1
+      - name: profile__nickName
+        externalId: profile__nickName
+        type: String
+        attributeAlias: fd8d183b-db60-43dc-85a1-c5674aef2e41
+    entityAlias: d5ad4cfe-dd33-4543-9866-5b4424822973
+  68d9d4fdd4334c25ab1c42e5e90154b1:
+    displayName: Group
+    externalId: Group
+    description: Group entity in Okta
+    pageSize: 100
+    pagesOrderedById: false
+    attributes:
+      - name: profile__description
+        externalId: profile__description
+        type: String
+        attributeAlias: 03fdd159-ace3-4eb8-bff1-5a02f82f0fe6
+      - name: profile__name
+        externalId: profile__name
+        type: String
+        indexed: true
+        attributeAlias: 278ebcd5-ac5f-4817-9c11-fa205da699c8
+      - name: objectClass
+        externalId: objectClass
+        type: String
+        attributeAlias: 3bddba4f-2f61-4539-a022-9239edaaa353
+        list: true
+      - name: type
+        externalId: type
+        type: String
+        attributeAlias: 5d1a600a-bd7e-4ca0-9f02-61f1ff2b853c
+      - name: lastMembershipUpdated
+        externalId: lastMembershipUpdated
+        type: DateTime
+        attributeAlias: 942042f0-0a7c-4ca5-bbc2-8805fd7cbc62
+      - name: id
+        externalId: id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: ae3a20bf-d02e-4d3b-a236-73ddd2aff065
+      - name: created
+        externalId: created
+        type: DateTime
+        attributeAlias: cbc5c1c4-76aa-4396-a748-33b36dd34020
+      - name: lastUpdated
+        externalId: lastUpdated
+        type: DateTime
+        attributeAlias: d08a0beb-114f-46bf-81c3-011e425f014e
+    entityAlias: 68d9d4fd-d433-4c25-ab1c-42e5e90154b1
+  5109ce62cb0c409bae18bb08f4998ef5:
+    displayName: GroupMember
+    externalId: GroupMember
+    description: Group Member entity in Okta
+    pageSize: 100
+    pagesOrderedById: false
+    attributes:
+      - name: userId
+        externalId: userId
+        type: String
+        indexed: true
+        attributeAlias: 2105c780-870d-4889-8a34-42374bfa140e
+      - name: id
+        externalId: id
+        type: String
+        indexed: true
+        uniqueId: true
+        attributeAlias: 39fd9fa1-b6af-416b-bd3b-6688d725158d
+      - name: groupId
+        externalId: groupId
+        type: String
+        indexed: true
+        attributeAlias: a30f551b-93ac-46d5-98eb-b615d05b4ca3
+    entityAlias: 5109ce62-cb0c-409b-ae18-bb08f4998ef5
+relationships:
+  0d920548ac984b33b8eda75acf8b0635:
+    displayName: User Manager
+    name: Manager
+    fromAttribute: 5b2c86d6-23d6-43f5-a860-af736980f671
+    toAttribute: aed08015-38ea-43cf-b8c8-df117a045614
+  8bf8d3e5cc2141a0b1c391311c1932e9:
+    displayName: Group Membership
+    name: GroupMembership
+    fromAttribute: a30f551b-93ac-46d5-98eb-b615d05b4ca3
+    toAttribute: ae3a20bf-d02e-4d3b-a236-73ddd2aff065
+  62366f7c289448f1a524465a210ada43:
+    displayName: Member
+    name: Member
+    fromAttribute: 2105c780-870d-4889-8a34-42374bfa140e
+    toAttribute: aed08015-38ea-43cf-b8c8-df117a045614
+  2a5309c6ab0f41f9a91ee3d95644eede:
+    displayName: User Member Group
+    name: Group
+    path:
+      - relationship: 62366f7c289448f1a524465a210ada43
+        direction: Backward
+      - relationship: 8bf8d3e5cc2141a0b1c391311c1932e9
+        direction: Forward
