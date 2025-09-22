@@ -327,7 +327,7 @@ func TestEntityAddRow_RejectsDuplicateUniqueValues(t *testing.T) {
 	require.True(t, ok)
 
 	entities := graph.GetAllEntities()
-	userEntity := entities["user"]
+	userEntity := entities["User"]
 
 	// Add first row successfully
 	err = userEntity.AddRow(model.NewRow(map[string]string{

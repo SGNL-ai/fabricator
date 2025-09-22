@@ -83,8 +83,8 @@ user-2,Jane Smith`
 				"user_role": {
 					DisplayName:   "User Role",
 					Name:          "user_role",
-					FromAttribute: "user.roleId",
-					ToAttribute:   "role.id",
+					FromAttribute: "User.roleId",
+					ToAttribute:   "Role.id",
 				},
 			},
 		}

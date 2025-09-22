@@ -43,13 +43,13 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 			Relationships: map[string]parser.Relationship{
 				"membership_user": {
 					Name:          "membership_to_user",
-					FromAttribute: "user_group_membership.user_id", // FK1
-					ToAttribute:   "user.id",                       // PK
+					FromAttribute: "UserGroupMembership.user_id", // FK1
+					ToAttribute:   "User.id",                     // PK
 				},
 				"membership_group": {
 					Name:          "membership_to_group",
-					FromAttribute: "user_group_membership.group_id", // FK2
-					ToAttribute:   "group.id",                       // PK
+					FromAttribute: "UserGroupMembership.group_id", // FK2
+					ToAttribute:   "Group.id",                     // PK
 				},
 			},
 		}
@@ -66,7 +66,7 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 
 		// Analyze junction table for duplicate FK tuples
 		entities := graph.GetAllEntities()
-		membershipEntity := entities["user_group_membership"]
+		membershipEntity := entities["UserGroupMembership"]
 		membershipCSV := membershipEntity.ToCSV()
 
 		// Find FK columns
@@ -147,18 +147,18 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 			Relationships: map[string]parser.Relationship{
 				"urp_user": {
 					Name:          "urp_to_user",
-					FromAttribute: "user_role_permission.user_id",
-					ToAttribute:   "user.id",
+					FromAttribute: "UserRolePermission.user_id",
+					ToAttribute:   "User.id",
 				},
 				"urp_role": {
 					Name:          "urp_to_role",
-					FromAttribute: "user_role_permission.role_id",
-					ToAttribute:   "role.id",
+					FromAttribute: "UserRolePermission.role_id",
+					ToAttribute:   "Role.id",
 				},
 				"urp_permission": {
 					Name:          "urp_to_permission",
-					FromAttribute: "user_role_permission.perm_id",
-					ToAttribute:   "permission.id",
+					FromAttribute: "UserRolePermission.perm_id",
+					ToAttribute:   "Permission.id",
 				},
 			},
 		}
@@ -174,7 +174,7 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 
 		// Verify 3-way junction table has unique FK triples
 		entities := graph.GetAllEntities()
-		urpEntity := entities["user_role_permission"]
+		urpEntity := entities["UserRolePermission"]
 		urpCSV := urpEntity.ToCSV()
 
 		// Find all FK columns
@@ -246,13 +246,13 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 			Relationships: map[string]parser.Relationship{
 				"membership_user": {
 					Name:          "membership_to_user",
-					FromAttribute: "membership.user_id",
-					ToAttribute:   "user.id",
+					FromAttribute: "Membership.user_id",
+					ToAttribute:   "User.id",
 				},
 				"membership_group": {
 					Name:          "membership_to_group",
-					FromAttribute: "membership.group_id",
-					ToAttribute:   "group.id",
+					FromAttribute: "Membership.group_id",
+					ToAttribute:   "Group.id",
 				},
 			},
 		}
@@ -267,7 +267,7 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 
 		// Analyze M:M distribution
 		entities := graph.GetAllEntities()
-		membershipEntity := entities["membership"]
+		membershipEntity := entities["Membership"]
 		membershipCSV := membershipEntity.ToCSV()
 
 		// Find FK columns

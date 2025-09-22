@@ -127,8 +127,8 @@ user-1,Jane Smith` // Duplicate ID
 				"user_role": {
 					DisplayName:   "User Role",
 					Name:          "user_role",
-					FromAttribute: "user.roleId",
-					ToAttribute:   "role.id",
+					FromAttribute: "User.roleId",
+					ToAttribute:   "Role.id",
 				},
 			},
 		}

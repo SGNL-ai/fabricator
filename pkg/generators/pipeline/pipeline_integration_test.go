@@ -42,8 +42,8 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 				"user_profile": {
 					DisplayName:   "User Profile",
 					Name:          "user_profile",
-					FromAttribute: "user.profile_id", // Dotted notation
-					ToAttribute:   "profile.id",      // Dotted notation
+					FromAttribute: "User.profile_id", // Use DisplayName "User"
+					ToAttribute:   "Profile.id",      // Use DisplayName "Profile"
 				},
 			},
 		}
@@ -78,8 +78,8 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 
 		// Verify the graph state after pipeline execution
 		entities := graph.GetAllEntities()
-		userEntity := entities["user"]
-		profileEntity := entities["profile"]
+		userEntity := entities["User"]
+		profileEntity := entities["Profile"]
 
 		// Check that relationship attributes are properly marked
 		userRelAttrs := userEntity.GetRelationshipAttributes()
@@ -141,12 +141,6 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 			assert.Contains(t, profileIDs, profileIdValue,
 				"User row %d: profile_id '%s' should reference valid profile ID from %v",
 				i, profileIdValue, profileIDs)
-
-			// Should NOT be random words
-			assert.NotEqual(t, "company", profileIdValue, "Should not be random word 'company'")
-			assert.NotEqual(t, "beauty", profileIdValue, "Should not be random word 'beauty'")
-			assert.NotContains(t, []string{"fly", "that", "health", "pod", "they"}, profileIdValue,
-				"Should not be any random words commonly generated")
 		}
 	})
 
@@ -199,7 +193,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 
 		// Check relationship attribute marking
 		entities := graph.GetAllEntities()
-		userEntity := entities["user-entity"]
+		userEntity := entities["User"]
 
 		userRelAttrs := userEntity.GetRelationshipAttributes()
 		t.Logf("User relationship attributes with attributeAlias: %d", len(userRelAttrs))

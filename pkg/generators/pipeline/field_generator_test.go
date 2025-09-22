@@ -196,8 +196,8 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 						"user_profile": {
 							DisplayName:   "User Profile",
 							Name:          "user_profile",
-							FromAttribute: "user.profile_id", // This should mark profile_id as a relationship attribute
-							ToAttribute:   "profile.id",
+							FromAttribute: "User.profile_id", // This should mark profile_id as a relationship attribute
+							ToAttribute:   "Profile.id",
 						},
 					},
 				}
@@ -208,8 +208,8 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 
 				// Pre-populate with rows
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				profileEntity := entities["profile"]
+				userEntity := entities["User"]
+				profileEntity := entities["Profile"]
 
 				// Add profile first
 				err = profileEntity.AddRow(model.NewRow(map[string]string{
@@ -230,7 +230,7 @@ func TestFieldGenerator_GenerateFields(t *testing.T) {
 			wantErr: false,
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
+				userEntity := entities["User"]
 
 				// Verify that field generator filled non-relationship fields but left FK alone
 				csvData := userEntity.ToCSV()

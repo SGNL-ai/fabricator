@@ -47,8 +47,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"user_profile": {
 							DisplayName:   "User Profile",
 							Name:          "user_profile",
-							FromAttribute: "user.profileId", // Use entityID.externalId format
-							ToAttribute:   "profile.id",     // Use entityID.externalId format
+							FromAttribute: "User.profileId", // Use entityID.externalId format
+							ToAttribute:   "Profile.id",     // Use entityID.externalId format
 						},
 					},
 				}
@@ -59,8 +59,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 
 				// Pre-populate with proper relationship data
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				profileEntity := entities["profile"]
+				userEntity := entities["User"]
+				profileEntity := entities["Profile"]
 
 				// Add profiles first (target entities)
 				for i := 0; i < 2; i++ {
@@ -84,8 +84,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			wantErr:         false,
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				profileEntity := entities["profile"]
+				userEntity := entities["User"]
+				profileEntity := entities["Profile"]
 
 				// Verify row counts after relationship linking
 				assert.Equal(t, 2, userEntity.GetRowCount(), "User entity should still have 2 rows after linking")
@@ -139,8 +139,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"employee_user": {
 							DisplayName:   "Employee User",
 							Name:          "employee_user",
-							FromAttribute: "employee.user_id", // Unique FK
-							ToAttribute:   "user.id",          // Unique PK
+							FromAttribute: "Employee.user_id", // Unique FK
+							ToAttribute:   "User.id",          // Unique PK
 						},
 					},
 				}
@@ -150,8 +150,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				require.True(t, ok)
 
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				employeeEntity := entities["employee"]
+				userEntity := entities["User"]
+				employeeEntity := entities["Employee"]
 
 				// Add 3 users
 				for i := 0; i < 3; i++ {
@@ -175,8 +175,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			wantErr:         false,
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				employeeEntity := entities["employee"]
+				userEntity := entities["User"]
+				employeeEntity := entities["Employee"]
 
 				// Verify row counts after relationship linking
 				assert.Equal(t, 3, userEntity.GetRowCount(), "User entity should still have 3 rows after linking")
@@ -228,8 +228,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"user_role": {
 							DisplayName:   "User Role",
 							Name:          "user_role",
-							FromAttribute: "user.roleId",
-							ToAttribute:   "role.id",
+							FromAttribute: "User.roleId",
+							ToAttribute:   "Role.id",
 						},
 					},
 				}
@@ -239,8 +239,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				require.True(t, ok)
 
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				roleEntity := entities["role"]
+				userEntity := entities["User"]
+				roleEntity := entities["Role"]
 
 				// Add valid roles first
 				err = roleEntity.AddRow(model.NewRow(map[string]string{
@@ -260,13 +260,13 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 				assert.Len(t, relationships, 1, "Graph should have 1 relationship")
 
 				// Verify User entity has the relationship
-				userRelationships := graph.GetRelationshipsForEntity("user")
+				userRelationships := graph.GetRelationshipsForEntity("User")
 				assert.Len(t, userRelationships, 1, "User entity should have 1 relationship")
 
 				// Verify relationship details
 				rel := relationships[0]
-				assert.Equal(t, "user", rel.GetSourceEntity().GetID(), "Source entity should be user")
-				assert.Equal(t, "role", rel.GetTargetEntity().GetID(), "Target entity should be role")
+				assert.Equal(t, "User", rel.GetSourceEntity().GetID(), "Source entity should be user")
+				assert.Equal(t, "Role", rel.GetTargetEntity().GetID(), "Target entity should be role")
 				assert.NotNil(t, rel.GetSourceAttribute(), "Source attribute should not be nil")
 				assert.NotNil(t, rel.GetTargetAttribute(), "Target attribute should not be nil")
 				assert.Equal(t, "roleId", rel.GetSourceAttribute().GetName(), "Source attribute should be roleId")
@@ -294,7 +294,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			wantErr:         false,
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
+				userEntity := entities["User"]
 
 				// Directly inspect entity row for FK value
 				require.Equal(t, 1, userEntity.GetRowCount(), "Should have 1 user row")
@@ -343,8 +343,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 						"user_role": {
 							DisplayName:   "User Role",
 							Name:          "user_role",
-							FromAttribute: "user.roleId",
-							ToAttribute:   "role.id",
+							FromAttribute: "User.roleId",
+							ToAttribute:   "Role.id",
 						},
 					},
 				}
@@ -355,7 +355,7 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 
 				// Add user but NO roles (empty target entity)
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
+				userEntity := entities["User"]
 
 				err = userEntity.AddRow(model.NewRow(map[string]string{
 					"id": "user-1",
@@ -369,8 +369,8 @@ func TestRelationshipLinker_LinkRelationships(t *testing.T) {
 			wantErr:         true, // Should error with explicit empty target entity message
 			validate: func(t *testing.T, graph *model.Graph) {
 				entities := graph.GetAllEntities()
-				userEntity := entities["user"]
-				roleEntity := entities["role"]
+				userEntity := entities["User"]
+				roleEntity := entities["Role"]
 
 				// User should still have its row
 				assert.Equal(t, 1, userEntity.GetRowCount())

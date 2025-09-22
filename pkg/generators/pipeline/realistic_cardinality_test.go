@@ -34,8 +34,8 @@ func TestRealisticCardinalityDistribution(t *testing.T) {
 			Relationships: map[string]parser.Relationship{
 				"employee_user": {
 					Name:          "employee_user",
-					FromAttribute: "employee.user_id", // Unique FK
-					ToAttribute:   "user.id",          // Unique PK
+					FromAttribute: "Employee.user_id", // Unique FK
+					ToAttribute:   "User.id",          // Unique PK
 				},
 			},
 		}
@@ -51,8 +51,8 @@ func TestRealisticCardinalityDistribution(t *testing.T) {
 
 		// Verify 1:1 relationship integrity
 		entities := graph.GetAllEntities()
-		userEntity := entities["user"]
-		employeeEntity := entities["employee"]
+		userEntity := entities["User"]
+		employeeEntity := entities["Employee"]
 
 		userCSV := userEntity.ToCSV()
 		employeeCSV := employeeEntity.ToCSV()
@@ -129,8 +129,8 @@ func TestRealisticCardinalityDistribution(t *testing.T) {
 			Relationships: map[string]parser.Relationship{
 				"user_dept": {
 					Name:          "user_department",
-					FromAttribute: "user.dept_id",  // Non-unique FK
-					ToAttribute:   "department.id", // Unique PK
+					FromAttribute: "User.dept_id",  // Non-unique FK
+					ToAttribute:   "Department.id", // Unique PK
 				},
 			},
 		}
@@ -145,7 +145,7 @@ func TestRealisticCardinalityDistribution(t *testing.T) {
 		require.NoError(t, err)
 
 		// Analyze clustering distribution
-		userEntity := graph.GetAllEntities()["user"]
+		userEntity := graph.GetAllEntities()["User"]
 		userCSV := userEntity.ToCSV()
 
 		// Find dept_id column

@@ -233,8 +233,8 @@ func TestRelationshipTargetSelection(t *testing.T) {
 			Relationships: map[string]parser.Relationship{
 				"user_role": {
 					Name:          "user_role",
-					FromAttribute: "user.roleId",
-					ToAttribute:   "role.id",
+					FromAttribute: "User.roleId",
+					ToAttribute:   "Role.id",
 				},
 			},
 		}
@@ -244,8 +244,8 @@ func TestRelationshipTargetSelection(t *testing.T) {
 
 		// Set up real entities with real rows
 		entities := graph.GetAllEntities()
-		userEntity := entities["user"]
-		roleEntity := entities["role"]
+		userEntity := entities["User"]
+		roleEntity := entities["Role"]
 
 		// Add 1 user (source)
 		err = userEntity.AddRow(NewRow(map[string]string{

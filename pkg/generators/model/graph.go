@@ -138,7 +138,8 @@ func (g *Graph) GetExpectedDataVolume() int {
 // createEntitiesFromYAML creates Entity objects from YAML model definition
 func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]parser.Entity) error {
 	// First, create all entities with their attributes
-	for entityID, yamlEntity := range yamlEntities {
+	for _, yamlEntity := range yamlEntities {
+		entityID := yamlEntity.DisplayName // Use DisplayName as the primary entity identifier
 		// Convert YAML attributes to model attributes
 		attributes := make([]AttributeInterface, 0, len(yamlEntity.Attributes))
 
@@ -176,7 +177,14 @@ func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]parser.Entity) er
 
 	// Then build the attribute to entity lookup map
 	for entityID, entity := range g.entities {
-		yamlEntity := g.yamlModel.Entities[entityID]
+		// Find the corresponding YAML entity by matching DisplayName
+		var yamlEntity parser.Entity
+		for _, yEntity := range g.yamlModel.Entities {
+			if yEntity.DisplayName == entityID {
+				yamlEntity = yEntity
+				break
+			}
+		}
 
 		for _, yamlAttr := range yamlEntity.Attributes {
 			g.attributeToEntity[fmt.Sprintf("%s.%s", entityID, yamlAttr.ExternalId)] = entity

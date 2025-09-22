@@ -118,8 +118,8 @@ func TestGenerationOrchestrator(t *testing.T) {
 				"user_profile": {
 					DisplayName:   "User Profile",
 					Name:          "user_profile",
-					FromAttribute: "user.profile_id",
-					ToAttribute:   "profile.id",
+					FromAttribute: "User.profile_id",
+					ToAttribute:   "Profile.id",
 				},
 			},
 		}

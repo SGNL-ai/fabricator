@@ -504,8 +504,8 @@ func TestGraphDottedAttributeReferenceBug(t *testing.T) {
 			"user_profile": {
 				DisplayName:   "User Profile",
 				Name:          "user_profile",
-				FromAttribute: "user.profileId", // Graph maps this to entity, then passes "user.profileId" to GetAttributeByExternalID
-				ToAttribute:   "profile.id",     // But GetAttributeByExternalID expects just "profileId", not "user.profileId"
+				FromAttribute: "User.profileId", // Use DisplayName "User" not YAML key "user"
+				ToAttribute:   "Profile.id",     // Use DisplayName "Profile" not YAML key "profile"
 			},
 		},
 	}
@@ -570,7 +570,7 @@ func TestGraphUUIDAttributeReferences(t *testing.T) {
 
 	// Check that source attribute has correct relationship metadata
 	assert.True(t, sourceAttr.IsRelationship(), "Source attribute should be marked as relationship")
-	assert.Equal(t, "profile", sourceAttr.GetRelatedEntityID(), "Should point to profile entity, not UUID")
+	assert.Equal(t, "Profile", sourceAttr.GetRelatedEntityID(), "Should point to Profile entity using DisplayName")
 	assert.Equal(t, "id", sourceAttr.GetRelatedAttribute(), "Should point to id attribute")
 }
 
@@ -617,7 +617,7 @@ func TestGraphUUIDEntityIDs(t *testing.T) {
 	sourceAttr := rel.GetSourceAttribute()
 
 	// This should show the bug - relatedEntityID might be wrong
-	assert.Equal(t, "uuid-entity-2", sourceAttr.GetRelatedEntityID(), "Should be target entity ID, not dotted reference")
+	assert.Equal(t, "Entity2", sourceAttr.GetRelatedEntityID(), "Should be target entity DisplayName")
 	assert.Equal(t, "id", sourceAttr.GetRelatedAttribute(), "Should be target attribute name")
 
 	// CRITICAL: Target ID attributes should NOT be marked as relationships
@@ -1341,8 +1341,8 @@ func TestAttributeAliasRelationshipMarking(t *testing.T) {
 	require.NoError(t, err)
 
 	entities := graph.GetAllEntities()
-	groupMemberEntity := entities["group-member-entity"]
-	groupEntity := entities["group-entity"]
+	groupMemberEntity := entities["GroupMember"]
+	groupEntity := entities["Group"]
 
 	// Check GroupMember entity attributes
 	groupMemberRelAttrs := groupMemberEntity.GetRelationshipAttributes()
