@@ -37,8 +37,8 @@ func TestGraphStatistics(t *testing.T) {
 				"user_role": {
 					DisplayName:   "User Role",
 					Name:          "user_role",
-					FromAttribute: "User.roleId",
-					ToAttribute:   "Role.id",
+					FromAttribute: "TestApp/User.roleId", // Use ExternalId format
+					ToAttribute:   "TestApp/Role.id",     // Use ExternalId format
 				},
 				"role_path": {
 					DisplayName: "Role Path",

@@ -173,6 +173,57 @@ func (p *Parser) validate() error {
 	return nil
 }
 
+// buildAttributeSuggestions creates helpful debugging information when an attribute cannot be found
+func (p *Parser) buildAttributeSuggestions(attrRef string, aliasMap, entityAttrMap map[string]struct {
+	EntityID      string
+	AttributeName string
+	ExternalID    string
+	UniqueID      bool
+}) string {
+	var suggestions strings.Builder
+	suggestions.WriteString("\n    Searched for: ")
+
+	// Show what format was attempted
+	if strings.Contains(attrRef, ".") {
+		suggestions.WriteString("Entity.Attribute format")
+	} else {
+		suggestions.WriteString("Attribute alias format")
+	}
+
+	// Show some examples of available formats
+	suggestions.WriteString("\n    Available attribute aliases (sample):")
+	count := 0
+	for alias := range aliasMap {
+		if count >= 5 {
+			suggestions.WriteString("\n      ... and more")
+			break
+		}
+		suggestions.WriteString(fmt.Sprintf("\n      - %s", alias))
+		count++
+	}
+
+	if count == 0 {
+		suggestions.WriteString("\n      (none found)")
+	}
+
+	suggestions.WriteString("\n    Available Entity.Attribute patterns (sample):")
+	count = 0
+	for pattern := range entityAttrMap {
+		if count >= 5 {
+			suggestions.WriteString("\n      ... and more")
+			break
+		}
+		suggestions.WriteString(fmt.Sprintf("\n      - %s", pattern))
+		count++
+	}
+
+	if count == 0 {
+		suggestions.WriteString("\n      (none found)")
+	}
+
+	return suggestions.String()
+}
+
 // validateRelationships performs comprehensive validation of relationship definitions
 func (p *Parser) validateRelationships() error {
 	if len(p.Definition.Relationships) == 0 {
@@ -197,8 +248,12 @@ func (p *Parser) validateRelationships() error {
 		UniqueID      bool
 	})
 
-	// Build the attribute maps
+	// Build the attribute maps and collect entity info for debugging
+	fmt.Printf("\nDEBUG: Discovered %d entities:\n", len(p.Definition.Entities))
 	for entityID, entity := range p.Definition.Entities {
+		fmt.Printf("  • Entity ID: %s, External ID: %s, Display Name: %s (%d attributes)\n",
+			entityID, entity.ExternalId, entity.DisplayName, len(entity.Attributes))
+
 		for _, attr := range entity.Attributes {
 			// Handle attributeAlias case (when it exists)
 			if attr.AttributeAlias != "" {
@@ -230,6 +285,7 @@ func (p *Parser) validateRelationships() error {
 			}
 		}
 	}
+	fmt.Println()
 
 	// Keep track of valid and invalid relationships
 	invalidRelationships := make([]string, 0)
@@ -325,17 +381,21 @@ func (p *Parser) validateRelationships() error {
 			}
 		}
 
-		// Report validation problems
+		// Report validation problems with detailed debugging information
 		if !fromFound {
+			// Build suggestions for what might have been intended
+			suggestions := p.buildAttributeSuggestions(rel.FromAttribute, attributeAliasMap, entityAttributeMap)
 			invalidRelationships = append(invalidRelationships,
-				fmt.Sprintf("relationship %s: fromAttribute '%s' does not match any entity attribute",
-					relID, rel.FromAttribute))
+				fmt.Sprintf("relationship %s: fromAttribute '%s' does not match any entity attribute%s",
+					relID, rel.FromAttribute, suggestions))
 		}
 
 		if !toFound {
+			// Build suggestions for what might have been intended
+			suggestions := p.buildAttributeSuggestions(rel.ToAttribute, attributeAliasMap, entityAttributeMap)
 			invalidRelationships = append(invalidRelationships,
-				fmt.Sprintf("relationship %s: toAttribute '%s' does not match any entity attribute",
-					relID, rel.ToAttribute))
+				fmt.Sprintf("relationship %s: toAttribute '%s' does not match any entity attribute%s",
+					relID, rel.ToAttribute, suggestions))
 		}
 
 		// Skip further validation if either attribute wasn't found
