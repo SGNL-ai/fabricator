@@ -1,0 +1,62 @@
+displayName: Invalid-Relationship-References
+description: Test file demonstrating invalid relationship attribute references
+hostname: localhost:8080
+defaultSyncFrequency: DAILY
+defaultSyncMinInterval: 1
+defaultApiCallFrequency: SECONDLY
+defaultApiCallMinInterval: 1
+type: S3-1.0.0
+adapterConfig:
+auth:
+  - basic:
+      username: TEST_USER
+entities:
+  User:
+    displayName: User
+    externalId: ons-profile-read/user
+    description: User entity
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: Unique user id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: profileId
+        externalId: profileId
+        description: Reference to profile
+        type: String
+        indexed: true
+  Profile:
+    displayName: Profile
+    externalId: ons-profile-read/profile
+    description: Profile entity
+    pagesOrderedById: false
+    attributes:
+      - name: id
+        externalId: id
+        description: Unique profile id
+        type: String
+        indexed: true
+        uniqueId: true
+      - name: name
+        externalId: name
+        description: Profile name
+        type: String
+        indexed: false
+relationships:
+  # INVALID: Incorrect attribute reference format
+  # Correct format: ons-profile-read/user.profileId -> ons-profile-read/profile.id
+  invalid_relationship:
+    displayName: INVALID_USER_PROFILE
+    name: INVALID_USER_PROFILE
+    fromAttribute: User.profileId  # Incorrect format
+    toAttribute: Profile.id        # Incorrect format
+
+  # CORRECT: Uses proper externalId format
+  valid_relationship:
+    displayName: VALID_USER_PROFILE
+    name: VALID_USER_PROFILE
+    fromAttribute: ons-profile-read/user.profileId
+    toAttribute: ons-profile-read/profile.id

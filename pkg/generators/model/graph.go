@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/SGNL-ai/fabricator/pkg/util"
@@ -176,6 +177,7 @@ func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]parser.Entity) er
 	}
 
 	// Then build the attribute to entity lookup map
+	// Support two formats with priority: 1) attributeAlias, 2) ExternalId.ExternalId
 	for entityID, entity := range g.entities {
 		// Find the corresponding YAML entity by matching DisplayName
 		var yamlEntity parser.Entity
@@ -187,10 +189,12 @@ func (g *Graph) createEntitiesFromYAML(yamlEntities map[string]parser.Entity) er
 		}
 
 		for _, yamlAttr := range yamlEntity.Attributes {
-			g.attributeToEntity[fmt.Sprintf("%s.%s", entityID, yamlAttr.ExternalId)] = entity
+			// Priority 1: attributeAlias (highest priority)
 			if yamlAttr.AttributeAlias != "" {
 				g.attributeToEntity[yamlAttr.AttributeAlias] = entity
 			}
+			// Priority 2: EntityExternalId.AttributeExternalId format
+			g.attributeToEntity[fmt.Sprintf("%s.%s", yamlEntity.ExternalId, yamlAttr.ExternalId)] = entity
 		}
 	}
 
@@ -210,15 +214,15 @@ func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]parser.
 		// Get source entity from FromAttribute
 		sourceEntity := g.attributeToEntity[yamlRel.FromAttribute]
 		if sourceEntity == nil {
-			return fmt.Errorf("source entity not found for relationship %s (attribute: %s)",
-				relationshipID, yamlRel.FromAttribute)
+			return fmt.Errorf("source entity not found for relationship %s (attribute: %s)\n%s",
+				relationshipID, yamlRel.FromAttribute, g.buildAvailableAttributesMessage(yamlRel.FromAttribute))
 		}
 
 		// Get target entity from ToAttribute
 		targetEntity := g.attributeToEntity[yamlRel.ToAttribute]
 		if targetEntity == nil {
-			return fmt.Errorf("target entity not found for relationship %s (attribute: %s)",
-				relationshipID, yamlRel.ToAttribute)
+			return fmt.Errorf("target entity not found for relationship %s (attribute: %s)\n%s",
+				relationshipID, yamlRel.ToAttribute, g.buildAvailableAttributesMessage(yamlRel.ToAttribute))
 		}
 
 		// Call addRelationship on the source entity with the external IDs
@@ -242,6 +246,70 @@ func (g *Graph) createRelationshipsFromYAML(yamlRelationships map[string]parser.
 	}
 
 	return nil
+}
+
+// buildAvailableAttributesMessage creates helpful debugging information when an attribute cannot be found
+func (g *Graph) buildAvailableAttributesMessage(attrRef string) string {
+	var msg strings.Builder
+	msg.WriteString("    Available attribute references:\n")
+
+	// Group by entity for better readability
+	entityAttrs := make(map[string][]string)
+
+	for key := range g.attributeToEntity {
+		// Extract entity name from the key (before the first dot)
+		parts := strings.SplitN(key, ".", 2)
+		if len(parts) == 2 {
+			entityName := parts[0]
+			entityAttrs[entityName] = append(entityAttrs[entityName], key)
+		}
+	}
+
+	// Show up to 5 entities with their attributes
+	count := 0
+	for entityName, attrs := range entityAttrs {
+		if count >= 5 {
+			msg.WriteString(fmt.Sprintf("    ... and %d more entities\n", len(entityAttrs)-5))
+			break
+		}
+		msg.WriteString(fmt.Sprintf("    Entity: %s\n", entityName))
+		// Show up to 3 attributes per entity
+		for i, attr := range attrs {
+			if i >= 3 {
+				msg.WriteString(fmt.Sprintf("      ... and %d more attributes\n", len(attrs)-3))
+				break
+			}
+			msg.WriteString(fmt.Sprintf("      - %s\n", attr))
+		}
+		count++
+	}
+
+	// Add format hint by checking if the prefix matches any entity's ExternalId
+	if strings.Contains(attrRef, ".") {
+		parts := strings.SplitN(attrRef, ".", 2)
+		entityPrefix := parts[0]
+
+		// Check if this prefix matches any entity's ExternalId (not DisplayName)
+		matchesExternalId := false
+		matchesDisplayName := false
+
+		for _, entity := range g.yamlModel.Entities {
+			if entity.ExternalId == entityPrefix {
+				matchesExternalId = true
+			}
+			if entity.DisplayName == entityPrefix {
+				matchesDisplayName = true
+			}
+		}
+
+		if matchesExternalId && !matchesDisplayName {
+			msg.WriteString("\n    Note: This appears to use Entity ExternalId format.\n")
+			msg.WriteString("    Relationships should use Entity DisplayName format: DisplayName.AttributeExternalId\n")
+			msg.WriteString("    Check your YAML entities to find the correct DisplayName for this entity.\n")
+		}
+	}
+
+	return msg.String()
 }
 
 // buildIndexes builds all the optimized data structures for faster lookups
