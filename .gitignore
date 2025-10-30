@@ -42,6 +42,10 @@ go.work
 **/.claude/settings.local.json
 /test-run/
 
+# Spec-kit working directories (may contain sensitive info)
+.specify/specs/*/research.md
+.specify/specs/*/tasks.md
+
 # Sensitive files
 # Add patterns here, not specific filenames
 samples/
