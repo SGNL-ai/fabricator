@@ -297,15 +297,16 @@ func (e *Entity) ToCSV() *CSVData {
 	// Create headers from attribute external IDs
 	headers := make([]string, 0, len(e.attrList))
 	for _, attr := range e.attrList {
-		headers = append(headers, attr.GetName())
+		headers = append(headers, attr.GetExternalID())
 	}
 
 	// Create rows from entity data
 	csvRows := make([][]string, 0, len(e.rows))
 	for _, row := range e.rows {
 		csvRow := make([]string, 0, len(headers))
-		for _, attrName := range headers {
-			csvRow = append(csvRow, row.values[attrName])
+		for _, attr := range e.attrList {
+			// Use attribute name to look up value in row (rows are keyed by name)
+			csvRow = append(csvRow, row.values[attr.GetName()])
 		}
 		csvRows = append(csvRows, csvRow)
 	}
