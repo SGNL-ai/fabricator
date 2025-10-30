@@ -1129,7 +1129,8 @@ func TestEntityToCSV(t *testing.T) {
 		// Verify CSV structure
 		assert.Equal(t, entity.GetExternalID(), csvData.ExternalId)
 		assert.Equal(t, 2, len(csvData.Rows))
-		assert.Equal(t, []string{"id", "name"}, csvData.Headers)
+		// Headers should use externalID, not name, for proper data ingestion
+		assert.Equal(t, []string{"id_ext", "name_ext"}, csvData.Headers)
 
 		// Verify rows contain expected data
 		assert.Len(t, csvData.Rows, 2)
