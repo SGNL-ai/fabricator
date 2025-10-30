@@ -453,3 +453,73 @@ When reviewing implementation:
   - Tests must genuinely verify the functionality, not just appear to pass.
   - Each test should have meaningful assertions that validate actual behavior.
   - Tests should fail when the implementation is incorrect.
+
+## Spec-Driven Development with Spec Kit
+
+This project uses [GitHub Spec Kit](https://github.com/github/spec-kit) for structured, AI-assisted development. Spec Kit provides a workflow for defining specifications, creating implementation plans, and executing tasks systematically.
+
+### Spec Kit Workflow
+
+The development process follows six steps:
+
+1. **Establish Principles** (`/speckit.constitution`): Review and update project principles in `.specify/memory/constitution.md`
+2. **Create Specification** (`/speckit.specify`): Define what to build, user stories, and acceptance criteria
+3. **Create Plan** (`/speckit.plan`): Develop technical implementation approach and architecture
+4. **Break Down Tasks** (`/speckit.tasks`): Generate sequenced, actionable tasks with dependencies
+5. **Analyze** (`/speckit.analyze`): Optional cross-artifact consistency check
+6. **Execute** (`/speckit.implement`): Implement tasks following TDD principles
+
+### Available Commands
+
+Core workflow commands:
+- `/speckit.constitution` - Establish or update project governance principles
+- `/speckit.specify` - Create functional specifications for new features
+- `/speckit.plan` - Develop technical implementation plans
+- `/speckit.tasks` - Generate detailed task breakdowns
+- `/speckit.implement` - Execute implementation with AI assistance
+
+Enhancement commands (optional):
+- `/speckit.clarify` - Ask structured questions to de-risk ambiguous areas (run before `/speckit.plan`)
+- `/speckit.analyze` - Generate consistency report across artifacts (after `/speckit.tasks`)
+- `/speckit.checklist` - Validate requirements completeness and clarity (after `/speckit.plan`)
+
+### Directory Structure
+
+```
+.specify/
+├── memory/
+│   └── constitution.md     # Project governance principles
+├── scripts/                # Utility scripts for workflow automation
+├── specs/
+│   └── [feature-number]-[feature-name]/
+│       ├── spec.md         # Functional specification
+│       ├── plan.md         # Technical implementation plan
+│       ├── tasks.md        # Detailed task breakdown
+│       ├── contracts/      # API and data model specs (optional)
+│       ├── research.md     # Tech research details (optional)
+│       └── quickstart.md   # Getting started guide (optional)
+└── templates/              # Templates for specs and plans
+```
+
+### Integration with Existing Workflow
+
+Spec Kit complements the existing development practices:
+
+1. **Constitution**: `.specify/memory/constitution.md` codifies the project principles from this CLAUDE.md file
+2. **Specifications**: Feature specs define requirements before implementation begins
+3. **TDD Alignment**: Task breakdowns explicitly include test creation steps
+4. **Quality Gates**: Analysis commands verify consistency and completeness
+5. **Documentation**: Specs serve as living documentation of feature rationale
+
+### When to Use Spec Kit
+
+Use Spec Kit for:
+- **New features**: Major functionality additions requiring planning
+- **Refactoring**: Significant architectural changes
+- **Complex bugs**: Issues requiring investigation and design
+- **API changes**: Changes affecting external contracts
+
+Don't use Spec Kit for:
+- **Simple bugs**: Single-file fixes with obvious solutions
+- **Trivial changes**: Documentation updates, typo fixes
+- **Emergency hotfixes**: Critical production issues requiring immediate action
