@@ -1,0 +1,118 @@
+
+# Row count configuration for fabricator
+# Generated from: samples/data-gen.yaml
+# Last updated: 2025-10-30 20:44:02
+#
+# Edit the numbers below to specify how many rows to generate for each entity.
+# Entities not listed here will use the default count (100).
+
+# Entity: authz-api-permission/application
+# Name: Application
+# Description: Application entity in which Permissions, APIs, are namespaced
+authz-api-permission/application: 100
+
+# Entity: authz-api-permission/applicationHostname
+# Name: ApplicationHostname
+# Description: Hostname child entity for a parent Application
+authz-api-permission/applicationHostname: 100
+
+# Entity: authz-api-permission/api
+# Name: API
+# Description: API entity to describe protected APIs
+authz-api-permission/api: 100
+
+# Entity: authz-api-permission/entraIdGroup
+# Name: EntraIdGroup
+# Description: Group entity to link to EntraId
+authz-api-permission/entraIdGroup: 100
+
+# Entity: ons-svcpermission-profile/userPermission
+# Name: UserPermission
+# Description: Child entity of UserPermissions
+ons-svcpermission-profile/userPermission: 100
+
+# Entity: authz-api-permission/permissionUserJoinTable
+# Name: Permission and User Join Table
+# Description: Join table for Permissions that are assigned to a user
+authz-api-permission/permissionUserJoinTable: 100
+
+# Entity: ons-profile-read/account
+# Name: Account
+# Description: Child entity of CustomerAccount representing account holding vehicles
+ons-profile-read/account: 100
+
+# Entity: ons-svcpermission-profile/devicePermission
+# Name: DevicePermission
+# Description: Child entity of DevicePermissions
+ons-svcpermission-profile/devicePermission: 100
+
+# Entity: fake-entra-id/group
+# Name: Group
+# Description: Fake Entra ID Group entity
+fake-entra-id/group: 100
+
+# Entity: authz-api-permission/permissionCriteria
+# Name: Permission Criteria
+# Description: Configurable criteria for dynamic permission assignment to customers
+authz-api-permission/permissionCriteria: 100
+
+# Entity: authz-api-permission/universalClientCriteriaSingleton
+# Name: UniversalClientCriteriaSingleton
+# Description: Singleton entity to connect all client nodes to all permissionCriteria via relationships. connected through conditions, not relationships.
+authz-api-permission/universalClientCriteriaSingleton: 100
+
+# Entity: ons-profile-read/customerAccount
+# Name: CustomerAccount
+# Description: Child entity of UserProfile representing customer accounts
+ons-profile-read/customerAccount: 100
+
+# Entity: authz-api-permission/permission
+# Name: Permission
+# Description: Permission entity to be assigned to principals and to gate access to APIs
+authz-api-permission/permission: 100
+
+# Entity: authz-api-permission/entraIdUser
+# Name: EntraIdUser
+# Description: User entity to link to EntraId
+authz-api-permission/entraIdUser: 100
+
+# Entity: authz-api-permission/apiPermissionJoinTable
+# Name: API Permission Join Table
+# Description: Join table for Permissions that gate access to a given API
+authz-api-permission/apiPermissionJoinTable: 100
+
+# Entity: authz-api-permission/permissionGroupJoinTable
+# Name: Permission and Group Join Table
+# Description: Join table for Permissions that are assigned to a group
+authz-api-permission/permissionGroupJoinTable: 100
+
+# Entity: ons-svcpermission-profile/serviceGroupPermission
+# Name: DeviceServiceGroupPermission
+# Description: Child entity of DeviceServiceGroupPermissions
+ons-svcpermission-profile/serviceGroupPermission: 100
+
+# Entity: ons-profile-read/userProfile
+# Name: UserProfile
+# Description: User profile information
+ons-profile-read/userProfile: 100
+
+# Entity: ons-profile-read/accountVehicle
+# Name: AccountVehicle
+# Description: Child entity of Account representing vehicles associated with the account
+ons-profile-read/accountVehicle: 100
+
+# Entity: ons-svcpermission-profile/accountPermission
+# Name: AccountPermission
+# Description: Child entity of AccountPermissions
+ons-svcpermission-profile/accountPermission: 100
+
+# Entity: fake-entra-id/user
+# Name: User
+# Description: Fake Entra ID User entity
+fake-entra-id/user: 100
+
+# Entity: fake-entra-id/groupMember
+# Name: GroupMember
+# Description: Fake Entra ID Group Member join table entity
+fake-entra-id/groupMember: 100
+

@@ -1,0 +1,40 @@
+# Row count configuration for fabricator - Real-world GM scenario
+# Based on production-like data volumes
+
+# Applications and APIs
+authz-api-permission/application: 2000
+authz-api-permission/applicationHostname: 6000
+authz-api-permission/api: 20000
+authz-api-permission/permission: 20000
+
+# Entra ID entities (identity source)
+authz-api-permission/entraIdGroup: 500000
+authz-api-permission/entraIdUser: 1000000
+
+# Fake Entra ID entities (same_as copies for AuthZ)
+fake-entra-id/group: 500000
+fake-entra-id/user: 1000000
+fake-entra-id/groupMember: 2000000
+
+# Permission criteria (half of APIs accessible to customers)
+authz-api-permission/permissionCriteria: 10000
+
+# User profiles and customer data (10M customers)
+ons-profile-read/userProfile: 10000000
+ons-profile-read/customerAccount: 10000000
+ons-profile-read/account: 10000000
+ons-profile-read/accountVehicle: 10000000
+
+# Static permission sets (small)
+ons-svcpermission-profile/userPermission: 100
+ons-svcpermission-profile/accountPermission: 100
+ons-svcpermission-profile/devicePermission: 100
+ons-svcpermission-profile/serviceGroupPermission: 100
+
+# Singleton (all profiles and criteria link to this one instance)
+authz-api-permission/universalClientCriteriaSingleton: 1
+
+# Join tables
+authz-api-permission/apiPermissionJoinTable: 20000
+authz-api-permission/permissionGroupJoinTable: 250000
+authz-api-permission/permissionUserJoinTable: 500000
