@@ -189,7 +189,16 @@ func TestIDGenerator_GenerateIDs(t *testing.T) {
 			generator := NewIDGenerator()
 			graph := tt.setupGraph()
 
-			err := generator.GenerateIDs(graph, tt.dataVolume)
+			// Convert dataVolume int to rowCounts map
+			rowCounts := make(map[string]int)
+			if graph != nil {
+				entities := graph.GetAllEntities()
+				for _, entity := range entities {
+					rowCounts[entity.GetExternalID()] = tt.dataVolume
+				}
+			}
+
+			err := generator.GenerateIDs(graph, rowCounts)
 
 			if tt.wantErr {
 				assert.Error(t, err)

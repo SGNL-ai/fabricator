@@ -45,7 +45,7 @@ func TestRealisticCardinalityDistribution(t *testing.T) {
 
 		// Generate data (no CSV output needed for this test)
 		tempDir := t.TempDir()
-		generator := NewDataGenerator(tempDir, 5, true) // Enable auto-cardinality
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 5, "Employee": 5}, true) // Enable auto-cardinality
 		err = generator.Generate(graph.(*model.Graph))
 		require.NoError(t, err)
 
@@ -140,7 +140,7 @@ func TestRealisticCardinalityDistribution(t *testing.T) {
 
 		// Generate data with auto-cardinality enabled
 		tempDir := t.TempDir()
-		generator := NewDataGenerator(tempDir, 25, true) // Enable auto-cardinality
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 25, "Department": 25}, true) // Enable auto-cardinality
 		err = generator.Generate(graph.(*model.Graph))
 		require.NoError(t, err)
 

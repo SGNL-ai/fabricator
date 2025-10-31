@@ -8,6 +8,7 @@
 # Build output
 /build/
 /bin/
+/fabricator
 
 # Generated data files
 /output/

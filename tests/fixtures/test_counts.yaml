@@ -1,0 +1,6 @@
+# Test row count configuration
+# Used for integration testing
+
+users: 10
+groups: 5
+permissions: 8
