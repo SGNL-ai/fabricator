@@ -79,12 +79,12 @@ EntraIdGroup: 105
 		{
 			name:            "round-robin",
 			autoCardinality: false,
-			description:     "Round-robin causes modulo wrapping: row 105 % 105 = 0, duplicating row 0's ID",
+			description:     "Round-robin with 1:1 mapping for same_as relationships",
 		},
 		{
 			name:            "power-law",
 			autoCardinality: true,
-			description:     "Power-law uses GetRowCount() which shrinks during ForEachRow, causing wrong calculations",
+			description:     "Should force round-robin for same_as regardless of auto-cardinality setting",
 		},
 	}
 
@@ -102,14 +102,104 @@ EntraIdGroup: 105
 
 			_, err = orchestrator.RunGeneration(p.Definition, outputDir, options)
 
-			// BUG: This currently fails with "duplicate value for unique attribute 'id'"
-			// Reason: tc.description
-			// After fix, this should succeed
+			// Should succeed: same_as relationships cap at min(source, target)
 			require.NoError(t, err, "Should generate successfully with source > target counts (%s)", tc.description)
 
 			// Verify output
 			verifyCSVRowCount(t, filepath.Join(outputDir, "Group.csv"), 107)
 			verifyCSVRowCount(t, filepath.Join(outputDir, "EntraIdGroup.csv"), 105)
+		})
+	}
+}
+
+// TestPerEntityCountBug_TargetHasMoreRowsThanSource tests the reverse scenario
+func TestPerEntityCountBug_TargetHasMoreRowsThanSource(t *testing.T) {
+	// Create minimal YAML with 2 entities and 1 same_as relationship
+	tmpDir := t.TempDir()
+	yamlPath := filepath.Join(tmpDir, "test.yaml")
+	yamlContent := `displayName: Reverse Scenario Test
+description: Test when target has more rows than source
+
+entities:
+  Group:
+    displayName: Group
+    externalId: Group
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+
+  EntraIdGroup:
+    displayName: EntraIdGroup
+    externalId: EntraIdGroup
+    attributes:
+      - name: id
+        externalId: id
+        type: String
+        uniqueId: true
+
+relationships:
+  GroupToEntraIdGroup:
+    name: GroupToEntraIdGroup
+    fromAttribute: Group.id
+    toAttribute: EntraIdGroup.id
+`
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0644)
+	require.NoError(t, err)
+
+	// Create count config: Group (105) < EntraIdGroup (107) - REVERSED
+	countConfigPath := filepath.Join(tmpDir, "counts.yaml")
+	countConfigContent := `Group: 105
+EntraIdGroup: 107
+`
+	err = os.WriteFile(countConfigPath, []byte(countConfigContent), 0644)
+	require.NoError(t, err)
+
+	// Parse SOR
+	p := parser.NewParser(yamlPath)
+	err = p.Parse()
+	require.NoError(t, err)
+
+	// Load count config
+	countConfig, err := config.LoadConfiguration(countConfigPath)
+	require.NoError(t, err)
+
+	// Test both distribution algorithms
+	testCases := []struct {
+		name            string
+		autoCardinality bool
+	}{
+		{
+			name:            "round-robin",
+			autoCardinality: false,
+		},
+		{
+			name:            "power-law",
+			autoCardinality: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			outputDir := filepath.Join(tmpDir, "output-reverse-"+tc.name)
+
+			options := orchestrator.GenerationOptions{
+				DataVolume:      100,
+				CountConfig:     countConfig,
+				AutoCardinality: tc.autoCardinality,
+				GenerateDiagram: false,
+				ValidateResults: false,
+			}
+
+			_, err = orchestrator.RunGeneration(p.Definition, outputDir, options)
+
+			// Should succeed: all 105 Group rows can map to 105 of the 107 EntraIdGroup rows
+			require.NoError(t, err, "Should generate successfully with target > source counts")
+
+			// Verify output
+			verifyCSVRowCount(t, filepath.Join(outputDir, "Group.csv"), 105)
+			verifyCSVRowCount(t, filepath.Join(outputDir, "EntraIdGroup.csv"), 107)
 		})
 	}
 }

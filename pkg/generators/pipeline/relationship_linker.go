@@ -46,11 +46,28 @@ func (l *RelationshipLinker) LinkRelationships(graph *model.Graph, autoCardinali
 		for i, relationship := range sourceRelationships {
 			isLastRelationship := (i == len(sourceRelationships)-1)
 
+			// Detect same_as relationships (both source and target attributes are unique/PKs)
+			// These represent bidirectional (0..1)-to-(0..1) identity mappings
+			isSameAs := relationship.GetSourceAttribute().IsUnique() && relationship.GetTargetAttribute().IsUnique()
+
+			// For same_as relationships, only assign up to min(source, target) rows
+			// Excess rows in larger entity remain unassigned (valid for optional same_as)
+			targetRowCount := relationship.GetTargetEntity().GetRowCount()
+
 			// Process all rows for this relationship
 			duplicateIndices := make([]int, 0)
 			err := entity.ForEachRow(func(row *model.Row, rowIndex int) error {
+				// For same_as relationships with source > target, skip excess rows
+				if isSameAs && rowIndex >= targetRowCount {
+					return nil // Skip - no corresponding target row exists
+				}
+
+				// For same_as relationships, always use round-robin (1:1 sequential mapping)
+				// Power-law clustering doesn't make sense for identity relationships
+				useAutoCardinality := autoCardinality && !isSameAs
+
 				// Ask relationship to provide target PK value for this source row
-				targetValue, err := relationship.GetTargetValueForSourceRow(rowIndex, autoCardinality)
+				targetValue, err := relationship.GetTargetValueForSourceRow(rowIndex, useAutoCardinality)
 				if err != nil {
 					return fmt.Errorf("failed to get target value for row %d: %w", rowIndex, err)
 				}
