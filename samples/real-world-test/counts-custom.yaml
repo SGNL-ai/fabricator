@@ -1,40 +1,40 @@
 # Row count configuration for fabricator - Real-world GM scenario
-# Based on production-like data volumes
+# Based on actual requirements provided
 
 # Applications and APIs
-authz-api-permission/application: 2000
-authz-api-permission/applicationHostname: 6000
-authz-api-permission/api: 20000
-authz-api-permission/permission: 20000
+authz-api-permission/application: 2000                    # 2k applications
+authz-api-permission/applicationHostname: 6000            # 6k hostnames (3:1 ratio or power rule linking to apps)
+authz-api-permission/api: 20000                           # 20k APIs (~10 APIs per Application)
+authz-api-permission/permission: 20000                    # 20k permissions (1:1 with APIs, must link to same app)
 
 # Entra ID entities (identity source)
-authz-api-permission/entraIdGroup: 500000
-authz-api-permission/entraIdUser: 1000000
+authz-api-permission/entraIdGroup: 500000                 # 500k EntraId groups
+authz-api-permission/entraIdUser: 1000000                 # 1m EntraId users
 
-# Fake Entra ID entities (same_as copies for AuthZ)
-fake-entra-id/group: 500000
-fake-entra-id/user: 1000000
-fake-entra-id/groupMember: 2000000
+# Fake Entra ID entities (same_as copies for AuthZ - 1:1 mapping)
+fake-entra-id/group: 500000                               # 500k groups (same_as copy)
+fake-entra-id/user: 1000000                               # 1m users (same_as copy)
+fake-entra-id/groupMember: 2000000                        # 2m group memberships
 
 # Permission criteria (half of APIs accessible to customers)
-authz-api-permission/permissionCriteria: 10000
+authz-api-permission/permissionCriteria: 10000            # 10k permission criteria
 
-# User profiles and customer data (10M customers)
-ons-profile-read/userProfile: 10000000
-ons-profile-read/customerAccount: 10000000
-ons-profile-read/account: 10000000
-ons-profile-read/accountVehicle: 10000000
+# User profiles and customer data (1:1 chains)
+ons-profile-read/userProfile: 10000000                    # 10m user profiles (based on 6m global annual GM vehicle sales)
+ons-profile-read/customerAccount: 10000000                # 10m customer accounts (1:1 with UserProfile)
+ons-profile-read/account: 10000000                        # 10m accounts (1:1 with CustomerAccount)
+ons-profile-read/accountVehicle: 10000000                 # 10m account vehicles (1:1 with Account)
 
-# Static permission sets (small)
-ons-svcpermission-profile/userPermission: 100
-ons-svcpermission-profile/accountPermission: 100
-ons-svcpermission-profile/devicePermission: 100
-ons-svcpermission-profile/serviceGroupPermission: 100
+# Static permission sets (small defined sets)
+ons-svcpermission-profile/userPermission: 100             # 100 user permissions (static set)
+ons-svcpermission-profile/accountPermission: 100          # 100 account permissions (static set)
+ons-svcpermission-profile/devicePermission: 100           # 100 device permissions (static set)
+ons-svcpermission-profile/serviceGroupPermission: 100     # 100 DSG permissions (static set)
 
-# Singleton (all profiles and criteria link to this one instance)
-authz-api-permission/universalClientCriteriaSingleton: 1
+# Singleton (all UserProfile and PermissionCriteria link to this one instance)
+authz-api-permission/universalClientCriteriaSingleton: 1  # 1 singleton instance
 
 # Join tables
-authz-api-permission/apiPermissionJoinTable: 20000
-authz-api-permission/permissionGroupJoinTable: 250000
-authz-api-permission/permissionUserJoinTable: 500000
+authz-api-permission/apiPermissionJoinTable: 20000               # API-Permission joins
+authz-api-permission/permissionGroupJoinTable: 250000            # Permission-Group joins
+authz-api-permission/permissionUserJoinTable: 500000             # Permission-User joins

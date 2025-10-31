@@ -25,9 +25,18 @@ This directory contains test results demonstrating the per-entity row count conf
      - Static datasets: 100 rows for permissions
      - Singleton: 1 row for universal criteria
 
-3. **counts-custom.yaml** - Production-scale configuration (not executed)
-   - Full production volumes: 45M+ total records
-   - Demonstrates extreme scale capabilities
+3. **counts-custom.yaml** - Production-scale configuration
+   - Based on actual GM requirements (not executed due to size)
+   - Full production volumes: ~45M+ total records
+   - Key specifications:
+     - 10M customer profiles (1:1 chains through account/vehicle)
+     - 2M group memberships
+     - 1M EntraId users, 500K groups (with 1:1 same_as copies)
+     - 20K APIs with 20K permissions (1:1, must link to same app)
+     - 6K application hostnames for 2K applications (3:1 ratio)
+     - 10K permission criteria (half of APIs accessible to customers)
+     - Singleton universal criteria (1 instance, all profiles/criteria link to it)
+   - Note: Would take ~5+ minutes to generate
 
 ### Output Directory
 
