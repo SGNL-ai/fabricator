@@ -50,12 +50,6 @@ go.work
 # Sensitive files
 # Add patterns here, not specific filenames
 samples/
-# Allow real-world-test configs and docs
-!samples/real-world-test/
-!samples/real-world-test/*.yaml
-!samples/real-world-test/README.md
-# But exclude CSV output
-samples/real-world-test/output/
 
 # output files
 *.csv

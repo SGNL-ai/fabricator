@@ -42,7 +42,7 @@ func withFlagValues(t *testing.T, flags map[string]string, fn func()) {
 	inputFile = ""
 	outputDir = "output"
 	dataVolume = 100
-	autoCardinality = false
+	autoCardinality = true
 	validateOnly = false
 	generateDiagram = true
 

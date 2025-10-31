@@ -73,8 +73,8 @@ func init() {
 	flag.StringVar(&countConfigFile, "count-config", "", "Path to row count configuration YAML file")
 	flag.StringVar(&countConfigFile, "c", "", "Path to row count configuration YAML file")
 
-	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
-	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
+	flag.BoolVar(&autoCardinality, "a", true, "Enable automatic cardinality detection for relationships")
+	flag.BoolVar(&autoCardinality, "auto-cardinality", true, "Enable automatic cardinality detection for relationships")
 
 	flag.BoolVar(&validateOnly, "validate-only", false, "Validate existing CSV files without generating new data")
 
