@@ -5,17 +5,21 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/SGNL-ai/fabricator/pkg/config"
 	"github.com/SGNL-ai/fabricator/pkg/diagrams"
 	"github.com/SGNL-ai/fabricator/pkg/fabricator"
+	"github.com/SGNL-ai/fabricator/pkg/generators"
 	"github.com/SGNL-ai/fabricator/pkg/generators/model"
 	"github.com/SGNL-ai/fabricator/pkg/generators/pipeline"
 	"github.com/SGNL-ai/fabricator/pkg/parser"
 	"github.com/SGNL-ai/fabricator/pkg/util"
+	"github.com/fatih/color"
 )
 
 // GenerationOptions configures the data generation process
 type GenerationOptions struct {
 	DataVolume      int
+	CountConfig     *config.CountConfiguration
 	AutoCardinality bool
 	GenerateDiagram bool
 	ValidateResults bool
@@ -60,10 +64,25 @@ func RunGeneration(def *parser.SORDefinition, outputDir string, options Generati
 	statistics := graph.GetStatistics()
 	fabricator.PrintGraphStatistics(statistics)
 
+	// Build row counts map (per-entity or uniform)
+	rowCounts := BuildRowCountsMap(def, options.CountConfig, options.DataVolume)
+
 	// Initialize and run the data generation pipeline
-	generator := pipeline.NewDataGenerator(outputDir, options.DataVolume, options.AutoCardinality)
+	generator := pipeline.NewDataGenerator(outputDir, rowCounts, options.AutoCardinality)
 	if err := generator.Generate(graph); err != nil {
 		return nil, fmt.Errorf("data generation failed: %w", err)
+	}
+
+	// Detect and emit cardinality warnings if using per-entity counts
+	if options.CountConfig != nil {
+		warnings := generators.DetectCardinalityViolations(graph, def, rowCounts)
+		if len(warnings) > 0 {
+			color.Yellow("\n⚠️  Cardinality Warnings:")
+			for _, warning := range warnings {
+				color.Yellow("  • %s", warning.String())
+			}
+			color.Yellow("\nNote: CSV files were generated with best-effort relationship assignment.")
+		}
 	}
 
 	// Count generated files
@@ -123,4 +142,23 @@ func generateERDiagram(def *parser.SORDefinition, outputDir string) (string, err
 	}
 
 	return diagramPath, nil
+}
+
+// BuildRowCountsMap constructs a map of entity external IDs to row counts.
+// If a CountConfiguration is provided, it uses those values.
+// Otherwise, it creates a uniform map with the default dataVolume.
+func BuildRowCountsMap(def *parser.SORDefinition, countConfig *config.CountConfiguration, defaultVolume int) map[string]int {
+	rowCounts := make(map[string]int, len(def.Entities))
+
+	for _, entity := range def.Entities {
+		if countConfig != nil {
+			// Use configured count, or default if not specified
+			rowCounts[entity.ExternalId] = countConfig.GetCount(entity.ExternalId, defaultVolume)
+		} else {
+			// Use uniform default
+			rowCounts[entity.ExternalId] = defaultVolume
+		}
+	}
+
+	return rowCounts
 }

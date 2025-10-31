@@ -1,0 +1,5 @@
+# Partial row count configuration
+# Only specifies some entities - others should use defaults
+
+users: 20
+# groups and permissions not specified - should use default (100)

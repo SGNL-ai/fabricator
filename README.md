@@ -59,6 +59,7 @@ chmod +x fabricator
 - **Relationship consistency** across all CSV files
 - **Variable cardinalities** (1:1, 1:N, N:1, N:N) with auto-detection
 - **Configurable data volume** from small samples to large datasets
+- **Per-entity row counts** via configuration files for flexible test scenarios
 
 ### 🔍 **Validation & Quality**
 - **YAML schema validation** using industry-standard JSON Schema
@@ -132,6 +133,7 @@ For Windows users, download the `fabricator-windows.exe` file from the releases 
 | `-f`       | `--file`             | Path to the YAML definition file (required)      | -         |
 | `-o`       | `--output`           | Directory to store generated CSV files           | "output"  |
 | `-n`       | `--num-rows`         | Number of rows to generate for each entity       | 100       |
+| `-c`       | `--count-config`     | Path to row count configuration YAML file        | -         |
 | `-a`       | `--auto-cardinality` | Enable automatic cardinality detection           | false     |
 | `-d`       | `--diagram`          | Generate Entity-Relationship diagram             | true      |
 |            | `--validate`         | Validate relationships in CSV files              | true      |
@@ -161,6 +163,85 @@ For Windows users, download the `fabricator-windows.exe` file from the releases 
 
 # Validate existing CSV files and generate an ER diagram
 ./build/fabricator -f example.yaml -o existing/csv/data --validate-only --diagram
+```
+
+### Per-Entity Row Count Configuration
+
+Fabricator now supports specifying different row counts for each entity using a configuration file, providing flexibility for realistic test data scenarios.
+
+#### Generate a Configuration Template
+
+```bash
+# Generate a row count configuration template from your SOR YAML
+./build/fabricator init-count-config -f example.yaml > counts.yaml
+```
+
+This creates a YAML file with all entities and default row counts:
+
+```yaml
+# Row count configuration for fabricator
+# Generated from: example.yaml
+# Last updated: 2025-10-30 14:30:00
+
+# Entity: users
+# Description: User accounts
+users: 100
+
+# Entity: groups
+# Description: User groups
+groups: 100
+
+# Entity: permissions
+# Description: Access permissions
+permissions: 100
+```
+
+#### Customize Row Counts
+
+Edit the generated file to specify different row counts per entity:
+
+```yaml
+users: 1000        # Large user base
+groups: 50         # Fewer groups
+permissions: 200   # Moderate permissions
+```
+
+#### Generate CSVs with Custom Counts
+
+```bash
+# Use the configuration file to generate CSVs
+./build/fabricator -f example.yaml --count-config counts.yaml -o output/
+```
+
+#### Additional Options
+
+| Flag | Long Flag | Description |
+|------|-----------|-------------|
+| `-c` | `--count-config` | Path to row count configuration YAML file |
+
+**Note**: The `--count-config` and `-n` flags are mutually exclusive. Use one or the other, not both.
+
+#### Use Cases
+
+**Realistic Data Distributions:**
+```yaml
+employees: 10000
+departments: 100
+managers: 500
+```
+
+**Performance Testing:**
+```yaml
+transactions: 1000000
+customers: 100000
+products: 10000
+```
+
+**Minimal Test Data:**
+```yaml
+users: 5
+groups: 2
+permissions: 3
 ```
 
 ## YAML Format

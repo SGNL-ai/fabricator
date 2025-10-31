@@ -1,0 +1,24 @@
+
+# Row count configuration for fabricator
+# Generated from: examples/okta.sgnl.yaml
+# Last updated: 2025-10-30 19:53:21
+#
+# Edit the numbers below to specify how many rows to generate for each entity.
+# Entities not listed here will use the default count (100).
+
+# Entity: User
+# Description: User entity in Okta
+User: 100
+
+# Entity: Group
+# Description: Group entity in Okta
+Group: 100
+
+# Entity: GroupMember
+# Description: Group Member entity in Okta
+GroupMember: 100
+
+# Entity: Application
+# Description: Application entity in Okta
+Application: 100
+

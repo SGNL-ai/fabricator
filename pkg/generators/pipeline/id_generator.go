@@ -17,14 +17,15 @@ func NewIDGenerator() IDGeneratorInterface {
 	return &IDGenerator{}
 }
 
-// GenerateIDs generates unique IDs for all entities in topological order
-func (g *IDGenerator) GenerateIDs(graph *model.Graph, dataVolume int) error {
+// GenerateIDs generates unique IDs for all entities in topological order.
+// rowCounts maps entity external_id to the number of rows to generate.
+func (g *IDGenerator) GenerateIDs(graph *model.Graph, rowCounts map[string]int) error {
 	if graph == nil {
 		return fmt.Errorf("graph cannot be nil")
 	}
 
-	if dataVolume <= 0 {
-		return fmt.Errorf("data volume must be greater than 0")
+	if len(rowCounts) == 0 {
+		return fmt.Errorf("row counts map cannot be nil or empty")
 	}
 
 	// Generate IDs for each entity
@@ -35,11 +36,22 @@ func (g *IDGenerator) GenerateIDs(graph *model.Graph, dataVolume int) error {
 			continue // Skip entities without primary keys
 		}
 
+		// Get row count for this entity
+		entityID := entity.GetExternalID()
+		count, exists := rowCounts[entityID]
+		if !exists {
+			return fmt.Errorf("no row count specified for entity %s", entityID)
+		}
+
+		if count <= 0 {
+			return fmt.Errorf("row count for entity %s must be greater than 0, got %d", entityID, count)
+		}
+
 		// Show progress for current entity (no newline, will be overwritten)
-		fmt.Printf("\r%-80s\r→ Generating %s...", "", entity.GetName())
+		fmt.Printf("\r%-80s\r→ Generating %s (%d rows)...", "", entity.GetName(), count)
 
 		// Generate the specified number of rows with unique IDs
-		for i := 0; i < dataVolume; i++ {
+		for i := 0; i < count; i++ {
 			// Create row with just the primary key
 			rowData := map[string]string{
 				primaryKey.GetName(): uuid.New().String(),

@@ -9,9 +9,11 @@ import (
 	"runtime/pprof"
 	"strings"
 
+	"github.com/SGNL-ai/fabricator/pkg/config"
 	"github.com/SGNL-ai/fabricator/pkg/diagrams"
 	"github.com/SGNL-ai/fabricator/pkg/orchestrator"
 	"github.com/SGNL-ai/fabricator/pkg/parser"
+	"github.com/SGNL-ai/fabricator/pkg/subcommands"
 	"github.com/fatih/color"
 )
 
@@ -33,6 +35,9 @@ var (
 
 	// Data volume
 	dataVolume int
+
+	// Count configuration file
+	countConfigFile string
 
 	// Auto-cardinality for relationships
 	autoCardinality bool
@@ -65,8 +70,11 @@ func init() {
 	flag.IntVar(&dataVolume, "n", 100, "Number of rows to generate for each entity")
 	flag.IntVar(&dataVolume, "num-rows", 100, "Number of rows to generate for each entity")
 
-	flag.BoolVar(&autoCardinality, "a", false, "Enable automatic cardinality detection for relationships")
-	flag.BoolVar(&autoCardinality, "auto-cardinality", false, "Enable automatic cardinality detection for relationships")
+	flag.StringVar(&countConfigFile, "count-config", "", "Path to row count configuration YAML file")
+	flag.StringVar(&countConfigFile, "c", "", "Path to row count configuration YAML file")
+
+	flag.BoolVar(&autoCardinality, "a", true, "Enable automatic cardinality detection for relationships")
+	flag.BoolVar(&autoCardinality, "auto-cardinality", true, "Enable automatic cardinality detection for relationships")
 
 	flag.BoolVar(&validateOnly, "validate-only", false, "Validate existing CSV files without generating new data")
 
@@ -102,6 +110,18 @@ func init() {
 }
 
 func main() {
+	// Check for subcommands before parsing flags
+	// Subcommands are verbs like "init-count-config" that come before flags
+	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-") {
+		switch os.Args[1] {
+		case "init-count-config":
+			handleInitCountConfigSubcommand(os.Args[2:])
+			return
+		}
+		// If not a recognized subcommand, continue with normal flag parsing
+		// This allows for backward compatibility with non-subcommand usage
+	}
+
 	// Parse command-line flags
 	flag.Parse()
 
@@ -119,15 +139,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Validate flag conflicts: cannot use both -n and --count-config
+	if dataVolume != 100 && countConfigFile != "" {
+		color.Red("Error: Cannot use both -n/--num-rows and --count-config flags simultaneously.")
+		color.Yellow("Suggestion: Choose one approach:")
+		color.Yellow("  • Use -n for uniform row counts across all entities")
+		color.Yellow("  • Use --count-config for per-entity row counts")
+		os.Exit(1)
+	}
+
 	// Main application logic
-	if err := run(inputFile, outputDir, dataVolume, autoCardinality); err != nil {
+	if err := run(inputFile, outputDir, dataVolume, countConfigFile, autoCardinality); err != nil {
 		color.Red("Error: %v", err)
 		os.Exit(1)
 	}
 }
 
 // run performs the main application logic
-func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) error {
+func run(inputFile, outputDir string, dataVolume int, countConfigFile string, autoCardinality bool) error {
 	// Start profiling if requested
 	if cpuProfile != "" {
 		f, err := os.Create(cpuProfile) // #nosec G304 - cpuProfile is from CLI argument
@@ -185,7 +214,7 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 
 	if !validateOnly {
 		// Generation mode
-		err := runGenerationMode(def, absOutputDir, dataVolume, autoCardinality)
+		err := runGenerationMode(def, absOutputDir, dataVolume, countConfigFile, autoCardinality)
 		if err != nil {
 			return err
 		}
@@ -223,9 +252,37 @@ func run(inputFile, outputDir string, dataVolume int, autoCardinality bool) erro
 }
 
 // runGenerationMode handles data generation workflow
-func runGenerationMode(def *parser.SORDefinition, outputDir string, dataVolume int, autoCardinality bool) error {
+func runGenerationMode(def *parser.SORDefinition, outputDir string, dataVolume int, countConfigFile string, autoCardinality bool) error {
+	// Load count configuration if provided
+	var countConfig *config.CountConfiguration
+	if countConfigFile != "" {
+		color.Yellow("Loading row count configuration from %s...", countConfigFile)
+		cfg, err := config.LoadConfiguration(countConfigFile)
+		if err != nil {
+			return fmt.Errorf("failed to load count configuration: %w", err)
+		}
+		countConfig = cfg
+
+		// Validate configuration against SOR entities
+		var entityIDs []string
+		for _, entity := range def.Entities {
+			entityIDs = append(entityIDs, entity.ExternalId)
+		}
+		if err := countConfig.Validate(entityIDs); err != nil {
+			return fmt.Errorf("count configuration validation failed: %w", err)
+		}
+		color.Green("✓ Row count configuration loaded and validated")
+	}
+
 	// Calculate estimated number of records
 	totalRecords := len(def.Entities) * dataVolume
+	if countConfig != nil {
+		// Recalculate with per-entity counts
+		totalRecords = 0
+		for _, entity := range def.Entities {
+			totalRecords += countConfig.GetCount(entity.ExternalId, dataVolume)
+		}
+	}
 	color.Yellow("Estimated total CSV records to generate: %d", totalRecords)
 
 	// Generate data using orchestrator
@@ -235,6 +292,7 @@ func runGenerationMode(def *parser.SORDefinition, outputDir string, dataVolume i
 
 	options := orchestrator.GenerationOptions{
 		DataVolume:      dataVolume,
+		CountConfig:     countConfig,
 		AutoCardinality: autoCardinality,
 		GenerateDiagram: generateDiagram,
 		ValidateResults: false, // Skip validation in generation mode for performance
@@ -295,10 +353,23 @@ func runValidationMode(def *parser.SORDefinition, outputDir string) error {
 
 // printUsage displays the usage information with proper double-dash syntax for long options
 func printUsage() {
+	// Subcommands section
+	_, _ = color.New(color.FgCyan, color.Bold).Println("\nSubcommands:")
+	fmt.Println("  init-count-config\n\tGenerate a row count configuration template from a SOR YAML file")
+	fmt.Println("\n\tUsage: fabricator init-count-config -f <sor.yaml> [options]")
+	fmt.Println("\tOptions:")
+	fmt.Println("\t  -f, --file         Path to the SOR YAML definition file (required)")
+	fmt.Println("\t  -n, --num-rows     Default row count for all entities (default: 100)")
+	fmt.Println("\tExample:")
+	fmt.Println("\t  fabricator init-count-config -f my-sor.yaml > counts.yaml")
+
+	// Main command flags
+	_, _ = color.New(color.FgCyan, color.Bold).Println("\nMain Command Flags:")
 	fmt.Println("  -v, --version\n\tDisplay version information")
 	fmt.Println("  -f, --file string\n\tPath to the YAML definition file (required)")
 	fmt.Println("  -o, --output string\n\tDirectory to store generated CSV files (default \"output\")")
 	fmt.Println("  -n, --num-rows int\n\tNumber of rows to generate for each entity (default 100)")
+	fmt.Println("  --count-config, -c string\n\tPath to row count configuration YAML file (alternative to -n)")
 	fmt.Println("  -a, --auto-cardinality\n\tEnable automatic cardinality detection for relationships")
 	fmt.Println("  --validate\n\tValidate relationships consistency in output CSV files (default true)")
 	fmt.Println("  --validate-only\n\tValidate existing CSV files without generating new data")
@@ -313,6 +384,15 @@ func printUsage() {
 		diagDesc += " (default false - Graphviz not found)"
 	}
 	fmt.Println("  -d, --diagram\n\t" + diagDesc)
+
+	// Examples section
+	_, _ = color.New(color.FgCyan, color.Bold).Println("\nExamples:")
+	fmt.Println("  # Generate CSVs with uniform row counts")
+	fmt.Println("  fabricator -f sor.yaml -n 100 -o output/")
+	fmt.Println("\n  # Generate CSVs with per-entity row counts")
+	fmt.Println("  fabricator -f sor.yaml --count-config counts.yaml -o output/")
+	fmt.Println("\n  # Generate a row count configuration template")
+	fmt.Println("  fabricator init-count-config -f sor.yaml > counts.yaml")
 }
 
 // SummaryInfo holds common information needed for printing operation summaries
@@ -400,4 +480,52 @@ func printHeader() {
 	// Print the logo with version information
 	_, _ = headerColor.Printf(logo, version)
 	fmt.Println() // Add an extra newline
+}
+
+// handleInitCountConfigSubcommand handles the init-count-config subcommand
+// which generates a row count configuration template from a SOR YAML file
+func handleInitCountConfigSubcommand(args []string) {
+	// Create a new flag set for the subcommand
+	initFlags := flag.NewFlagSet("init-count-config", flag.ExitOnError)
+
+	// Define flags for the init-count-config subcommand
+	var (
+		sorFile      string
+		defaultCount int
+	)
+
+	initFlags.StringVar(&sorFile, "f", "", "Path to the SOR YAML definition file (required)")
+	initFlags.StringVar(&sorFile, "file", "", "Path to the SOR YAML definition file (required)")
+	initFlags.IntVar(&defaultCount, "n", 100, "Default row count for all entities")
+	initFlags.IntVar(&defaultCount, "num-rows", 100, "Default row count for all entities")
+
+	// Parse the subcommand flags
+	if err := initFlags.Parse(args); err != nil {
+		color.Red("Error parsing flags: %v", err)
+		os.Exit(1)
+	}
+
+	// Validate required flags
+	if sorFile == "" {
+		color.Red("Error: SOR file is required for init-count-config subcommand")
+		color.Yellow("\nUsage: fabricator init-count-config -f <sor.yaml> [options]")
+		color.Yellow("\nOptions:")
+		color.Yellow("  -f, --file         Path to the SOR YAML definition file (required)")
+		color.Yellow("  -n, --num-rows     Default row count for all entities (default: 100)")
+		color.Yellow("\nExample:")
+		color.Yellow("  fabricator init-count-config -f my-sor.yaml > counts.yaml")
+		os.Exit(1)
+	}
+
+	// Call the subcommand implementation
+	opts := subcommands.InitCountConfigOptions{
+		SORFile:      sorFile,
+		DefaultCount: defaultCount,
+		Output:       os.Stdout,
+	}
+
+	if err := subcommands.InitCountConfig(opts); err != nil {
+		color.Red("Error: %v", err)
+		os.Exit(1)
+	}
 }

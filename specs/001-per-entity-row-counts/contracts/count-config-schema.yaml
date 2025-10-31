@@ -1,0 +1,101 @@
+# Row Count Configuration Schema
+# Version: 1.0.0
+# Feature: 001-per-entity-row-counts
+
+# This schema defines the structure of row count configuration files
+# used by fabricator to specify different row counts per entity.
+
+# Schema Type: YAML Key-Value Map
+# Format: entity_external_id: positive_integer
+
+# Example Configuration:
+# ---
+# # Row count configuration for fabricator
+# # Generated from: my-sor.yaml
+# # Last updated: 2025-10-30
+#
+# # Entity: users
+# # Description: User accounts in the system
+# users: 1000
+#
+# # Entity: groups
+# # Description: User groups for organization
+# groups: 50
+#
+# # Entity: permissions
+# # Description: Access control permissions
+# permissions: 200
+# ---
+
+# Schema Definition (using JSON Schema format for validation)
+
+$schema: "http://json-schema.org/draft-07/schema#"
+$id: "https://github.com/SGNL-ai/fabricator/schemas/count-config-v1.yaml"
+
+title: "Fabricator Row Count Configuration"
+description: "Configuration file specifying per-entity row counts for test data generation"
+type: object
+
+# Properties: Dynamic keys based on SOR entities
+patternProperties:
+  # Entity external_id pattern: lowercase alphanumeric with underscores/hyphens
+  "^[a-z0-9_-]+$":
+    type: integer
+    minimum: 1
+    maximum: 2147483647  # Max int32 for practical limits
+    description: "Number of rows to generate for this entity"
+    examples:
+      - 100
+      - 1000
+      - 50
+
+# No fixed properties (all keys are entity external_ids)
+additionalProperties: false
+
+# Minimum one entity required (empty config is technically valid but pointless)
+minProperties: 0
+
+# Examples of valid configurations
+examples:
+  - # Minimal configuration (single entity)
+    users: 100
+
+  - # Typical configuration (multiple entities)
+    users: 1000
+    groups: 50
+    permissions: 200
+    roles: 25
+
+  - # Large scale configuration
+    customers: 100000
+    orders: 500000
+    products: 10000
+    inventory_items: 50000
+
+# Validation Rules (enforced by pkg/config/validator.go):
+# 1. All keys MUST match entity external_ids from the referenced SOR YAML file
+# 2. All values MUST be positive integers (>0)
+# 3. Entity keys not present in config will use default row count (from -n flag or 100)
+# 4. Unknown entity keys (not in SOR) will cause validation error
+
+# Error Messages:
+# - Unknown entity: "Entity '{key}' in count configuration not found in SOR YAML"
+# - Invalid count: "Invalid count for entity '{key}': {value} (expected positive integer)"
+# - Zero/negative: "Invalid count for entity '{key}': {value} must be greater than 0"
+# - Non-integer: "Invalid count type for entity '{key}': expected integer, got {type}"
+
+# Usage:
+# 1. Generate template: fabricator init-count-config -f sor.yaml > counts.yaml
+# 2. Edit counts.yaml to specify desired row counts
+# 3. Generate data: fabricator -f sor.yaml --count-config counts.yaml -o output/
+# 4. Verify: Check output/*.csv files for correct row counts
+
+# Related Files:
+# - Specification: specs/001-per-entity-row-counts/spec.md
+# - Data Model: specs/001-per-entity-row-counts/data-model.md
+# - Implementation: pkg/config/count_config.go
+# - Validation: pkg/config/validator.go
+# - Template Generator: pkg/config/template.go
+
+# Version History:
+# - 1.0.0 (2025-10-30): Initial schema definition

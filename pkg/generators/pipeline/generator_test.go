@@ -18,8 +18,8 @@ type MockIDGenerator struct {
 // Ensure MockIDGenerator implements the IDGeneratorInterface
 var _ IDGeneratorInterface = (*MockIDGenerator)(nil)
 
-func (m *MockIDGenerator) GenerateIDs(graph *model.Graph, dataVolume int) error {
-	args := m.Called(graph, dataVolume)
+func (m *MockIDGenerator) GenerateIDs(graph *model.Graph, rowCounts map[string]int) error {
+	args := m.Called(graph, rowCounts)
 	return args.Error(0)
 }
 
@@ -80,36 +80,36 @@ func TestNewDataGenerator(t *testing.T) {
 	tests := []struct {
 		name            string
 		outputDir       string
-		dataVolume      int
+		rowCounts       map[string]int
 		autoCardinality bool
 	}{
 		{
 			name:            "should create generator with valid parameters",
 			outputDir:       "/tmp/output",
-			dataVolume:      100,
+			rowCounts:       map[string]int{"entity1": 100, "entity2": 200},
 			autoCardinality: true,
 		},
 		{
 			name:            "should create generator with default parameters",
 			outputDir:       "output",
-			dataVolume:      10,
+			rowCounts:       map[string]int{"entity1": 10},
 			autoCardinality: false,
 		},
 		{
 			name:            "should handle empty output directory",
 			outputDir:       "",
-			dataVolume:      50,
+			rowCounts:       map[string]int{"entity1": 50},
 			autoCardinality: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			generator := NewDataGenerator(tt.outputDir, tt.dataVolume, tt.autoCardinality)
+			generator := NewDataGenerator(tt.outputDir, tt.rowCounts, tt.autoCardinality)
 
 			require.NotNil(t, generator)
 			assert.Equal(t, tt.outputDir, generator.outputDir)
-			assert.Equal(t, tt.dataVolume, generator.dataVolume)
+			assert.Equal(t, tt.rowCounts, generator.rowCounts)
 			assert.Equal(t, tt.autoCardinality, generator.autoCardinality)
 
 			// Verify all components are initialized
@@ -143,7 +143,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 			name: "Successful generation",
 			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
 				// All phases succeed
-				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				idGen.On("GenerateIDs", mock.Anything, mock.Anything).Return(nil)
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
 				csvWriter.On("WriteFiles", mock.Anything).Return(nil)
@@ -157,7 +157,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 			name: "ID generation fails",
 			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
 				// ID generation fails
-				idGen.On("GenerateIDs", mock.Anything, 10).Return(errors.New("ID generation error"))
+				idGen.On("GenerateIDs", mock.Anything, mock.Anything).Return(errors.New("ID generation error"))
 				// Other mocks shouldn't be called
 			},
 			graph:           nil, // Will be initialized in test
@@ -170,7 +170,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 			name: "Relationship linking fails",
 			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
 				// ID generation succeeds
-				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				idGen.On("GenerateIDs", mock.Anything, mock.Anything).Return(nil)
 				// Relationship linking fails
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(errors.New("relationship error"))
 				// Other mocks shouldn't be called
@@ -185,7 +185,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 			name: "Field generation fails",
 			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
 				// ID generation succeeds
-				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				idGen.On("GenerateIDs", mock.Anything, mock.Anything).Return(nil)
 				// Relationship linking succeeds
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				// Field generation fails
@@ -202,7 +202,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 			name: "CSV writing fails",
 			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
 				// All steps succeed until CSV writing
-				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				idGen.On("GenerateIDs", mock.Anything, mock.Anything).Return(nil)
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
 				// CSV writing fails
@@ -218,7 +218,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 			name: "Validation errors are logged but don't fail generation",
 			setupMocks: func(idGen *MockIDGenerator, relLinker *MockRelationshipLinker, fieldGen *MockFieldGenerator, validator *MockValidator, csvWriter *MockCSVWriter) {
 				// All phases succeed
-				idGen.On("GenerateIDs", mock.Anything, 10).Return(nil)
+				idGen.On("GenerateIDs", mock.Anything, mock.Anything).Return(nil)
 				relLinker.On("LinkRelationships", mock.Anything, false).Return(nil)
 				fieldGen.On("GenerateFields", mock.Anything).Return(nil)
 				// No validation expectations since validation was removed from generation
@@ -250,7 +250,7 @@ func TestDataGenerator_Generate(t *testing.T) {
 				fieldGenerator:     mockFieldGen,
 				validator:          mockValidator,
 				csvWriter:          mockCSVWriter,
-				dataVolume:         tt.dataVolume,
+				rowCounts:          map[string]int{"entity1": tt.dataVolume},
 				autoCardinality:    tt.autoCardinality,
 			}
 

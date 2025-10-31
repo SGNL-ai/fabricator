@@ -19,6 +19,7 @@ type Parser struct {
 	Definition *SORDefinition
 	FilePath   string
 	schema     *jsonschema.Schema
+	Quiet      bool // Suppress debug output when true
 }
 
 // NewParser creates a new Parser instance
@@ -249,9 +250,9 @@ func (p *Parser) validateRelationships() error {
 	})
 
 	// Build the attribute maps and collect entity info for debugging
-	fmt.Printf("\nDEBUG: Discovered %d entities:\n", len(p.Definition.Entities))
+	fmt.Fprintf(os.Stderr, "\nDEBUG: Discovered %d entities:\n", len(p.Definition.Entities))
 	for entityID, entity := range p.Definition.Entities {
-		fmt.Printf("  • Entity ID: %s, External ID: %s, Display Name: %s (%d attributes)\n",
+		fmt.Fprintf(os.Stderr, "  • Entity ID: %s, External ID: %s, Display Name: %s (%d attributes)\n",
 			entityID, entity.ExternalId, entity.DisplayName, len(entity.Attributes))
 
 		for _, attr := range entity.Attributes {

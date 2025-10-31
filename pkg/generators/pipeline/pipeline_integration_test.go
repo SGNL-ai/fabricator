@@ -60,7 +60,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Execute the complete 3-phase pipeline
-		generator := NewDataGenerator(tempDir, 2, false)
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 2, "Profile": 2}, false)
 		err = generator.Generate(graph)
 		require.NoError(t, err)
 
@@ -187,7 +187,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Execute pipeline directly
-		generator := NewDataGenerator(tempDir, 2, false)
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 2, "Profile": 2}, false)
 		err = generator.Generate(graph)
 		require.NoError(t, err)
 
@@ -244,7 +244,7 @@ func TestDataGeneratorPipelineIntegration(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Execute pipeline
-		generator := NewDataGenerator(tempDir, 1, false)
+		generator := NewDataGenerator(tempDir, map[string]int{"Entity": 1}, false)
 		err = generator.Generate(graph)
 		require.NoError(t, err)
 
