@@ -453,6 +453,10 @@ When reviewing implementation:
   - Tests must genuinely verify the functionality, not just appear to pass.
   - Each test should have meaningful assertions that validate actual behavior.
   - Tests should fail when the implementation is incorrect.
+  - **NEVER use t.Skip() to hide failing tests due to broken implementation**
+  - t.Skip() is ONLY acceptable for broken test infrastructure (missing dependencies, external services unavailable, etc.)
+  - When implementation is broken, the test MUST fail - that's the entire point of TDD
+  - Skipping tests because "the code isn't ready yet" defeats the purpose of Red-Green-Refactor
 
 ## Spec-Driven Development with Spec Kit
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 )
 
 // Relationship represents a relationship between two entities and their attributes
@@ -239,6 +240,12 @@ func (r *Relationship) powerLawIndex(sourceRowIndex, targetCount int) int {
 	maxSourceIndex := r.sourceEntity.GetRowCount() - 1
 	if maxSourceIndex <= 0 {
 		return 0
+	}
+
+	// DEBUG: Log when row count is suspiciously small during iteration
+	if sourceRowIndex > 10 && maxSourceIndex < 10 {
+		fmt.Fprintf(os.Stderr, "\nDEBUG: Suspicious! sourceRowIndex=%d but maxSourceIndex=%d (entity has %d rows)\n",
+			sourceRowIndex, maxSourceIndex, r.sourceEntity.GetRowCount())
 	}
 
 	// Normalize sourceRowIndex to [0, 1] range
