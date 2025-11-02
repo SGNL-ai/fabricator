@@ -9,6 +9,11 @@ TDD is mandatory for all code changes:
 - Acceptable test coverage is 80% or better using testify framework
 - Never skip work or justify incomplete functionality with "it likely works"
 - Act as a professional engineer - no shortcuts
+- **NEVER use t.Skip() to hide failing tests when implementation is broken**
+  - t.Skip() is ONLY acceptable when the test infrastructure itself is broken (missing external dependencies, unavailable services, etc.)
+  - When implementation is broken, tests MUST fail - that is the entire point of TDD
+  - Skipping tests because "code isn't ready yet" defeats Red-Green-Refactor
+  - Failing tests drive fixes; skipped tests hide problems
 
 Testing hierarchy:
 - **Unit tests**: Test individual functions and methods in isolation
@@ -145,4 +150,34 @@ This constitution supersedes all other development practices and guidelines. All
 - Code review approval required
 - No direct commits to main branch
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-30 | **Last Amended**: 2025-10-30
+<!--
+Sync Impact Report - Constitution v1.1.0
+========================================
+Version Change: 1.0.0 → 1.1.0 (MINOR - added explicit test skipping prohibition to Principle I)
+
+Modified Principles:
+- Principle I (Test-Driven Development): Added explicit prohibition on t.Skip() for broken implementations
+
+Added Sections: None
+
+Removed Sections: None
+
+Templates Requiring Updates:
+- ✅ .specify/templates/plan-template.md: Reviewed - no changes needed (constitution check already enforces TDD)
+- ✅ .specify/templates/spec-template.md: Reviewed - no changes needed (spec focuses on requirements, not testing)
+- ✅ .specify/templates/tasks-template.md: Reviewed - no changes needed (tasks already mandate TDD test-first approach)
+- ✅ .specify/templates/commands/*.md: Reviewed - no references to test skipping practices
+
+Runtime Guidance:
+- ✅ CLAUDE.md: Already updated with identical test skipping prohibition (lines 456-459)
+
+Follow-up TODOs: None
+
+Rationale for MINOR bump:
+- Added material new guidance (prohibition on t.Skip() misuse)
+- Expands existing Principle I with explicit rule
+- Does not change existing principles or remove guidance
+- Backward compatible (doesn't break existing workflows)
+-->
+
+**Version**: 1.1.0 | **Ratified**: 2025-10-30 | **Last Amended**: 2025-10-31

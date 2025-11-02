@@ -82,8 +82,10 @@ type EntityInterface interface {
 	CheckKeyExists(keyValue string) bool // O(1) primary key existence check
 
 	// Junction table duplicate prevention
-	IsForeignKeyUnique(row *Row) bool // Check if row's FK combination is unique for junction tables
-	RemoveRow(rowIndex int) error     // Remove row and update hash maps
+	IsForeignKeyUnique(row *Row) bool        // Check if row's FK combination is unique for junction tables
+	RemoveRow(rowIndex int) error            // Remove row and update hash maps
+	RegisterCompositeKey(row *Row)           // Register composite key after all FKs set (for duplicate detection)
+	IsCompositeKeyRegistered(row *Row) bool  // Check if composite key already registered
 }
 
 // RelationshipInterface defines operations for relationships

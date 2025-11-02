@@ -885,3 +885,29 @@ func (mr *MockAttributeInterfaceMockRecorder) setRelationship(relatedEntityID, r
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "setRelationship", reflect.TypeOf((*MockAttributeInterface)(nil).setRelationship), relatedEntityID, relatedAttributeName)
 }
+
+// IsCompositeKeyRegistered mocks base method.
+func (m *MockEntityInterface) IsCompositeKeyRegistered(row *Row) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsCompositeKeyRegistered", row)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsCompositeKeyRegistered indicates an expected call of IsCompositeKeyRegistered.
+func (mr *MockEntityInterfaceMockRecorder) IsCompositeKeyRegistered(row any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCompositeKeyRegistered", reflect.TypeOf((*MockEntityInterface)(nil).IsCompositeKeyRegistered), row)
+}
+
+// RegisterCompositeKey mocks base method.
+func (m *MockEntityInterface) RegisterCompositeKey(row *Row) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RegisterCompositeKey", row)
+}
+
+// RegisterCompositeKey indicates an expected call of RegisterCompositeKey.
+func (mr *MockEntityInterfaceMockRecorder) RegisterCompositeKey(row any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterCompositeKey", reflect.TypeOf((*MockEntityInterface)(nil).RegisterCompositeKey), row)
+}

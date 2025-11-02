@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// ErrSkipRow signals ForEachRow to skip re-adding the current row
+// Used to efficiently remove duplicate rows without expensive RemoveRow calls
+var ErrSkipRow = errors.New("skip row - do not re-add")
+
 // TODO make interface
 // Row represents a single row of data for an entity
 
@@ -251,44 +255,58 @@ func (e *Entity) AddRow(row *Row) error {
 	return nil
 }
 
-// ForEachRow iterates over all rows and allows modification during iteration
-// Any changes made to the row are validated using AddRow validation
-// Row order is preserved after iteration completes
+// ForEachRow iterates over all rows and allows in-place modification
+// Validates PK uniqueness only if PK value changes (performance optimization)
+// Returns ErrSkipRow from callback to skip including a row in the result
 func (e *Entity) ForEachRow(fn func(row *Row, index int) error) error {
-	originalRowCount := len(e.rows)
+	var originalPKValue string // Reuse - no allocations per iteration
+	var newPKValue string       // Reuse - no allocations per iteration
 
-	// Process each row by temporarily removing and re-adding for atomic validation
-	for i := range originalRowCount {
-		// Get the first row (don't pop yet to maintain entity state during fn call)
-		row := e.rows[0]
+	pk := e.GetPrimaryKey()
+	pkName := pk.GetName()
 
-		// Capture original PK value before modification
-		var originalPKValue string
-		if e.primaryKey != nil {
-			pkName := e.primaryKey.GetName()
-			if pkValue, exists := row.values[pkName]; exists {
-				originalPKValue = pkValue
-			}
+	// Build new slice of rows to keep (pre-allocate with original capacity)
+	newRows := make([]*Row, 0, len(e.rows))
+
+	for i, row := range e.rows {
+		// Capture original PK value
+		originalPKValue = row.GetValue(pkName)
+
+		// Call function to modify row in-place
+		err := fn(row, i)
+
+		// Check if callback signals to skip this row
+		if errors.Is(err, ErrSkipRow) {
+			// Don't add to newRows - effectively removes this row
+			delete(e.usedPKValues, originalPKValue)  // Clean up PK tracking
+			continue
 		}
 
-		// Call the function to potentially modify the row
-		if err := fn(row, i); err != nil {
+		if err != nil {
 			return fmt.Errorf("error processing row %d in entity %s: %w", i, e.name, err)
 		}
 
-		// Now atomically pop the old row and re-add the modified row
-		e.rows = e.rows[1:] // Remove the processed row
+		// Validate PK if changed
+		newPKValue = row.GetValue(pkName)
 
-		// Remove original PK value from hash map (before modification)
-		if e.primaryKey != nil && originalPKValue != "" {
+		if newPKValue != originalPKValue {
+			// PK changed - validate uniqueness FIRST before updating tracking
+			if e.CheckKeyExists(newPKValue) {
+				return fmt.Errorf("duplicate value '%s' for unique attribute '%s'", newPKValue, pkName)
+			}
+
+			// Validation passed - update PK tracking
 			delete(e.usedPKValues, originalPKValue)
+			e.usedPKValues[newPKValue] = true
 		}
 
-		// Re-add the modified row using AddRow for validation
-		if err := e.AddRow(row); err != nil {
-			return fmt.Errorf("failed to re-add modified row %d in entity %s: %w", i, e.name, err)
-		}
+		// Row validated - add to new slice
+		newRows = append(newRows, row)
 	}
+
+	// Replace entire row slice with filtered results
+	e.rows = newRows
+
 	return nil
 }
 
@@ -412,15 +430,39 @@ func (e *Entity) IsForeignKeyUnique(row *Row) bool {
 }
 
 // addCompositeKeyToIndex adds a row's composite FK key to the internal index
-// Should only be called after verifying the key is unique
 func (e *Entity) addCompositeKeyToIndex(row *Row) {
+	compositeKey := e.getCompositeKey(row)
+	if compositeKey != "" {
+		e.usedCompositeKeys[compositeKey] = true
+	}
+}
+
+// RegisterCompositeKey registers a row's composite key for duplicate detection
+// Should be called by relationship_linker after ALL FK values have been set
+func (e *Entity) RegisterCompositeKey(row *Row) {
+	compositeKey := e.getCompositeKey(row)
+	if compositeKey != "" {
+		e.usedCompositeKeys[compositeKey] = true
+	}
+}
+
+// IsCompositeKeyRegistered checks if a row's composite key was already registered
+// Used by ForEachRow to detect duplicates after fn() modifies the row
+func (e *Entity) IsCompositeKeyRegistered(row *Row) bool {
+	compositeKey := e.getCompositeKey(row)
+	if compositeKey == "" {
+		return false
+	}
+	return e.usedCompositeKeys[compositeKey]
+}
+
+// getCompositeKey builds composite key for a row (convenience wrapper)
+func (e *Entity) getCompositeKey(row *Row) string {
 	fkAttributes := e.GetRelationshipAttributes()
 	if len(fkAttributes) == 0 {
-		return // No FK attributes to index
+		return ""
 	}
-
-	compositeKey := e.buildCompositeKey(row, fkAttributes)
-	e.usedCompositeKeys[compositeKey] = true
+	return e.buildCompositeKey(row, fkAttributes)
 }
 
 // buildCompositeKey creates a composite key string from FK attribute values
