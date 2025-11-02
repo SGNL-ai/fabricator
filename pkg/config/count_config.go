@@ -33,7 +33,7 @@ type CountConfiguration struct {
 // Returns an error if the file cannot be read or parsed.
 func LoadConfiguration(path string) (*CountConfiguration, error) {
 	// Read the file
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 - path is from CLI argument, user-controlled
 	if err != nil {
 		return nil, &ValidationError{
 			Message:    fmt.Sprintf("Count configuration file not found: %s", path),
