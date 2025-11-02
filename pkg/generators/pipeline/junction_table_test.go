@@ -60,7 +60,7 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 
 		// Generate data with auto-cardinality (should create realistic M:M patterns)
 		tempDir := t.TempDir()
-		generator := NewDataGenerator(tempDir, 10, true)
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 10, "Group": 10, "UserGroupMembership": 10}, true)
 		err = generator.Generate(graph.(*model.Graph))
 		require.NoError(t, err)
 
@@ -168,7 +168,7 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 
 		// Generate data
 		tempDir := t.TempDir()
-		generator := NewDataGenerator(tempDir, 20, true)
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 20, "Role": 20, "Permission": 20, "UserRolePermission": 20}, true)
 		err = generator.Generate(graph.(*model.Graph))
 		require.NoError(t, err)
 
@@ -261,7 +261,7 @@ func TestJunctionTableDuplicatePruning(t *testing.T) {
 		require.NoError(t, err)
 
 		tempDir := t.TempDir()
-		generator := NewDataGenerator(tempDir, 15, true)
+		generator := NewDataGenerator(tempDir, map[string]int{"User": 15, "Group": 15, "Membership": 15}, true)
 		err = generator.Generate(graph.(*model.Graph))
 		require.NoError(t, err)
 

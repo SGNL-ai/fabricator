@@ -523,3 +523,10 @@ Don't use Spec Kit for:
 - **Simple bugs**: Single-file fixes with obvious solutions
 - **Trivial changes**: Documentation updates, typo fixes
 - **Emergency hotfixes**: Critical production issues requiring immediate action
+
+## Active Technologies
+- Go 1.25 + gopkg.in/yaml.v3 (existing), github.com/fatih/color (existing), github.com/stretchr/testify (testing) (001-per-entity-row-counts)
+- File-based (YAML input, CSV output) (001-per-entity-row-counts)
+
+## Recent Changes
+- 001-per-entity-row-counts: Added Go 1.25 + gopkg.in/yaml.v3 (existing), github.com/fatih/color (existing), github.com/stretchr/testify (testing)

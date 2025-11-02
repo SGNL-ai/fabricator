@@ -8,7 +8,7 @@ import (
 
 // IDGeneratorInterface defines the interface for ID generation
 type IDGeneratorInterface interface {
-	GenerateIDs(graph *model.Graph, dataVolume int) error
+	GenerateIDs(graph *model.Graph, rowCounts map[string]int) error
 }
 
 // RelationshipLinkerInterface defines the interface for relationship linking
@@ -41,13 +41,14 @@ type DataGenerator struct {
 	csvWriter          CSVWriterInterface
 
 	// Configuration
-	dataVolume      int
+	rowCounts       map[string]int
 	outputDir       string
 	autoCardinality bool
 }
 
-// NewDataGenerator creates a new DataGenerator with all pipeline components
-func NewDataGenerator(outputDir string, dataVolume int, autoCardinality bool) *DataGenerator {
+// NewDataGenerator creates a new DataGenerator with all pipeline components.
+// rowCounts maps entity external_id to the number of rows to generate.
+func NewDataGenerator(outputDir string, rowCounts map[string]int, autoCardinality bool) *DataGenerator {
 	return &DataGenerator{
 		idGenerator:        NewIDGenerator(),
 		relationshipLinker: NewRelationshipLinker(),
@@ -55,7 +56,7 @@ func NewDataGenerator(outputDir string, dataVolume int, autoCardinality bool) *D
 		validator:          NewValidation(),
 		csvWriter:          NewCSVWriter(outputDir),
 
-		dataVolume:      dataVolume,
+		rowCounts:       rowCounts,
 		outputDir:       outputDir,
 		autoCardinality: autoCardinality,
 	}
@@ -64,7 +65,7 @@ func NewDataGenerator(outputDir string, dataVolume int, autoCardinality bool) *D
 // Generate executes the full pipeline to generate data for all entities
 func (g *DataGenerator) Generate(graph *model.Graph) error {
 	// Step 1: Generate all identifier fields in topological order
-	if err := g.idGenerator.GenerateIDs(graph, g.dataVolume); err != nil {
+	if err := g.idGenerator.GenerateIDs(graph, g.rowCounts); err != nil {
 		return fmt.Errorf("ID generation failed: %w", err)
 	}
 
