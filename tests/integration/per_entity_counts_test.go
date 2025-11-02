@@ -254,7 +254,7 @@ func verifyCSVRowCount(t *testing.T, csvPath string, expectedRows int) {
 	// Open CSV file
 	file, err := os.Open(csvPath)
 	require.NoError(t, err, "CSV file should exist: %s", csvPath)
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Read CSV
 	reader := csv.NewReader(file)
