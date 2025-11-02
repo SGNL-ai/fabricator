@@ -437,13 +437,6 @@ func (e *Entity) addCompositeKeyToIndex(row *Row) {
 	}
 }
 
-// removeCompositeKey removes a composite key from tracking (takes key string directly)
-func (e *Entity) removeCompositeKey(compositeKey string) {
-	if compositeKey != "" {
-		delete(e.usedCompositeKeys, compositeKey)
-	}
-}
-
 // RegisterCompositeKey registers a row's composite key for duplicate detection
 // Should be called by relationship_linker after ALL FK values have been set
 func (e *Entity) RegisterCompositeKey(row *Row) {
