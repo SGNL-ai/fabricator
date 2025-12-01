@@ -30,7 +30,7 @@ jobs:
         check-latest: true
 
     - name: Check out code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Verify Go module setup
       run: |
@@ -54,7 +54,7 @@ jobs:
       shell: bash
 
     - name: Install golangci-lint
-      uses: golangci/golangci-lint-action@v8
+      uses: golangci/golangci-lint-action@v9
       with:
         version: v2.4.0
         install-mode: binary
