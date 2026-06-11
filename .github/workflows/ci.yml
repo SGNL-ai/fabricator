@@ -24,13 +24,13 @@ jobs:
 
     steps:
     - name: Set up Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
       with:
         go-version: '1.25'
         check-latest: true
 
     - name: Check out code
-      uses: actions/checkout@v5
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
     - name: Verify Go module setup
       run: |
@@ -54,7 +54,7 @@ jobs:
       shell: bash
 
     - name: Install golangci-lint
-      uses: golangci/golangci-lint-action@v8
+      uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8
       with:
         version: v2.4.0
         install-mode: binary
@@ -70,7 +70,7 @@ jobs:
       shell: bash
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: fabricator-${{ matrix.os }}
         path: build/fabricator
